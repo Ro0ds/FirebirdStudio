@@ -39,7 +39,9 @@ internal sealed class GitHubReleaseChecker
 
         if (!Uri.TryCreate(releaseUrl, UriKind.Absolute, out var htmlUrl) ||
             htmlUrl.Scheme != Uri.UriSchemeHttps ||
-            !string.Equals(htmlUrl.Host, "github.com", StringComparison.OrdinalIgnoreCase))
+            !string.Equals(htmlUrl.Host, "github.com", StringComparison.OrdinalIgnoreCase) ||
+            !htmlUrl.AbsolutePath.StartsWith(
+                "/Ro0ds/FirebirdStudio/releases/tag/", StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("The latest GitHub release returned an unexpected URL.");
 
         var releaseNotes = root.TryGetProperty("body", out var body)
@@ -55,10 +57,12 @@ internal sealed class GitHubReleaseChecker
         {
             Timeout = TimeSpan.FromSeconds(15)
         };
+        var version = typeof(GitHubReleaseChecker).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("FirebirdStudio", "0.1"));
+            new ProductInfoHeaderValue("FirebirdStudio", version));
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
         return client;
     }
 
