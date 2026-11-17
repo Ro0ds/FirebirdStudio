@@ -55,6 +55,9 @@
               <MenuItem Header="Tab beside SQL Editor" x:Name="HistoryDockTabMenuItem" ToggleType="Radio" GroupName="HistoryDock" />
             </MenuItem>
           </MenuItem>
+          <MenuItem Header="_Help">
+            <MenuItem Header="Check for updates…" x:Name="CheckForUpdatesMenuItem" />
+          </MenuItem>
         </Menu>
         <TextBlock DockPanel.Dock="Right" Text="FIREBIRD STUDIO  ·  DATABASE WORKSPACE"
                    VerticalAlignment="Center" Opacity="0.6" Margin="12,0" />
