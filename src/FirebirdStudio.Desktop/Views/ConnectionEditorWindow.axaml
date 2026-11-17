@@ -1,0 +1,146 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="FirebirdStudio.Desktop.Views.ConnectionEditorWindow"
+    Width="760"
+    Height="860"
+    MinWidth="640"
+    MinHeight="700"
+    WindowStartupLocation="CenterOwner"
+    Title="Firebird connection registration">
+  <Grid RowDefinitions="*,Auto,Auto" Margin="18">
+    <TabControl Grid.Row="0">
+      <TabItem Header="General">
+        <ScrollViewer>
+          <StackPanel Spacing="10" Margin="8">
+            <TextBlock Text="Connection registration" FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="The connection name is the local alias shown in the database list. Passwords are not stored in the profile." TextWrapping="Wrap" Opacity="0.7" />
+
+            <TextBlock Text="Connection name / alias" />
+            <TextBox x:Name="NameInput" PlaceholderText="Production database" />
+
+            <TextBlock Text="Server type" />
+            <ComboBox x:Name="ServerTypeInput" SelectedIndex="0">
+              <ComboBoxItem Content="Remote server (TCP/IP)" />
+              <ComboBoxItem Content="Embedded database" />
+            </ComboBox>
+            <TextBlock Text="Remote connections use TCP/IP. Embedded mode loads the selected client library in this process." TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+
+            <Grid ColumnDefinitions="*,130" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock Text="Server / host" />
+                <TextBox x:Name="HostInput" PlaceholderText="localhost" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="TCP port" />
+                <TextBox x:Name="PortInput" Text="3050" />
+              </StackPanel>
+            </Grid>
+
+            <TextBlock Text="Database file path or server-side alias" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+              <TextBox Grid.Column="0" x:Name="DatabaseInput" PlaceholderText="C:\Databases\APP.FDB or /var/lib/firebird/data/APP.FDB or an alias" />
+              <Button Grid.Column="1" x:Name="BrowseDatabaseButton" Content="Browse…" />
+            </Grid>
+            <TextBlock Text="The file picker accepts .GDB and .FDB files on this computer. For remote connections, the selected path must also be accessible to the Firebird server; server-side aliases can be entered manually." FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+
+            <TextBlock Text="Client library path (required for embedded mode)" />
+            <TextBox x:Name="ClientLibraryInput" PlaceholderText="Path to fbclient.dll, libfbclient.so, or platform equivalent" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock Text="User name" />
+                <TextBox x:Name="UserNameInput" Text="SYSDBA" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="Role (optional)" />
+                <TextBox x:Name="RoleInput" />
+              </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock Text="Character set" />
+                <TextBox x:Name="CharacterSetInput" Text="UTF8" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="SQL dialect" />
+                <ComboBox x:Name="DialectInput" SelectedIndex="2">
+                  <ComboBoxItem Content="Dialect 1" />
+                  <ComboBoxItem Content="Dialect 2" />
+                  <ComboBoxItem Content="Dialect 3" />
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="5">
+                <TextBlock Text="Connect timeout (s)" />
+                <TextBox x:Name="TimeoutInput" Text="15" />
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Advanced">
+        <ScrollViewer>
+          <StackPanel Spacing="10" Margin="8">
+            <TextBlock Text="Provider and network options" FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="These options are passed to the Firebird .NET provider. A connection test always bypasses the pool to test a fresh connection." TextWrapping="Wrap" Opacity="0.7" />
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock Text="Packet size (bytes)" />
+                <TextBox x:Name="PacketSizeInput" Text="8192" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="Fetch size (rows)" />
+                <TextBox x:Name="FetchSizeInput" Text="200" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="5">
+                <TextBlock Text="Database cache pages" />
+                <TextBox x:Name="DatabaseCachePagesInput" Text="0" />
+              </StackPanel>
+            </Grid>
+
+            <CheckBox x:Name="PoolingInput" Content="Enable connection pooling" IsChecked="True" />
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock Text="Minimum pool size" />
+                <TextBox x:Name="MinPoolSizeInput" Text="0" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="Maximum pool size" />
+                <TextBox x:Name="MaxPoolSizeInput" Text="100" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="5">
+                <TextBlock Text="Connection lifetime (s)" />
+                <TextBox x:Name="ConnectionLifetimeInput" Text="0" />
+              </StackPanel>
+            </Grid>
+
+            <CheckBox x:Name="CompressionInput" Content="Enable wire compression (if supported by the server and provider)" />
+            <CheckBox x:Name="DisableDatabaseTriggersInput" Content="Suppress database triggers for this connection" />
+            <TextBlock Text="Warning: suppressing database triggers can bypass database-side business rules. The provider does not allow this option together with connection pooling." TextWrapping="Wrap" FontSize="12" Opacity="0.8" />
+            <CheckBox x:Name="DisableGarbageCollectionInput" Content="Disable garbage collection for this connection" />
+            <TextBlock Text="This option changes Firebird garbage-collection behavior. Leave it disabled unless you understand the operational impact." TextWrapping="Wrap" FontSize="12" Opacity="0.8" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+
+    <StackPanel Grid.Row="1" Spacing="5" Margin="0,12,0,0">
+      <TextBlock Text="Password (used only for the test below)" />
+      <TextBox x:Name="PasswordInput" PasswordChar="●" IsUndoEnabled="False" />
+      <TextBlock Text="The test password is cleared after the attempt and is never saved in the connection profile. Remembered passwords for saved sessions are managed separately through the operating system credential store." TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+      <Button x:Name="TestConnectionButton" Content="Run connection diagnostics" HorizontalAlignment="Left" />
+      <ScrollViewer MaxHeight="180" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <TextBlock x:Name="TestResultText" TextWrapping="Wrap" MinHeight="38"
+                   FontFamily="Cascadia Code, Consolas, monospace" FontSize="10" />
+      </ScrollViewer>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,14,0,0">
+      <Button x:Name="CancelButton" Content="Cancel" />
+      <Button x:Name="SaveButton" Content="Save profile" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.log
+artifacts/
+TestResults/
+.coverage/
+*.bat
+*.ps1
+releases/
