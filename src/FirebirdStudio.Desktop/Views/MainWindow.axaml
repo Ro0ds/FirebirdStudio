@@ -282,15 +282,17 @@
 
     <Border Grid.Row="2" Padding="8,4" BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="18">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="18">
         <TextBlock Grid.Column="0" x:Name="ConnectionStateText" Text="Not connected"
                    FontSize="10" FontWeight="Bold" Foreground="#D96C6C" />
         <TextBlock Grid.Column="1" Text="Firebird provider 10.3.4" FontSize="10"
                    VerticalAlignment="Center" Opacity="0.75" />
-        <TextBlock Grid.Column="2" x:Name="FooterNotificationText" FontSize="10"
+        <TextBlock Grid.Column="2" x:Name="CurrentVersionText" Text="Firebird Studio 0.1.0" FontSize="10"
+                   VerticalAlignment="Center" Opacity="0.75" />
+        <TextBlock Grid.Column="3" x:Name="FooterNotificationText" FontSize="10"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
                    TextAlignment="Center" FontWeight="SemiBold" IsVisible="False" />
-        <TextBlock Grid.Column="3" Text=".NET 10 · Avalonia 12" FontSize="10"
+        <TextBlock Grid.Column="4" Text=".NET 10 · Avalonia 12" FontSize="10"
                    VerticalAlignment="Center" Opacity="0.6" />
       </Grid>
     </Border>
