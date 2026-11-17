@@ -4,12 +4,19 @@ using System.Text.Json;
 
 namespace FirebirdStudio.Desktop.Services;
 
-internal sealed record AvailableRelease(string TagName, Version Version, Uri HtmlUrl, string? ReleaseNotes);
+internal sealed record ReleaseAsset(string Name, long SizeBytes, Uri DownloadUrl);
+
+internal sealed record AvailableRelease(
+    string TagName,
+    Version Version,
+    Uri HtmlUrl,
+    string? ReleaseNotes,
+    IReadOnlyList<ReleaseAsset> Assets);
 
 internal sealed class GitHubReleaseChecker
 {
     private static readonly HttpClient HttpClient = CreateHttpClient();
-    private const string LatestReleaseEndpoint =
+    internal const string LatestReleaseEndpoint =
         "https://api.github.com/repos/Ro0ds/FirebirdStudio/releases/latest";
 
     public async Task<AvailableRelease?> GetLatestStableReleaseAsync(CancellationToken cancellationToken)
@@ -44,18 +51,58 @@ internal sealed class GitHubReleaseChecker
                 "/Ro0ds/FirebirdStudio/releases/tag/", StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("The latest GitHub release returned an unexpected URL.");
 
+        var assets = new List<ReleaseAsset>();
+        if (root.TryGetProperty("assets", out var assetsElement) &&
+            assetsElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var asset in assetsElement.EnumerateArray())
+            {
+                var name = asset.TryGetProperty("name", out var nameElement)
+                    ? nameElement.GetString()
+                    : null;
+                var size = asset.TryGetProperty("size", out var sizeElement)
+                    ? sizeElement.GetInt64()
+                    : 0;
+                var downloadUrl = asset.TryGetProperty("browser_download_url", out var urlElement)
+                    ? urlElement.GetString()
+                    : null;
+
+                if (string.IsNullOrWhiteSpace(name) || size < 0 ||
+                    !Uri.TryCreate(downloadUrl, UriKind.Absolute, out var assetUri) ||
+                    !IsExpectedReleaseAssetUrl(assetUri, tagName, name))
+                    continue;
+
+                assets.Add(new ReleaseAsset(name, size, assetUri));
+            }
+        }
+
         var releaseNotes = root.TryGetProperty("body", out var body)
             ? body.GetString()
             : null;
 
-        return new AvailableRelease(tagName, NormalizeVersion(version), htmlUrl, releaseNotes);
+        return new AvailableRelease(tagName, NormalizeVersion(version), htmlUrl, releaseNotes, assets);
+    }
+
+    internal static bool IsExpectedReleaseAssetUrl(Uri uri, string tagName, string fileName)
+    {
+        if (uri.Scheme != Uri.UriSchemeHttps ||
+            !string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal))
+            return false;
+
+        var expectedPrefix = $"/Ro0ds/FirebirdStudio/releases/download/{Uri.EscapeDataString(tagName)}/";
+        return uri.AbsolutePath.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(
+                   Uri.UnescapeDataString(uri.AbsolutePath[(expectedPrefix.Length)..]),
+                   fileName,
+                   StringComparison.Ordinal);
     }
 
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient
         {
-            Timeout = TimeSpan.FromSeconds(15)
+            Timeout = TimeSpan.FromMinutes(10)
         };
         var version = typeof(GitHubReleaseChecker).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         client.DefaultRequestHeaders.UserAgent.Add(
