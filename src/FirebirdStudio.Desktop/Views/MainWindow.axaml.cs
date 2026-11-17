@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
@@ -30,6 +31,11 @@ public sealed partial class MainWindow : Window
     private readonly FirebirdSessionManager _sessionManager;
     private readonly ISecureCredentialStore _credentialStore;
     private readonly StudioPreferencesStore _preferencesStore = new();
+    private readonly GitHubReleaseChecker _releaseChecker = new();
+    private readonly SemaphoreSlim _updateCheckGate = new(1, 1);
+    private readonly CancellationTokenSource _updateCheckLifetime = new();
+    private Task _updateCheckTask = Task.CompletedTask;
+    private string? _lastNotifiedReleaseTag;
     private readonly QueryHistoryStore _queryHistoryStore = new();
     private readonly SqlEditorRecoveryStore _sqlEditorRecoveryStore = new();
     private StudioPreferences _preferences = StudioPreferences.Default;
@@ -94,6 +100,7 @@ public sealed partial class MainWindow : Window
     private readonly MenuItem _historyDockRightMenuItem;
     private readonly MenuItem _historyDockTabMenuItem;
     private readonly MenuItem _toggleThemeMenuItem;
+    private readonly MenuItem _checkForUpdatesMenuItem;
     private readonly MenuItem _editButton;
     private readonly MenuItem _removeButton;
     private readonly MenuItem _connectButton;
@@ -187,6 +194,7 @@ public sealed partial class MainWindow : Window
         _historyDockRightMenuItem = this.FindControl<MenuItem>("HistoryDockRightMenuItem")!;
         _historyDockTabMenuItem = this.FindControl<MenuItem>("HistoryDockTabMenuItem")!;
         _toggleThemeMenuItem = this.FindControl<MenuItem>("ToggleThemeMenuItem")!;
+        _checkForUpdatesMenuItem = this.FindControl<MenuItem>("CheckForUpdatesMenuItem")!;
         _editButton = this.FindControl<MenuItem>("EditConnectionMenuItem")!;
         _removeButton = this.FindControl<MenuItem>("RemoveConnectionMenuItem")!;
         _connectButton = this.FindControl<MenuItem>("ConnectMenuItem")!;
@@ -237,6 +245,8 @@ public sealed partial class MainWindow : Window
         _refreshMetadataMenuItem.Click += OnRefreshMetadataClick;
         _toggleThemeMenuItem.Click += async (_, _) =>
             await SetThemeAsync(_preferences.Theme == "Dark" ? "Light" : "Dark");
+        _checkForUpdatesMenuItem.Click += async (_, _) =>
+            await CheckForUpdatesAsync(manual: true, cancellationToken: _updateCheckLifetime.Token);
         _historyDockRightMenuItem.Click += (_, _) => SetHistoryDockMode(true);
         _historyDockTabMenuItem.Click += (_, _) => SetHistoryDockMode(false);
         KeyDown += OnWindowKeyDown;
@@ -294,6 +304,152 @@ public sealed partial class MainWindow : Window
         {
             ReportError("SQL editor recovery", exception);
         }
+
+        // This loop checks once immediately, then every 24 hours without blocking startup.
+        _updateCheckTask = RunUpdateCheckLoopAsync(_updateCheckLifetime.Token);
+    }
+
+    private async Task RunUpdateCheckLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await CheckForUpdatesAsync(manual: false, cancellationToken: cancellationToken);
+            try
+            {
+                await Task.Delay(TimeSpan.FromHours(24), cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+        }
+    }
+
+    private async Task CheckForUpdatesAsync(bool manual, CancellationToken cancellationToken)
+    {
+        bool acquired;
+        try
+        {
+            acquired = await _updateCheckGate.WaitAsync(0, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (!acquired)
+        {
+            if (manual)
+                ShowFooterNotification("An update check is already running", "#9A7100");
+            return;
+        }
+
+        try
+        {
+            if (manual)
+                ShowFooterNotification("Checking for updates…", "#9A7100");
+
+            var latestRelease = await _releaseChecker.GetLatestStableReleaseAsync(cancellationToken);
+            if (latestRelease is null)
+            {
+                if (manual)
+                    ShowFooterNotification("No stable release has been published yet", "#9A7100");
+                return;
+            }
+
+            var assemblyVersion = typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 0, 0);
+            var currentVersion = GitHubReleaseChecker.NormalizeVersion(assemblyVersion);
+            if (latestRelease.Version <= currentVersion)
+            {
+                if (manual)
+                    ShowFooterNotification("Firebird Studio is up to date", "#397B45");
+                return;
+            }
+
+            if (string.Equals(_lastNotifiedReleaseTag, latestRelease.TagName, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _lastNotifiedReleaseTag = latestRelease.TagName;
+            await ShowUpdateAvailableDialogAsync(latestRelease, currentVersion);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            if (manual)
+                ReportError("Checking for updates", exception);
+            else
+                AddMessage("Warning", "Automatic update check", exception.Message);
+        }
+        finally
+        {
+            _updateCheckGate.Release();
+        }
+    }
+
+    private async Task ShowUpdateAvailableDialogAsync(AvailableRelease release, Version currentVersion)
+    {
+        var notes = string.IsNullOrWhiteSpace(release.ReleaseNotes)
+            ? "No release notes were provided."
+            : release.ReleaseNotes.Trim();
+        if (notes.Length > 8_000)
+            notes = notes[..8_000] + Environment.NewLine + "[Release notes truncated.]";
+
+        var dialog = new Window
+        {
+            Title = "Firebird Studio update available",
+            Width = 560,
+            SizeToContent = SizeToContent.Height,
+            MaxHeight = 620,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false
+        };
+
+        var viewReleaseButton = CreateDialogButton("View release", () =>
+        {
+            dialog.Close();
+            try
+            {
+                Process.Start(new ProcessStartInfo(release.HtmlUrl.AbsoluteUri) { UseShellExecute = true });
+            }
+            catch (Exception exception)
+            {
+                ReportError("Opening the GitHub release page", exception);
+            }
+        });
+        var laterButton = CreateDialogButton("Later", () => dialog.Close());
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"Version {release.TagName} is available. You are using version {currentVersion}.",
+                    FontSize = 14,
+                    FontWeight = FontWeight.SemiBold,
+                    TextWrapping = TextWrapping.Wrap
+                },
+                new TextBlock { Text = "Release notes", FontWeight = FontWeight.SemiBold },
+                new ScrollViewer
+                {
+                    MaxHeight = 300,
+                    Content = new TextBlock { Text = notes, TextWrapping = TextWrapping.Wrap }
+                },
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { laterButton, viewReleaseButton }
+                }
+            }
+        };
+
+        await dialog.ShowDialog(this);
     }
 
     private async void OnAddConnectionClick(object? sender, RoutedEventArgs e) =>
@@ -2606,6 +2762,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnWindowClosed(object? sender, EventArgs e)
     {
+        _updateCheckLifetime.Cancel();
         _queryExecutionCancellation?.Cancel();
         _metadataSearchCancellation?.Cancel();
         _footerNotificationCancellation?.Cancel();
