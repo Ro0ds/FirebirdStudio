@@ -246,7 +246,7 @@ public sealed partial class MainWindow : Window
         _toggleThemeMenuItem.Click += async (_, _) =>
             await SetThemeAsync(_preferences.Theme == "Dark" ? "Light" : "Dark");
         _checkForUpdatesMenuItem.Click += async (_, _) =>
-            await CheckForUpdatesAsync(manual: true, _updateCheckLifetime.Token);
+            await CheckForUpdatesAsync(manual: true, cancellationToken: _updateCheckLifetime.Token);
         _historyDockRightMenuItem.Click += (_, _) => SetHistoryDockMode(true);
         _historyDockTabMenuItem.Click += (_, _) => SetHistoryDockMode(false);
         KeyDown += OnWindowKeyDown;
@@ -313,7 +313,7 @@ public sealed partial class MainWindow : Window
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await CheckForUpdatesAsync(manual: false, cancellationToken);
+            await CheckForUpdatesAsync(manual: false, cancellationToken: cancellationToken);
             try
             {
                 await Task.Delay(TimeSpan.FromHours(24), cancellationToken);
