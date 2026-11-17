@@ -582,10 +582,6 @@ public sealed partial class MainWindow : Window
                     cancelButton.Content = "Close";
                 }
             }
-            finally
-            {
-                cancellation.Dispose();
-            }
         };
 
         await dialog.ShowDialog(this);
