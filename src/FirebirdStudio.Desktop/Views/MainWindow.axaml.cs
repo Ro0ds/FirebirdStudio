@@ -327,7 +327,17 @@ public sealed partial class MainWindow : Window
 
     private async Task CheckForUpdatesAsync(bool manual, CancellationToken cancellationToken)
     {
-        if (!await _updateCheckGate.WaitAsync(0, cancellationToken))
+        bool acquired;
+        try
+        {
+            acquired = await _updateCheckGate.WaitAsync(0, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (!acquired)
         {
             if (manual)
                 ShowFooterNotification("An update check is already running", "#9A7100");
