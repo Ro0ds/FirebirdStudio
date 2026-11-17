@@ -102,7 +102,7 @@ internal sealed class GitHubReleaseChecker
     {
         var client = new HttpClient
         {
-            Timeout = TimeSpan.FromMinutes(10)
+            Timeout = TimeSpan.FromSeconds(15)
         };
         var version = typeof(GitHubReleaseChecker).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         client.DefaultRequestHeaders.UserAgent.Add(
