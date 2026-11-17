@@ -20,7 +20,7 @@ Firebird Studio checks the GitHub Releases stable channel for a newer version. T
   `%LOCALAPPDATA%/FirebirdStudio/Updates/<version>/` on Windows (the platform's LocalApplicationData directory on other operating systems).
 - The downloader checks the manifest schema, product, stable channel, version, platform, architecture, deployment mode, asset name, declared size, and SHA-256 value.
 - The ZIP is written to a temporary `.download` file. It is moved to its final name only after its size and SHA-256 match the manifest.
-- A previously downloaded package is reused only after its size and SHA-256 are checked again. Interrupted or failed downloads leave no partial package behind.
+- A previously downloaded package is reused only after its size and SHA-256 are checked again. Canceled or failed downloads remove their partial file; if the process is forcibly terminated, the next attempt overwrites any leftover `.download` file before validating the result.
 - After verification, the user can open the download folder and inspect or extract the ZIP manually.
 
 ## Important security boundary
