@@ -480,7 +480,20 @@ public sealed partial class MainWindow : Window
             TextWrapping = TextWrapping.Wrap
         };
         string? downloadDirectory = null;
-        var openFolderButton = CreateDialogButton("Open download folder", () => { });
+        var openFolderButton = CreateDialogButton("Open download folder", () =>
+        {
+            if (downloadDirectory is not { } directory || !Directory.Exists(directory))
+                return;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true });
+            }
+            catch (Exception exception)
+            {
+                ReportError("Opening the update download folder", exception);
+            }
+        });
         openFolderButton.IsVisible = false;
 
         var dialog = new Window
@@ -490,21 +503,6 @@ public sealed partial class MainWindow : Window
             SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             CanResize = false
-        };
-
-        openFolderButton.Click += (_, _) =>
-        {
-            if (downloadDirectory is { } directory && Directory.Exists(directory))
-            {
-                try
-                {
-                    Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true });
-                }
-                catch (Exception exception)
-                {
-                    ReportError("Opening the update download folder", exception);
-                }
-            }
         };
 
         var cancelButton = new Button { Content = "Cancel download" };
