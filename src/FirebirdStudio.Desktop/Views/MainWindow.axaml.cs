@@ -32,6 +32,7 @@ public sealed partial class MainWindow : Window
     private readonly ISecureCredentialStore _credentialStore;
     private readonly StudioPreferencesStore _preferencesStore = new();
     private readonly GitHubReleaseChecker _releaseChecker = new();
+    private readonly GitHubUpdateDownloader _updateDownloader = new();
     private readonly SemaphoreSlim _updateCheckGate = new(1, 1);
     private readonly CancellationTokenSource _updateCheckLifetime = new();
     private Task _updateCheckTask = Task.CompletedTask;
@@ -113,6 +114,7 @@ public sealed partial class MainWindow : Window
     private readonly TabItem _messagesTab;
     private readonly TextBlock _footerNotificationText;
     private readonly TextBlock _connectionStateText;
+    private readonly TextBlock _currentVersionText;
     private string? _currentTableDetailsName;
 
     public MainWindow()
@@ -208,6 +210,11 @@ public sealed partial class MainWindow : Window
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
         _footerNotificationText = this.FindControl<TextBlock>("FooterNotificationText")!;
         _connectionStateText = this.FindControl<TextBlock>("ConnectionStateText")!;
+        _currentVersionText = this.FindControl<TextBlock>("CurrentVersionText")!;
+        var currentVersion = GitHubReleaseChecker.NormalizeVersion(
+            typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 1, 0));
+        Title = $"Firebird Studio - {currentVersion}";
+        _currentVersionText.Text = $"Firebird Studio {currentVersion}";
 
         _connectionsList.ItemsSource = _profiles;
         _metadataTree.ItemsSource = _metadataObjects;
@@ -419,6 +426,11 @@ public sealed partial class MainWindow : Window
             }
         });
         var laterButton = CreateDialogButton("Later", () => dialog.Close());
+        var downloadButton = CreateDialogButton("Download update", () =>
+        {
+            dialog.Close();
+            _ = DownloadUpdateAsync(release);
+        });
 
         dialog.Content = new StackPanel
         {
@@ -444,12 +456,148 @@ public sealed partial class MainWindow : Window
                     Orientation = Avalonia.Layout.Orientation.Horizontal,
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
                     Spacing = 8,
-                    Children = { laterButton, viewReleaseButton }
+                    Children = { laterButton, viewReleaseButton, downloadButton }
                 }
             }
         };
 
         await dialog.ShowDialog(this);
+    }
+
+    private async Task DownloadUpdateAsync(AvailableRelease release)
+    {
+        var cancellation = new CancellationTokenSource();
+        var progressBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Value = 0,
+            Height = 12
+        };
+        var statusText = new TextBlock
+        {
+            Text = "Preparing the release download…",
+            TextWrapping = TextWrapping.Wrap
+        };
+        var openFolderButton = CreateDialogButton("Open download folder", () => { });
+        openFolderButton.IsVisible = false;
+
+        var dialog = new Window
+        {
+            Title = $"Download Firebird Studio {release.Version}",
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false
+        };
+
+        openFolderButton.Click += (_, _) =>
+        {
+            if (openFolderButton.Tag is string directory && Directory.Exists(directory))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true });
+                }
+                catch (Exception exception)
+                {
+                    ReportError("Opening the update download folder", exception);
+                }
+            }
+        };
+
+        var cancelButton = CreateDialogButton("Cancel download", cancellation.Cancel);
+        cancelButton.Click += (_, _) =>
+        {
+            if (cancelButton.Content?.ToString() == "Close")
+                dialog.Close();
+        };
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"Downloading Firebird Studio {release.Version}",
+                    FontSize = 14,
+                    FontWeight = FontWeight.SemiBold
+                },
+                statusText,
+                progressBar,
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { openFolderButton, cancelButton }
+                }
+            }
+        };
+
+        dialog.Closed += (_, _) => cancellation.Cancel();
+        dialog.Opened += async (_, _) =>
+        {
+            try
+            {
+                var progress = new Progress<UpdateDownloadProgress>(value =>
+                {
+                    progressBar.Value = value.Percentage;
+                    statusText.Text = value.TotalBytes > 0
+                        ? $"Downloading… {value.Percentage:F0}% ({FormatBytes(value.BytesReceived)} of {FormatBytes(value.TotalBytes)})"
+                        : $"Downloading… {FormatBytes(value.BytesReceived)}";
+                });
+
+                var downloaded = await _updateDownloader.DownloadAsync(
+                    release, progress, cancellation.Token);
+
+                statusText.Text =
+                    $"Download complete. SHA-256 verified. The ZIP package is ready; no files have been installed or changed.\n\n{downloaded.FileName}";
+                progressBar.Value = 100;
+                openFolderButton.Tag = downloaded.DirectoryPath;
+                openFolderButton.IsVisible = true;
+                cancelButton.Content = "Close";
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                if (dialog.IsVisible)
+                {
+                    statusText.Text = "Download canceled. Incomplete files were removed.";
+                    cancelButton.Content = "Close";
+                }
+            }
+            catch (Exception exception)
+            {
+                if (dialog.IsVisible)
+                {
+                    statusText.Text = $"Download failed: {exception.Message}";
+                    ReportError("Downloading or verifying the update package", exception);
+                    cancelButton.Content = "Close";
+                }
+            }
+            finally
+            {
+                cancellation.Dispose();
+            }
+        };
+
+        await dialog.ShowDialog(this);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        double size = bytes;
+        var unit = 0;
+        while (size >= 1024 && unit < units.Length - 1)
+        {
+            size /= 1024;
+            unit++;
+        }
+
+        return $"{size:0.##} {units[unit]}";
     }
 
     private async void OnAddConnectionClick(object? sender, RoutedEventArgs e) =>
