@@ -42,6 +42,8 @@ The script writes its generated outputs under releases/:
 
 Existing files elsewhere under releases/ are preserved. The two ZIP files for the current version and the staging directories owned by this script are replaced on each run.
 
-The manifest does not include its own checksum because that would be self-referential. The checksum file covers the distributable ZIP packages only. A checksum downloaded from the same release location detects accidental corruption but does not independently authenticate the publisher; release signing is a separate future task.
+The manifest does not include its own checksum because that would be self-referential.
+
+When creating a GitHub Release, attach both ZIP packages, `release-manifest.json`, and `checksums.txt` from this directory. The in-app downloader requires the manifest and matching ZIP package to be release assets; the checksum text file is provided for manual verification. The checksum file covers the distributable ZIP packages only. A checksum downloaded from the same release location detects accidental corruption but does not independently authenticate the publisher; release signing is a separate future task.
 
 This script creates local artifacts only. It does not create a GitHub Release, upload files, configure GitHub Actions, or implement the in-app updater.
