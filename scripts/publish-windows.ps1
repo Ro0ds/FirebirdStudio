@@ -46,7 +46,7 @@ foreach ($path in @($frameworkZip, $selfContainedZip)) {
 }
 
 Write-Host "Publishing framework-dependent single-file package..."
-$frameworkArgs = @("publish", $projectFile, "-c", "Release", "-f", $targetFramework, "-r", $runtimeIdentifier, "--self-contained", "false", "-p:PublishSingleFile=true", "-p:DebugType=None", "-p:DebugSymbols=false", "-p:Version=$version", "-o", $frameworkPublish)
+$frameworkArgs = @("publish", $projectFile, "-c", "Release", "-f", $targetFramework, "-r", $runtimeIdentifier, "--self-contained", "false", "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true", "-p:DebugType=None", "-p:DebugSymbols=false", "-p:Version=$version", "-o", $frameworkPublish)
 & dotnet @frameworkArgs
 if ($LASTEXITCODE -ne 0) { throw "Framework-dependent publish failed." }
 
