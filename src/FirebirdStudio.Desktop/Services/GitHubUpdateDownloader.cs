@@ -39,6 +39,8 @@ internal sealed class GitHubUpdateDownloader
             throw new InvalidDataException("The release manifest asset has invalid metadata.");
 
         var manifestBytes = await DownloadManifestAsync(manifestAsset, cancellationToken);
+        if (manifestBytes.LongLength != manifestAsset.SizeBytes)
+            throw new InvalidDataException("The downloaded release manifest size does not match GitHub asset metadata.");
         var artifact = SelectArtifact(manifestBytes, release);
         var packageAsset = release.Assets.SingleOrDefault(asset =>
             string.Equals(asset.Name, artifact.FileName, StringComparison.Ordinal));
