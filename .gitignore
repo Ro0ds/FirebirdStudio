@@ -10,5 +10,4 @@ artifacts/
 TestResults/
 .coverage/
 *.bat
-*.ps1
 releases/
