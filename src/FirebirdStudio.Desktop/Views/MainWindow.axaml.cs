@@ -506,11 +506,13 @@ public sealed partial class MainWindow : Window
             }
         };
 
-        var cancelButton = CreateDialogButton("Cancel download", cancellation.Cancel);
+        var cancelButton = new Button { Content = "Cancel download" };
         cancelButton.Click += (_, _) =>
         {
             if (cancelButton.Content?.ToString() == "Close")
                 dialog.Close();
+            else
+                cancellation.Cancel();
         };
 
         dialog.Content = new StackPanel
@@ -543,12 +545,15 @@ public sealed partial class MainWindow : Window
             try
             {
                 var progress = new Progress<UpdateDownloadProgress>(value =>
-                {
-                    progressBar.Value = value.Percentage;
-                    statusText.Text = value.TotalBytes > 0
-                        ? $"Downloading… {value.Percentage:F0}% ({FormatBytes(value.BytesReceived)} of {FormatBytes(value.TotalBytes)})"
-                        : $"Downloading… {FormatBytes(value.BytesReceived)}";
-                });
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (!dialog.IsVisible)
+                            return;
+                        progressBar.Value = value.Percentage;
+                        statusText.Text = value.TotalBytes > 0
+                            ? $"Downloading… {value.Percentage:F0}% ({FormatBytes(value.BytesReceived)} of {FormatBytes(value.TotalBytes)})"
+                            : $"Downloading… {FormatBytes(value.BytesReceived)}";
+                    }));
 
                 var downloaded = await _updateDownloader.DownloadAsync(
                     release, progress, cancellation.Token);
