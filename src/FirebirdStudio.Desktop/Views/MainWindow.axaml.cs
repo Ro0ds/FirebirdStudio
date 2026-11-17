@@ -479,6 +479,7 @@ public sealed partial class MainWindow : Window
             Text = "Preparing the release download…",
             TextWrapping = TextWrapping.Wrap
         };
+        string? downloadDirectory = null;
         var openFolderButton = CreateDialogButton("Open download folder", () => { });
         openFolderButton.IsVisible = false;
 
@@ -493,7 +494,7 @@ public sealed partial class MainWindow : Window
 
         openFolderButton.Click += (_, _) =>
         {
-            if (openFolderButton.Tag is string directory && Directory.Exists(directory))
+            if (downloadDirectory is { } directory && Directory.Exists(directory))
             {
                 try
                 {
@@ -561,7 +562,7 @@ public sealed partial class MainWindow : Window
                 statusText.Text =
                     $"Download complete. SHA-256 verified. The ZIP package is ready; no files have been installed or changed.\n\n{downloaded.FileName}";
                 progressBar.Value = 100;
-                openFolderButton.Tag = downloaded.DirectoryPath;
+                downloadDirectory = downloaded.DirectoryPath;
                 openFolderButton.IsVisible = true;
                 cancelButton.Content = "Close";
             }
