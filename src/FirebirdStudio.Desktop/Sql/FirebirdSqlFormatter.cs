@@ -13,7 +13,9 @@ internal static class FirebirdSqlFormatter
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES",
-        "VIEW", "WHEN", "WHERE", "WHILE", "WITH"
+        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
+        "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
+        "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARCHAR", "VARBINARY"
     };
 
     private readonly record struct Token(string Text, bool IsWord, bool IsComment = false);
@@ -34,6 +36,9 @@ internal static class FirebirdSqlFormatter
         var joinContinuation = false;
         var blockDepth = 0;
         var caseDepth = 0;
+        var ddlHeader = false;
+        var tableDefinitionPending = false;
+        var tableDefinitionDepth = 0;
 
         void TrimEndSpaces()
         {
@@ -84,6 +89,11 @@ internal static class FirebirdSqlFormatter
 
             if (token.IsWord)
             {
+                if (upper is "CREATE" or "RECREATE" or "ALTER")
+                    ddlHeader = true;
+                else if (upper == "TABLE" && ddlHeader)
+                    tableDefinitionPending = true;
+
                 var clause = depth == 0 &&
                     (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
                      upper == "GROUP" && next == "BY" || upper == "ORDER" && next == "BY");
@@ -174,16 +184,35 @@ internal static class FirebirdSqlFormatter
                 case "(":
                     Append(raw, previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR");
                     depth++;
+                    if (tableDefinitionPending)
+                    {
+                        tableDefinitionDepth = depth;
+                        tableDefinitionPending = false;
+                        indent++;
+                        NewLine();
+                    }
                     break;
                 case ")":
-                    TrimEndSpaces();
-                    Append(raw, false);
+                    if (tableDefinitionDepth == depth)
+                    {
+                        if (lineHasContent)
+                            NewLine();
+                        indent = Math.Max(0, indent - 1);
+                        tableDefinitionDepth = 0;
+                        TrimEndSpaces();
+                        Append(raw, false);
+                    }
+                    else
+                    {
+                        TrimEndSpaces();
+                        Append(raw, false);
+                    }
                     depth = Math.Max(0, depth - 1);
                     break;
                 case ",":
                     TrimEndSpaces();
                     output.Append(',');
-                    if (depth == 0 && (setClause || previous.Length > 0))
+                    if (tableDefinitionDepth == depth || depth == 0 && setClause)
                         NewLine();
                     else
                         output.Append(' ');
@@ -207,6 +236,8 @@ internal static class FirebirdSqlFormatter
                         indent = blockDepth;
                         whereClause = false;
                         setClause = false;
+                        ddlHeader = false;
+                        tableDefinitionPending = false;
                     }
                     break;
                 default:
