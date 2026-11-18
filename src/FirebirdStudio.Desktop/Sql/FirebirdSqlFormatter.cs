@@ -62,7 +62,8 @@ internal static class FirebirdSqlFormatter
                 output.Append(' ', Math.Max(0, indent) * 4);
                 lineHasContent = true;
             }
-            else if (space && output.Length > 0 && output[^1] != ' ' && output[^1] != '\n')
+            else if (space && previous is not "(" and not "." and not ":" &&
+                     output.Length > 0 && output[^1] != ' ' && output[^1] != '\n')
             {
                 output.Append(' ');
             }
