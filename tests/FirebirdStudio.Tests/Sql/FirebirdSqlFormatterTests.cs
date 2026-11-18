@@ -18,6 +18,14 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Fact]
+    public void KeepsMultiwordJoinModifiersTogether()
+    {
+        var formatted = FirebirdSqlFormatter.Format("select c.id from customer c left outer join orders o on o.customer_id=c.id;");
+
+        Assert.Contains("LEFT OUTER JOIN orders o", formatted);
+    }
+
+    [Fact]
     public void PreservesExistingMultilineClauseStructure()
     {
         const string sql = "SELECT\n    ID,\n    NAME\nFROM CUSTOMER\nWHERE ACTIVE = 1;";
