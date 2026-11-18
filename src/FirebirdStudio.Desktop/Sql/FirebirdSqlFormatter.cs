@@ -96,11 +96,11 @@ internal static class FirebirdSqlFormatter
                 if (upper == "UPDATE" && depth == 0)
                     updateStatement = true;
 
-                if (upper is "CREATE" or "RECREATE" or "ALTER" or "DROP")
+                if (string.IsNullOrEmpty(ddlObject) &&
+                    upper is "CREATE" or "RECREATE" or "ALTER" or "DROP")
                 {
                     ddlVerb = upper;
                     ddlHeader = true;
-                    ddlObject = string.Empty;
                 }
                 else if (ddlHeader && upper is "TABLE" or "VIEW" or "INDEX" or "PROCEDURE" or "TRIGGER" or "FUNCTION" or "DOMAIN" or "EXCEPTION" or "GENERATOR" or "SEQUENCE" or "ROLE")
                 {
@@ -113,8 +113,8 @@ internal static class FirebirdSqlFormatter
                 var ddlClause = depth == 0 && (
                     ddlObject == "VIEW" && upper == "AS" ||
                     ddlObject == "INDEX" && upper == "ON" ||
-                    ddlObject == "DOMAIN" && upper is "DEFAULT" or "CHECK" or "COLLATE" ||
-                    ddlObject == "PROCEDURE" && upper is "RETURNS" or "AS" or "DECLARE" ||
+                    ddlObject == "DOMAIN" && upper is "DEFAULT" or "CHECK" or "COLLATE" or "TYPE" or "ADD" or "DROP" ||
+                    (ddlObject is "PROCEDURE" or "FUNCTION") && upper is "RETURNS" or "AS" or "DECLARE" ||
                     ddlObject == "TRIGGER" && upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE" ||
                     ddlVerb == "ALTER" && ddlObject == "TABLE" && upper is "ADD" or "DROP" or "ALTER" or "RENAME");
                 if (ddlClause && lineHasContent)
@@ -208,7 +208,7 @@ internal static class FirebirdSqlFormatter
             switch (raw)
             {
                 case "(":
-                    Append(raw, tableDefinitionPending || previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR" or "KEY" or "CHECK");
+                    Append(raw, tableDefinitionPending || previous is "FROM" or "IN" or "INTO" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR" or "KEY" or "CHECK" or "RETURNS");
                     depth++;
                     if (tableDefinitionPending)
                     {
