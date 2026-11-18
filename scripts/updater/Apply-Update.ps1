@@ -93,8 +93,14 @@ try {
     $archive = [IO.Compression.ZipFile]::OpenRead($archivePath)
     try {
         if ($archive.Entries.Count -eq 0) { throw 'The update archive is empty.' }
+        if ($archive.Entries.Count -gt 20000) { throw 'The update archive contains too many entries.' }
         $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        [long]$expandedBytes = 0
         foreach ($entry in $archive.Entries) {
+            $expandedBytes += $entry.Length
+            if ($entry.Length -gt 1GB -or $expandedBytes -gt 2GB) {
+                throw 'The update archive expands beyond the updater safety limits.'
+            }
             $destination = Get-SafeArchivePath -EntryName $entry.FullName -Root $stagingRoot
             if (-not $seen.Add($entry.FullName)) { throw "The update archive contains a duplicate path: '$($entry.FullName)'." }
 
