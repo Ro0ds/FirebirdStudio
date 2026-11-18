@@ -95,7 +95,7 @@ internal sealed class GitHubUpdateDownloader
 
             File.Move(partialPath, destinationPath, overwrite: true);
             progress?.Report(new UpdateDownloadProgress(artifact.SizeBytes, artifact.SizeBytes));
-            return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName);
+            return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName, artifact.SizeBytes, artifact.Sha256);
         }
         catch
         {
