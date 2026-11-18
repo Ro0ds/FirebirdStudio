@@ -466,7 +466,9 @@ public sealed partial class MainWindow : Window
 
     private async Task DownloadUpdateAsync(AvailableRelease release)
     {
-        var cancellation = new CancellationTokenSource();
+        using var cancellation = new CancellationTokenSource();
+        DownloadedUpdate? downloadedUpdate = null;
+        var installRequested = false;
         var progressBar = new ProgressBar
         {
             Minimum = 0,
@@ -505,6 +507,13 @@ public sealed partial class MainWindow : Window
             CanResize = false
         };
 
+        var installButton = CreateDialogButton("Install and restart", () =>
+        {
+            installRequested = true;
+            dialog.Close();
+        });
+        installButton.IsVisible = false;
+
         var cancelButton = new Button { Content = "Cancel download" };
         cancelButton.Click += (_, _) =>
         {
@@ -533,7 +542,7 @@ public sealed partial class MainWindow : Window
                     Orientation = Avalonia.Layout.Orientation.Horizontal,
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
                     Spacing = 8,
-                    Children = { openFolderButton, cancelButton }
+                    Children = { installButton, openFolderButton, cancelButton }
                 }
             }
         };
@@ -554,15 +563,25 @@ public sealed partial class MainWindow : Window
                             : $"Downloading… {FormatBytes(value.BytesReceived)}";
                     }));
 
-                var downloaded = await _updateDownloader.DownloadAsync(
+                downloadedUpdate = await _updateDownloader.DownloadAsync(
                     release, progress, cancellation.Token);
 
-                statusText.Text =
-                    $"Download complete. SHA-256 verified. The ZIP package is ready; no files have been installed or changed.\n\n{downloaded.FileName}";
                 progressBar.Value = 100;
-                downloadDirectory = downloaded.DirectoryPath;
+                downloadDirectory = downloadedUpdate.DirectoryPath;
                 openFolderButton.IsVisible = true;
                 cancelButton.Content = "Close";
+
+                if (OperatingSystem.IsWindows())
+                {
+                    statusText.Text =
+                        $"Download complete and SHA-256 verified.\n\n{downloadedUpdate.FileName}\n\nInstall and restart Firebird Studio to apply this update.";
+                    installButton.IsVisible = true;
+                }
+                else
+                {
+                    statusText.Text =
+                        $"Download complete. SHA-256 verified. The ZIP package is ready for manual extraction. Automatic installation is currently supported on Windows only.\n\n{downloadedUpdate.FileName}";
+                }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
@@ -584,6 +603,73 @@ public sealed partial class MainWindow : Window
         };
 
         await dialog.ShowDialog(this);
+
+        if (installRequested && downloadedUpdate is not null)
+        {
+            try
+            {
+                StartExternalUpdater(downloadedUpdate);
+                Close();
+            }
+            catch (Exception exception)
+            {
+                ReportError("Starting the external update installer", exception);
+            }
+        }
+    }
+
+    private void StartExternalUpdater(DownloadedUpdate update)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Automatic update installation is currently supported on Windows only.");
+
+        if (_isQueryExecuting)
+            throw new InvalidOperationException("Wait for the running SQL query to finish before installing an update.");
+
+        var installDirectory = Path.GetFullPath(AppContext.BaseDirectory);
+        var executablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executablePath))
+            throw new InvalidOperationException("The current application executable path could not be determined.");
+
+        executablePath = Path.GetFullPath(executablePath);
+        if (!executablePath.StartsWith(
+                installDirectory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                "Automatic installation is available for packaged installations, not for applications started through the .NET development host.");
+
+        var updaterScript = Path.Combine(installDirectory, "Updater", "Apply-Update.ps1");
+        if (!File.Exists(updaterScript))
+            throw new FileNotFoundException("The external updater script is missing from this installation.", updaterScript);
+
+        var startInfo = new ProcessStartInfo("powershell.exe")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = installDirectory
+        };
+        startInfo.ArgumentList.Add("-NoLogo");
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-NonInteractive");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-File");
+        startInfo.ArgumentList.Add(updaterScript);
+        startInfo.ArgumentList.Add("-ParentProcessId");
+        startInfo.ArgumentList.Add(Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+        startInfo.ArgumentList.Add("-ArchivePath");
+        startInfo.ArgumentList.Add(update.FilePath);
+        startInfo.ArgumentList.Add("-ExpectedSizeBytes");
+        startInfo.ArgumentList.Add(update.SizeBytes.ToString(CultureInfo.InvariantCulture));
+        startInfo.ArgumentList.Add("-ExpectedSha256");
+        startInfo.ArgumentList.Add(update.Sha256);
+        startInfo.ArgumentList.Add("-InstallDirectory");
+        startInfo.ArgumentList.Add(installDirectory);
+        startInfo.ArgumentList.Add("-ExecutablePath");
+        startInfo.ArgumentList.Add(executablePath);
+
+        _ = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Windows did not start the external update installer.");
     }
 
     private static string FormatBytes(long bytes)
