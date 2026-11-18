@@ -158,8 +158,11 @@ try {
 
         $temporaryTarget = $targetPath + '.firebirdstudio-update'
         [IO.File]::Copy($stagedFile.FullName, $temporaryTarget, $true)
-        if (Test-Path -LiteralPath $targetPath) { [IO.File]::Delete($targetPath) }
-        [IO.File]::Move($temporaryTarget, $targetPath)
+        if (Test-Path -LiteralPath $targetPath) {
+            [IO.File]::Replace($temporaryTarget, $targetPath, $null)
+        } else {
+            [IO.File]::Move($temporaryTarget, $targetPath)
+        }
     }
 
     $completed = $true
@@ -186,8 +189,11 @@ catch {
             if (-not (Test-Path -LiteralPath $backup -PathType Leaf)) { throw "Backup file is missing: $backup" }
             $temporaryTarget = $target + '.firebirdstudio-rollback'
             [IO.File]::Copy($backup, $temporaryTarget, $true)
-            if (Test-Path -LiteralPath $target) { [IO.File]::Delete($target) }
-            [IO.File]::Move($temporaryTarget, $target)
+            if (Test-Path -LiteralPath $target) {
+                [IO.File]::Replace($temporaryTarget, $target, $null)
+            } else {
+                [IO.File]::Move($temporaryTarget, $target)
+            }
         } catch {
             $rollbackFailed = $true
             Write-UpdateLog ("Could not restore '$relativePath': " + $_.Exception.Message)
