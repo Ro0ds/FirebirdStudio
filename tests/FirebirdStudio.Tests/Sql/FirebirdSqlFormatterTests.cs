@@ -39,6 +39,22 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Fact]
+    public void KeepsAllCreateTableColumnsAtTheSameIndentationWithCharacterSets()
+    {
+        const string sql = "CREATE TABLE \"EMPRESA\" (\"COD_EMP\" INTEGER NOT NULL,\"NOME\" VARCHAR(200) CHARACTER SET \"NONE\" NOT NULL,\"ENDERECO\" VARCHAR(60) CHARACTER SET \"NONE\",\"COD_CIDADE\" INTEGER,\"DDD_FONE\" NUMERIC(2,0),CONSTRAINT \"PK_EMPRESA\" PRIMARY KEY (\"COD_EMP\"));";
+        var formatted = FirebirdSqlFormatter.Format(sql);
+        var lines = formatted.Split('\n');
+
+        Assert.Contains("    \"COD_EMP\" INTEGER NOT NULL,", lines);
+        Assert.Contains("    \"NOME\" VARCHAR(200) CHARACTER SET \"NONE\" NOT NULL,", lines);
+        Assert.Contains("    \"ENDERECO\" VARCHAR(60) CHARACTER SET \"NONE\",", lines);
+        Assert.Contains("    \"COD_CIDADE\" INTEGER,", lines);
+        Assert.Contains("    \"DDD_FONE\" NUMERIC(2,0),", lines);
+        Assert.Contains("    CONSTRAINT \"PK_EMPRESA\" PRIMARY KEY (\"COD_EMP\")", lines);
+        Assert.DoesNotContain(lines, line => line.StartsWith("        ", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void KeepsMultiwordJoinModifiersTogether()
     {
         var formatted = FirebirdSqlFormatter.Format("select c.id from customer c left outer join orders o on o.customer_id=c.id;");
