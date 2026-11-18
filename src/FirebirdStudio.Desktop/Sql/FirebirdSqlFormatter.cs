@@ -31,6 +31,8 @@ internal static class FirebirdSqlFormatter
         var previous = string.Empty;
         var whereClause = false;
         var setClause = false;
+        var joinContinuation = false;
+        var blockDepth = 0;
 
         void TrimEndSpaces()
         {
@@ -84,9 +86,9 @@ internal static class FirebirdSqlFormatter
                 var clause = depth == 0 &&
                     (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
                      upper == "GROUP" && next == "BY" || upper == "ORDER" && next == "BY");
-                var join = depth == 0 &&
-                    (upper == "JOIN" || (upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS") &&
-                     (next == "JOIN" || next == "OUTER"));
+                var joinModifier = upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS";
+                var join = depth == 0 && (upper == "JOIN" && !joinContinuation ||
+                    joinModifier && (next == "JOIN" || next == "OUTER"));
 
                 if (clause || join || depth == 0 && upper == "SET")
                 {
@@ -95,6 +97,11 @@ internal static class FirebirdSqlFormatter
 
                     if (upper is "FROM" or "WHERE" or "HAVING" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
                         indent = Math.Max(0, indent - 1);
+
+                    if (joinModifier && (next == "JOIN" || next == "OUTER"))
+                        joinContinuation = true;
+                    else if (upper == "JOIN")
+                        joinContinuation = false;
 
                     if (upper is "WHERE" or "HAVING")
                     {
@@ -125,6 +132,7 @@ internal static class FirebirdSqlFormatter
                     if (lineHasContent)
                         NewLine();
                     Append("BEGIN", false);
+                    blockDepth++;
                     indent++;
                     NewLine();
                     continue;
@@ -142,6 +150,8 @@ internal static class FirebirdSqlFormatter
                     if (lineHasContent)
                         NewLine();
                     indent = Math.Max(0, indent - 1);
+                    if (blockDepth > 0)
+                        blockDepth--;
                     Append("END", false);
                     if (next is not ";" and not "," and not ")" and not "." and not "ELSE")
                         NewLine();
@@ -184,7 +194,12 @@ internal static class FirebirdSqlFormatter
                     output.Append(';');
                     previous = ";";
                     if (depth == 0)
+                    {
                         NewLine();
+                        indent = blockDepth;
+                        whereClause = false;
+                        setClause = false;
+                    }
                     break;
                 default:
                     Append(raw, raw is not "::" and not "->" && previous != "(");
