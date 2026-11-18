@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -17,10 +18,22 @@ internal sealed class GitHubUpdateDownloader
 {
     private const string ManifestFileName = "release-manifest.json";
     private const long MaximumManifestSize = 1_048_576;
-    private static readonly HttpClient HttpClient = new()
+    private static readonly HttpClient HttpClient = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
     {
-        Timeout = TimeSpan.FromMinutes(10)
-    };
+        var handler = new HttpClientHandler
+        {
+            SslProtocols = OperatingSystem.IsWindows()
+                ? SslProtocols.Tls12
+                : SslProtocols.None
+        };
+
+        return new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromMinutes(10)
+        };
+    }
 
     public async Task<DownloadedUpdate> DownloadAsync(
         AvailableRelease release,
