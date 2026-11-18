@@ -25,6 +25,17 @@
     <Style Selector="TabItem">
       <Setter Property="FontSize" Value="12" />
     </Style>
+    <!-- TreeViewItem uses a StackPanel by default. Virtualize each expanded
+         category so thousands of metadata rows do not create thousands of controls. -->
+    <Style Selector="TreeViewItem">
+      <!-- Virtualized containers are recycled; persist expansion on the data item. -->
+      <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}" />
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <VirtualizingStackPanel />
+        </ItemsPanelTemplate>
+      </Setter>
+    </Style>
   </Window.Styles>
   <Grid RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" Padding="10,2" BorderThickness="0,0,0,1"
@@ -113,6 +124,11 @@
             </ComboBox>
           </Grid>
           <TreeView Grid.Row="2" x:Name="MetadataTree" SelectionMode="Single" MinHeight="0">
+            <TreeView.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </TreeView.ItemsPanel>
             <TreeView.DataTemplates>
               <TreeDataTemplate x:DataType="database:DatabaseMetadataObject" ItemsSource="{Binding Children}">
                 <StackPanel Spacing="1" Margin="2,2">

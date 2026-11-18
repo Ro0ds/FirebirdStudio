@@ -41,7 +41,10 @@ public sealed partial class MainWindow : Window
     private readonly SqlEditorRecoveryStore _sqlEditorRecoveryStore = new();
     private StudioPreferences _preferences = StudioPreferences.Default;
     private readonly ObservableCollection<ConnectionProfile> _profiles = [];
-    private readonly ObservableCollection<DatabaseMetadataObject> _metadataObjects = [];
+    private readonly BatchObservableCollection<DatabaseMetadataObject> _metadataObjects = [];
+    private CancellationTokenSource? _metadataLoadingCancellation;
+    private readonly Dictionary<string, CancellationTokenSource> _metadataPageCancellations = new(StringComparer.OrdinalIgnoreCase);
+    private int _metadataLoadGeneration;
     private readonly ObservableCollection<QueryHistoryEntry> _queryHistory = [];
     private CancellationTokenSource? _queryExecutionCancellation;
     private CancellationTokenSource? _recoverySaveCancellation;
@@ -842,6 +845,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnDisconnectClick(object? sender, RoutedEventArgs e)
     {
+        CancelMetadataLoading();
         if (_connectionsList.SelectedItem is not ConnectionProfile profile)
             return;
 
@@ -868,6 +872,7 @@ public sealed partial class MainWindow : Window
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        CancelMetadataLoading();
         _metadataSearchCancellation?.Cancel();
         _metadataSearchBox.Text = string.Empty;
         _isMetadataSearchActive = false;
@@ -910,13 +915,22 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshMetadataAsync(ConnectionProfile profile)
     {
+        CancelMetadataLoading();
+        var metadataCancellation = new CancellationTokenSource();
+        _metadataLoadingCancellation = metadataCancellation;
+        var loadGeneration = _metadataLoadGeneration;
         _refreshMetadataButton.IsEnabled = false;
         _isMetadataRefreshRunning = true;
         _statusText.Text = $"Preparing database object categories for '{profile.Name}'...";
         try
         {
-            var categories = await _sessionManager.GetMetadataAsync(profile.Id);
-            if (_connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+            // Keep provider work off the UI thread as some provider operations may perform
+            // synchronous work before their asynchronous I/O completes.
+            var categories = await Task.Run(
+                () => _sessionManager.GetMetadataAsync(profile.Id, metadataCancellation.Token),
+                metadataCancellation.Token);
+            if (metadataCancellation.IsCancellationRequested || loadGeneration != _metadataLoadGeneration ||
+                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
                 return;
 
             _metadataObjects.Clear();
@@ -947,7 +961,8 @@ public sealed partial class MainWindow : Window
                     return;
                 var categoryName = orderedCategories[index].Name;
                 _statusText.Text = $"Loading database objects in the background: {categoryName} ({index + 1}/{orderedCategories.Length}). Large catalogs may take some time; the window remains responsive.";
-                await LoadMetadataPageAsync(categoryName, 0, updateStatus: false);
+                await LoadMetadataPageAsync(categoryName, 0, updateStatus: false,
+                    cancellationToken: metadataCancellation.Token, loadGeneration: loadGeneration);
                 if (!_metadataNextOffsets.ContainsKey(categoryName))
                     failedCategories.Add(categoryName);
             }
@@ -961,16 +976,51 @@ public sealed partial class MainWindow : Window
                     : $"Initial metadata loading failed for: {string.Join(", ", failedCategories)}.");
             Dispatcher.UIThread.Post(TryLoadMoreMetadataWhenVisible);
         }
+        catch (OperationCanceledException) when (
+            metadataCancellation.IsCancellationRequested || loadGeneration != _metadataLoadGeneration)
+        {
+            // A connection change or a newer metadata refresh superseded this metadata load.
+        }
         catch (Exception exception)
         {
-            ReportError($"Preparing database metadata for '{profile.Name}'", exception);
+            if (loadGeneration == _metadataLoadGeneration)
+                ReportError($"Preparing database metadata for '{profile.Name}'", exception);
         }
         finally
         {
-            _isMetadataRefreshRunning = false;
-            UpdateActionAvailability();
-            Dispatcher.UIThread.Post(TryLoadMoreMetadataWhenVisible);
+            if (ReferenceEquals(_metadataLoadingCancellation, metadataCancellation))
+                _metadataLoadingCancellation = null;
+            metadataCancellation.Dispose();
+            if (loadGeneration == _metadataLoadGeneration)
+            {
+                _isMetadataRefreshRunning = false;
+                UpdateActionAvailability();
+                Dispatcher.UIThread.Post(TryLoadMoreMetadataWhenVisible);
+            }
         }
+    }
+
+    private void CancelMetadataLoading()
+    {
+        _metadataLoadGeneration++;
+        var cancellation = _metadataLoadingCancellation;
+        _metadataLoadingCancellation = null;
+        if (cancellation is not null)
+        {
+            cancellation.Cancel();
+            cancellation.Dispose();
+        }
+
+        foreach (var pageCancellation in _metadataPageCancellations.Values)
+        {
+            pageCancellation.Cancel();
+            pageCancellation.Dispose();
+        }
+        _metadataPageCancellations.Clear();
+
+        _loadingMetadataCategories.Clear();
+        _metadataCategoriesWithMore.Clear();
+        _isMetadataRefreshRunning = false;
     }
 
     private async void OnMetadataSearchChanged(object? sender, EventArgs e)
@@ -1026,7 +1076,9 @@ public sealed partial class MainWindow : Window
         {
             await Task.Delay(300, cancellation.Token);
             _statusText.Text = $"Searching database objects for '{searchTerm}'...";
-            var results = await _sessionManager.SearchMetadataAsync(profile.Id, searchTerm, cancellation.Token, kindFilter);
+            var results = await Task.Run(
+                () => _sessionManager.SearchMetadataAsync(profile.Id, searchTerm, cancellation.Token, kindFilter),
+                cancellation.Token);
             if (cancellation.IsCancellationRequested ||
                 _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id ||
                 !string.Equals(_metadataSearchBox.Text?.Trim(), searchTerm, StringComparison.Ordinal) ||
@@ -1035,8 +1087,17 @@ public sealed partial class MainWindow : Window
 
             _isMetadataSearchActive = true;
             _metadataObjects.Clear();
-            foreach (var result in results)
-                _metadataObjects.Add(result);
+            const int searchUiBatchSize = 50;
+            for (var index = 0; index < results.Count; index += searchUiBatchSize)
+            {
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (_connectionsList.SelectedItem is not ConnectionProfile activeProfile ||
+                    activeProfile.Id != profile.Id)
+                    return;
+
+                _metadataObjects.AddRange(results.Skip(index).Take(searchUiBatchSize).ToArray());
+                await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            }
 
             var filterDescription = kindFilter is null ? "database objects and columns" : kindFilter == "Column" ? "columns" : kindFilter.ToLowerInvariant();
             _statusText.Text = results.Count == 0
@@ -1182,7 +1243,8 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            var details = await _sessionManager.GetMetadataObjectDetailsAsync(profile.Id, item.Kind, item.Name);
+            var details = await Task.Run(
+                () => _sessionManager.GetMetadataObjectDetailsAsync(profile.Id, item.Kind, item.Name));
             if (_connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
                 return;
             var description = item.Details;
@@ -1214,17 +1276,31 @@ public sealed partial class MainWindow : Window
         if (index >= 0) children[index] = updated;
     }
 
-    private async Task LoadMetadataPageAsync(string categoryName, int offset, bool updateStatus = true)
+    private async Task LoadMetadataPageAsync(
+        string categoryName,
+        int offset,
+        bool updateStatus = true,
+        CancellationToken cancellationToken = default,
+        int? loadGeneration = null)
     {
+        if (!cancellationToken.CanBeCanceled && _metadataLoadingCancellation is not null)
+            cancellationToken = _metadataLoadingCancellation.Token;
+        var generation = loadGeneration ?? _metadataLoadGeneration;
         if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
             string.IsNullOrWhiteSpace(categoryName) || !_loadingMetadataCategories.Add(categoryName))
             return;
+
+        var pageCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _metadataPageCancellations[categoryName] = pageCancellation;
+        var pageToken = pageCancellation.Token;
 
         var categoryIndex = _metadataObjects.ToList().FindIndex(item =>
             item.Kind == "Category" && string.Equals(item.Name, categoryName, StringComparison.OrdinalIgnoreCase));
         if (categoryIndex < 0)
         {
             _loadingMetadataCategories.Remove(categoryName);
+            _metadataPageCancellations.Remove(categoryName);
+            pageCancellation.Dispose();
             return;
         }
 
@@ -1237,9 +1313,13 @@ public sealed partial class MainWindow : Window
             // Some Firebird provider operations can still perform synchronous work internally.
             // Keep the entire catalog fetch off the UI thread so large catalogs never freeze
             // the window while each 200-object page is being read.
-            var page = await Task.Run(() => _sessionManager.GetMetadataPageAsync(
-                profile.Id, categoryName, offset, MetadataPageSize));
-            if (_connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+            var page = await Task.Run(
+                () => _sessionManager.GetMetadataPageAsync(
+                    profile.Id, categoryName, offset, MetadataPageSize, pageToken),
+                pageToken);
+            pageToken.ThrowIfCancellationRequested();
+            if (generation != _metadataLoadGeneration ||
+                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
                 return;
             categoryIndex = _metadataObjects.ToList().FindIndex(item =>
                 item.Kind == "Category" && string.Equals(item.Name, categoryName, StringComparison.OrdinalIgnoreCase));
@@ -1268,9 +1348,14 @@ public sealed partial class MainWindow : Window
             for (var itemIndex = 0; itemIndex < pageItems.Length; itemIndex += uiBatchSize)
             {
                 var batch = pageItems.Skip(itemIndex).Take(uiBatchSize).ToArray();
+                pageToken.ThrowIfCancellationRequested();
+                if (generation != _metadataLoadGeneration)
+                    return;
                 children.AddRange(batch);
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-                if (_connectionsList.SelectedItem is not ConnectionProfile activeProfile || activeProfile.Id != profile.Id)
+                pageToken.ThrowIfCancellationRequested();
+                if (generation != _metadataLoadGeneration ||
+                    _connectionsList.SelectedItem is not ConnectionProfile activeProfile || activeProfile.Id != profile.Id)
                     return;
             }
 
@@ -1293,14 +1378,26 @@ public sealed partial class MainWindow : Window
             // If the current page fits in the visible tree area, continue filling it automatically.
             Dispatcher.UIThread.Post(TryLoadMoreMetadataWhenVisible);
         }
+        catch (OperationCanceledException) when (
+            pageToken.IsCancellationRequested || generation != _metadataLoadGeneration)
+        {
+            // The connection changed or a newer metadata refresh superseded this page.
+        }
         catch (Exception exception)
         {
-            ReportError($"Loading {categoryName} metadata", exception);
+            if (generation == _metadataLoadGeneration)
+                ReportError($"Loading {categoryName} metadata", exception);
         }
         finally
         {
-            _loadingMetadataCategories.Remove(categoryName);
-            UpdateMetadataReorderAvailability();
+            if (ReferenceEquals(_metadataPageCancellations.GetValueOrDefault(categoryName), pageCancellation))
+                _metadataPageCancellations.Remove(categoryName);
+            pageCancellation.Dispose();
+            if (generation == _metadataLoadGeneration)
+            {
+                _loadingMetadataCategories.Remove(categoryName);
+                UpdateMetadataReorderAvailability();
+            }
         }
     }
 
@@ -1325,6 +1422,16 @@ public sealed partial class MainWindow : Window
         if (viewportHeight <= 0)
             return;
 
+        // Virtualized TreeView panels expose only realized containers. Build this lookup
+        // once per scroll event instead of walking the visual tree once per category.
+        var visibleContainers = new Dictionary<DatabaseMetadataObject, TreeViewItem>(
+            ReferenceEqualityComparer.Instance);
+        foreach (var container in _metadataTree.GetVisualDescendants().OfType<TreeViewItem>())
+        {
+            if (container.DataContext is DatabaseMetadataObject item)
+                visibleContainers.TryAdd(item, container);
+        }
+
         foreach (var categoryName in _metadataCategoriesWithMore.ToArray())
         {
             if (_loadingMetadataCategories.Contains(categoryName))
@@ -1336,10 +1443,7 @@ public sealed partial class MainWindow : Window
                 continue;
 
             var lastItem = children[^1];
-            var lastContainer = _metadataTree.GetVisualDescendants()
-                .OfType<TreeViewItem>()
-                .FirstOrDefault(container => ReferenceEquals(container.DataContext, lastItem));
-            if (lastContainer is null)
+            if (!visibleContainers.TryGetValue(lastItem, out var lastContainer))
                 continue;
 
             var itemBounds = lastContainer.GetTransformedBounds()?.Bounds;
@@ -1702,7 +1806,7 @@ public sealed partial class MainWindow : Window
             if (!_completionMetadataCache.TryGetValue(profile.Id, out var schema))
             {
                 _statusText.Text = "Loading SQL completion metadata...";
-                schema = await _sessionManager.GetSqlCompletionMetadataAsync(profile.Id);
+                schema = await Task.Run(() => _sessionManager.GetSqlCompletionMetadataAsync(profile.Id));
                 _completionMetadataCache[profile.Id] = schema;
             }
 
@@ -1714,7 +1818,7 @@ public sealed partial class MainWindow : Window
                 if (!_completionDomainCache.TryGetValue(profile.Id, out var domains))
                 {
                     _statusText.Text = "Loading database domains for type completion...";
-                    domains = await _sessionManager.GetSqlCompletionDomainsAsync(profile.Id);
+                    domains = await Task.Run(() => _sessionManager.GetSqlCompletionDomainsAsync(profile.Id));
                     _completionDomainCache[profile.Id] = domains;
                 }
                 completionSchema = schema.Concat(domains).ToArray();
@@ -2317,7 +2421,8 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            var details = await _sessionManager.GetMetadataObjectDetailsAsync(profile.Id, item.Kind, item.Name);
+            var details = await Task.Run(
+                () => _sessionManager.GetMetadataObjectDetailsAsync(profile.Id, item.Kind, item.Name));
             var panel = new StackPanel { Spacing = 8, Margin = new Avalonia.Thickness(12) };
             panel.Children.Add(new TextBlock
             {
