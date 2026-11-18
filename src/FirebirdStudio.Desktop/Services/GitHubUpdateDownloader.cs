@@ -11,7 +11,7 @@ internal sealed record UpdateDownloadProgress(long BytesReceived, long TotalByte
         : Math.Clamp(BytesReceived * 100d / TotalBytes, 0, 100);
 }
 
-internal sealed record DownloadedUpdate(string FilePath, string DirectoryPath, string FileName);
+internal sealed record DownloadedUpdate(string FilePath, string DirectoryPath, string FileName, long SizeBytes, string Sha256);
 
 internal sealed class GitHubUpdateDownloader
 {
@@ -67,7 +67,7 @@ internal sealed class GitHubUpdateDownloader
                 await ComputeSha256Async(destinationPath, cancellationToken) == artifact.Sha256)
             {
                 progress?.Report(new UpdateDownloadProgress(artifact.SizeBytes, artifact.SizeBytes));
-                return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName);
+                return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName, artifact.SizeBytes, artifact.Sha256);
             }
 
             File.Delete(destinationPath);
