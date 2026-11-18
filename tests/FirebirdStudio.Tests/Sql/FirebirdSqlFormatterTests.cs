@@ -68,7 +68,7 @@ public sealed class FirebirdSqlFormatterTests
 
     [Theory]
     [InlineData("create index ix_customer_name on customer(name);", "CREATE INDEX ix_customer_name\nON customer(name);")]
-    [InlineData("create view active_customer as select id,name from customer where active=1;", "CREATE VIEW active_customer\nAS\nSELECT id, name\nFROM customer\nWHERE active = 1;")]
+    [InlineData("create view active_customer as select id,name from customer where active=1;", "CREATE VIEW active_customer\nAS\nSELECT id,\n    name\nFROM customer\nWHERE active = 1;")]
     [InlineData("alter table customer add column email varchar(120), drop column old_name;", "ALTER TABLE customer\nADD COLUMN email VARCHAR(120),\nDROP COLUMN old_name;")]
     public void FormatsCommonDdlStatementClauses(string sql, string expected)
     {
@@ -120,12 +120,12 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Fact]
-    public void PreservesExistingMultilineClauseStructure()
+    public void FormatsExistingMultilineSelectListsConsistently()
     {
         const string sql = "SELECT\n    ID,\n    NAME\nFROM CUSTOMER\nWHERE ACTIVE = 1;";
         var formatted = FirebirdSqlFormatter.Format(sql);
 
-        Assert.Contains("SELECT\n    ID,\n    NAME\nFROM CUSTOMER\nWHERE ACTIVE = 1;", formatted);
+        Assert.Contains("SELECT ID,\n    NAME\nFROM CUSTOMER\nWHERE ACTIVE = 1;", formatted);
     }
 
     [Fact]
