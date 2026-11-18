@@ -115,14 +115,11 @@ internal static class FirebirdSqlFormatter
                     {
                         setClause = true;
                         whereClause = false;
-                        indent++;
                     }
                     else if (upper is "SELECT" or "FROM" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
                     {
                         whereClause = false;
                         setClause = false;
-                        if (upper == "SELECT")
-                            indent++;
                     }
                 }
                 else if (depth == 0 && whereClause && (upper is "AND" or "OR"))
@@ -165,6 +162,8 @@ internal static class FirebirdSqlFormatter
                 }
 
                 Append(Keywords.Contains(raw) ? upper : raw);
+                if (upper is "SELECT" or "SET")
+                    indent++;
                 if (upper is "THEN" or "DO" or "ELSE")
                     NewLine();
                 continue;
