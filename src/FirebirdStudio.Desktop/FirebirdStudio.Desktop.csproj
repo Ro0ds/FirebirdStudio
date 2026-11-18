@@ -17,7 +17,6 @@
   <ItemGroup>
     <Content Include="..\..\scripts\updater\Apply-Update.ps1"
              Link="Updater\Apply-Update.ps1"
-             CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
