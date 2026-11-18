@@ -65,6 +65,6 @@ jobs:
           overwrite_files: false
           fail_on_unmatched_files: true
           files: |
-            releases/*.zip
+            releases/FirebirdStudio-${{ steps.version.outputs.version }}-win-x64-*.zip
             releases/checksums.txt
             releases/release-manifest.json
