@@ -38,7 +38,7 @@ function Get-SafeArchivePath {
     }
 
     $extension = [IO.Path]::GetExtension($destination)
-    $protectedExtensions = @('.fdb', '.gdb', '.ib', '.sqlite', '.sqlite3', '.db', '.db3', '.backup', '.fbk')
+    $protectedExtensions = @('.fdb', '.gdb', '.ib', '.sqlite', '.sqlite3', '.db', '.db3', '.backup', '.fbk', '.gbk')
     if ($protectedExtensions -contains $extension.ToLowerInvariant()) {
         throw "The release archive contains a database or backup file, which the updater will never install: '$EntryName'."
     }
@@ -59,6 +59,7 @@ $changedFiles = [Collections.Generic.List[string]]::new()
 $newFiles = [Collections.Generic.List[string]]::new()
 $completed = $false
 $rollbackFailed = $false
+$parentExited = $false
 
 try {
     Write-UpdateLog 'Updater started.'
@@ -81,6 +82,7 @@ try {
         if ([DateTime]::UtcNow -ge $deadline) { throw 'Firebird Studio did not exit within two minutes.' }
         Start-Sleep -Milliseconds 250
     }
+    $parentExited = $true
     Write-UpdateLog 'Firebird Studio process exited.'
 
     Add-Type -AssemblyName System.IO.Compression
@@ -123,17 +125,16 @@ try {
         $relativePath = $stagedFile.FullName.Substring($stagingRoot.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
         $targetPath = Get-SafeArchivePath -EntryName ($relativePath.Replace([IO.Path]::DirectorySeparatorChar, '/')) -Root $installDirectory
         $targetParent = Split-Path -Parent $targetPath
-        New-Item -ItemType Directory -Path $targetParent -Force | Out-Null
-
-        $cursor = $targetParent
-        while ($cursor.StartsWith($installPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        $relativeParent = $targetParent.Substring($installDirectory.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
+        $cursor = $installDirectory
+        foreach ($segment in ($relativeParent -split '[\\/]')) {
+            if ([string]::IsNullOrEmpty($segment)) { continue }
+            $cursor = Join-Path $cursor $segment
             if ((Test-Path -LiteralPath $cursor) -and ((Get-Item -LiteralPath $cursor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
                 throw "The installation path contains a reparse point: '$cursor'."
             }
-            $next = Split-Path -Parent $cursor
-            if ($next -eq $cursor) { break }
-            $cursor = $next
         }
+        New-Item -ItemType Directory -Path $targetParent -Force | Out-Null
 
         if (Test-Path -LiteralPath $targetPath -PathType Container) {
             throw "A directory already exists where the update expects a file: '$targetPath'."
@@ -194,12 +195,14 @@ catch {
     }
 }
 finally {
-    if (Test-Path -LiteralPath $workRoot) {
+    if ($rollbackFailed) {
+        Write-UpdateLog "Rollback backups retained at: $backupRoot"
+    } elseif (Test-Path -LiteralPath $workRoot) {
         try { Remove-Item -LiteralPath $workRoot -Recurse -Force } catch { Write-UpdateLog ("Could not remove staging files: " + $_.Exception.Message) }
     }
 }
 
-if ($completed -or -not $rollbackFailed) {
+if ($parentExited -and ($completed -or -not $rollbackFailed)) {
     try {
         Start-Process -FilePath $executablePath -WorkingDirectory $installDirectory
         Write-UpdateLog 'Firebird Studio restart requested.'
