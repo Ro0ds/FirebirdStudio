@@ -98,7 +98,7 @@ internal static class FirebirdSqlFormatter
                     updateStatement = true;
 
                 if (string.IsNullOrEmpty(ddlObject) &&
-                    upper is "CREATE" or "RECREATE" or "ALTER" or "DROP")
+                    (upper is "CREATE" or "RECREATE" or "ALTER" or "DROP"))
                 {
                     ddlVerb = upper;
                     ddlHeader = true;
@@ -107,7 +107,7 @@ internal static class FirebirdSqlFormatter
                 {
                     ddlObject = upper;
                     ddlHeader = false;
-                    if (upper == "TABLE" && ddlVerb is "CREATE" or "RECREATE")
+                    if (upper == "TABLE" && (ddlVerb is "CREATE" or "RECREATE"))
                         tableDefinitionPending = true;
                 }
 
@@ -115,9 +115,9 @@ internal static class FirebirdSqlFormatter
                     ddlObject == "VIEW" && upper == "AS" ||
                     ddlObject == "INDEX" && upper == "ON" ||
                     ddlObject == "DOMAIN" && (upper is "CHECK" or "COLLATE" or "TYPE" or "ADD" or "DROP" || upper == "DEFAULT" && previous is not "SET" and not "DROP" || upper == "SET" && next == "DEFAULT") ||
-                    (ddlObject is "PROCEDURE" or "FUNCTION") && upper is "RETURNS" or "AS" or "DECLARE" ||
-                    ddlObject == "TRIGGER" && upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE" ||
-                    ddlVerb == "ALTER" && ddlObject == "TABLE" && upper is "ADD" or "DROP" or "ALTER" or "RENAME");
+                    (ddlObject is "PROCEDURE" or "FUNCTION" or "PACKAGE") && (upper is "RETURNS" or "AS" or "DECLARE") ||
+                    ddlObject == "TRIGGER" && (upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE") ||
+                    ddlVerb == "ALTER" && ddlObject == "TABLE" && (upper is "ADD" or "DROP" or "ALTER" or "RENAME"));
                 if (ddlClause && lineHasContent)
                     NewLine();
 
