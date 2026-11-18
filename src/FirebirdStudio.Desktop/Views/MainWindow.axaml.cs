@@ -644,9 +644,13 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException(
                 "Automatic installation is available for packaged installations, not for applications started through the .NET development host.");
 
-        var updaterScript = Path.Combine(installDirectory, "Updater", "Apply-Update.ps1");
-        if (!File.Exists(updaterScript))
-            throw new FileNotFoundException("The external updater script is missing from this installation.", updaterScript);
+        var bundledUpdaterScript = Path.Combine(installDirectory, "Updater", "Apply-Update.ps1");
+        if (!File.Exists(bundledUpdaterScript))
+            throw new FileNotFoundException("The external updater script is missing from this installation.", bundledUpdaterScript);
+
+        // Run a copy from the writable update cache so the installer can replace its bundled copy.
+        var updaterScript = Path.Combine(update.DirectoryPath, "Apply-Update.ps1");
+        File.Copy(bundledUpdaterScript, updaterScript, overwrite: true);
 
         var startInfo = new ProcessStartInfo("powershell.exe")
         {
