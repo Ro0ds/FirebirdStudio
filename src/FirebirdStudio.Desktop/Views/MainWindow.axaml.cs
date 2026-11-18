@@ -1299,6 +1299,8 @@ public sealed partial class MainWindow : Window
         if (categoryIndex < 0)
         {
             _loadingMetadataCategories.Remove(categoryName);
+            _metadataPageCancellations.Remove(categoryName);
+            pageCancellation.Dispose();
             return;
         }
 
