@@ -164,6 +164,7 @@ public sealed partial class MainWindow : Window
         _executeButton = this.FindControl<MenuItem>("ExecuteMenuItem")!;
         _sqlAutocompleteMenuItem = this.FindControl<MenuItem>("SqlAutocompleteMenuItem")!;
         _sqlAutocompleteMenuItem.Click += async (_, _) => await ShowSqlCompletionAsync();
+        this.FindControl<MenuItem>("FormatSqlMenuItem")!.Click += (_, _) => FormatActiveSql();
         _cancelQueryButton = this.FindControl<MenuItem>("CancelQueryMenuItem")!;
         _queryHistoryList = this.FindControl<ListBox>("QueryHistoryList")!;
         _queryHistoryTabList = this.FindControl<ListBox>("QueryHistoryTabList")!;
@@ -1685,6 +1686,46 @@ public sealed partial class MainWindow : Window
         ShowFooterNotification("Query results cleared", "#397B45");
     }
 
+    private void FormatActiveSql()
+    {
+        var editor = GetActiveSqlEditorTab().Editor;
+        var selectionStart = editor.SelectionStart;
+        var selectionLength = editor.SelectionLength;
+        var hasSelection = selectionLength > 0;
+        var source = hasSelection ? editor.SelectedText : editor.Document.Text;
+
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            ReportInformation("SQL formatting", "There is no SQL text to format.");
+            return;
+        }
+
+        var formatted = FirebirdSqlFormatter.Format(source);
+        if (string.Equals(source, formatted, StringComparison.Ordinal))
+        {
+            _statusText.Text = "SQL is already formatted.";
+            return;
+        }
+
+        if (hasSelection)
+        {
+            editor.Document.Replace(selectionStart, selectionLength, formatted);
+            editor.CaretOffset = Math.Min(selectionStart + formatted.Length, editor.Document.TextLength);
+        }
+        else
+        {
+            var previousCaretOffset = editor.CaretOffset;
+            editor.Document.Replace(0, editor.Document.TextLength, formatted);
+            editor.CaretOffset = Math.Min(previousCaretOffset, editor.Document.TextLength);
+        }
+
+        _editorTabs.SelectedItem = GetActiveSqlEditorTab().Tab;
+        _statusText.Text = hasSelection
+            ? "Selected SQL formatted."
+            : "SQL editor content formatted.";
+        ShowFooterNotification("SQL formatted", "#397B45");
+    }
+
     private async void OnExecuteClick(object? sender, RoutedEventArgs e) => await ExecuteSelectedSqlAsync();
 
     private async Task ExecuteSelectedSqlAsync()
@@ -2030,6 +2071,13 @@ public sealed partial class MainWindow : Window
         {
             e.Handled = true;
             await ShowSqlCompletionAsync();
+            return;
+        }
+
+        if (e.Key == Key.F && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift))
+        {
+            e.Handled = true;
+            FormatActiveSql();
             return;
         }
 
