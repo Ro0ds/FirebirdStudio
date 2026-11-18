@@ -13,7 +13,7 @@ internal static class FirebirdSqlFormatter
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES",
-        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
+        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
         "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
         "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARBINARY"
     };
@@ -39,6 +39,8 @@ internal static class FirebirdSqlFormatter
         var ddlHeader = false;
         var tableDefinitionPending = false;
         var tableDefinitionDepth = 0;
+        var ddlVerb = string.Empty;
+        var ddlObject = string.Empty;
 
         void TrimEndSpaces()
         {
@@ -90,10 +92,29 @@ internal static class FirebirdSqlFormatter
 
             if (token.IsWord)
             {
-                if (upper is "CREATE" or "RECREATE")
+                if (upper is "CREATE" or "RECREATE" or "ALTER" or "DROP")
+                {
+                    ddlVerb = upper;
                     ddlHeader = true;
-                else if (upper == "TABLE" && ddlHeader)
-                    tableDefinitionPending = true;
+                    ddlObject = string.Empty;
+                }
+                else if (ddlHeader && upper is "TABLE" or "VIEW" or "INDEX" or "PROCEDURE" or "TRIGGER" or "FUNCTION" or "DOMAIN" or "EXCEPTION" or "GENERATOR" or "SEQUENCE" or "ROLE")
+                {
+                    ddlObject = upper;
+                    ddlHeader = false;
+                    if (upper == "TABLE" && ddlVerb is "CREATE" or "RECREATE")
+                        tableDefinitionPending = true;
+                }
+
+                var ddlClause = depth == 0 && (
+                    ddlObject == "VIEW" && upper == "AS" ||
+                    ddlObject == "INDEX" && upper == "ON" ||
+                    ddlObject == "DOMAIN" && upper is "DEFAULT" or "CHECK" or "COLLATE" ||
+                    ddlObject == "PROCEDURE" && upper is "RETURNS" or "AS" or "DECLARE" ||
+                    ddlObject == "TRIGGER" && upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE" ||
+                    ddlVerb == "ALTER" && ddlObject == "TABLE" && upper is "ADD" or "DROP" or "ALTER" or "RENAME");
+                if (ddlClause && lineHasContent)
+                    NewLine();
 
                 var clause = depth == 0 &&
                     (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
@@ -239,6 +260,8 @@ internal static class FirebirdSqlFormatter
                         setClause = false;
                         ddlHeader = false;
                         tableDefinitionPending = false;
+                        ddlVerb = string.Empty;
+                        ddlObject = string.Empty;
                     }
                     break;
                 default:
