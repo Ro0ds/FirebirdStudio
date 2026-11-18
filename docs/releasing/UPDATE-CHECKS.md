@@ -23,6 +23,20 @@ Firebird Studio checks the GitHub Releases stable channel for a newer version. T
 - A previously downloaded package is reused only after its size and SHA-256 are checked again. Canceled or failed downloads remove their partial file; if the process is forcibly terminated, the next attempt overwrites any leftover `.download` file before validating the result.
 - After verification, the user can open the download folder and inspect or extract the ZIP manually.
 
+## Windows installation and rollback
+
+On Windows, a verified download can be installed with **Install and restart**. The desktop application starts the bundled external PowerShell helper, then saves the SQL editor workspace, cancels background work, closes active Firebird sessions, and exits. The helper waits for the application process to terminate before touching application files.
+
+- The helper is packaged at `Updater/Apply-Update.ps1` in both Windows distributions. It uses the Windows PowerShell executable already supplied by Windows.
+- Before extraction, it independently checks the downloaded archive's expected byte length and SHA-256 again.
+- ZIP entry paths are validated before extraction. Absolute paths, traversal segments, duplicate paths, symbolic links, and database/backup file extensions are rejected.
+- Installation is an overlay: only files present in the release package are replaced or added. Files absent from the package are not deleted.
+- Existing files are backed up under the update cache before replacement. If a later operation fails, changed files are restored and newly added files are removed.
+- If rollback itself fails, the updater does not restart the application and retains its backup directory for manual recovery. The log is written to the versioned update cache as `updater.log`.
+- Connection profiles, credentials, preferences, query history, SQL editor recovery data, and database files are outside the application install directory and are not part of the update operation.
+
+Automatic installation currently supports Windows packaged deployments only. Launching from the .NET development host is intentionally rejected. Linux and macOS downloads remain manual. The updater does not remove obsolete application files that are absent from the new package; this avoids deleting user-created files but can leave unused old binaries behind.
+
 ## Important security boundary
 
 SHA-256 verification detects corruption or a mismatch between the package and the published manifest. Since both are downloaded from the same GitHub Release, this does **not** independently authenticate the publisher or protect against an attacker who can replace both assets. Signed release metadata or another trusted signing mechanism remains a separate security milestone.
