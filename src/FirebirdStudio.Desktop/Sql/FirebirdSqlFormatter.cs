@@ -26,13 +26,13 @@ internal static class FirebirdSqlFormatter
         var tokens = Tokenize(source);
         var output = new StringBuilder(source.Length + 64);
         var indent = 0;
-        var parenthesisDepth = 0;
+        var depth = 0;
         var lineHasContent = false;
         var previous = string.Empty;
-        var inWhereClause = false;
-        var inSetClause = false;
+        var whereClause = false;
+        var setClause = false;
 
-        void TrimLineEnd()
+        void TrimEndSpaces()
         {
             while (output.Length > 0 && output[^1] == ' ')
                 output.Length--;
@@ -40,26 +40,25 @@ internal static class FirebirdSqlFormatter
 
         void NewLine()
         {
-            TrimLineEnd();
+            TrimEndSpaces();
             if (lineHasContent)
                 output.AppendLine();
             lineHasContent = false;
             previous = string.Empty;
         }
 
-        void EnsureIndent()
+        void Append(string value, bool space = true)
         {
-            if (lineHasContent)
-                return;
-            output.Append(' ', Math.Max(0, indent) * 4);
-            lineHasContent = true;
-        }
-
-        void AppendToken(string value, bool needsSpace = true)
-        {
-            EnsureIndent();
-            if (needsSpace && output.Length > 0 && output[^1] != ' ' && output[^1] != '\n')
+            if (!lineHasContent)
+            {
+                output.Append(' ', Math.Max(0, indent) * 4);
+                lineHasContent = true;
+            }
+            else if (space && output.Length > 0 && output[^1] != ' ' && output[^1] != '\n')
+            {
                 output.Append(' ');
+            }
+
             output.Append(value);
             previous = value;
         }
@@ -75,42 +74,48 @@ internal static class FirebirdSqlFormatter
             {
                 if (lineHasContent)
                     NewLine();
-                AppendToken(raw, false);
+                Append(raw, false);
                 NewLine();
                 continue;
             }
 
             if (token.IsWord)
             {
-                var isClauseStart = parenthesisDepth == 0 &&
+                var clause = depth == 0 &&
                     (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
                      upper == "GROUP" && next == "BY" || upper == "ORDER" && next == "BY");
+                var join = depth == 0 &&
+                    (upper == "JOIN" || (upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS") &&
+                     (next == "JOIN" || next == "OUTER"));
 
-                var isJoin = parenthesisDepth == 0 &&
-                    (upper == "JOIN" || upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS" && next is "JOIN" or "OUTER");
-
-                if (isClauseStart || isJoin || parenthesisDepth == 0 && upper == "SET" && previous != "UPDATE")
+                if (clause || join || depth == 0 && upper == "SET")
                 {
                     if (lineHasContent)
                         NewLine();
-                    if (upper == "WHERE" || upper == "HAVING")
+
+                    if (upper is "FROM" or "WHERE" or "HAVING" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
+                        indent = Math.Max(0, indent - 1);
+
+                    if (upper is "WHERE" or "HAVING")
                     {
-                        inWhereClause = true;
-                        inSetClause = false;
+                        whereClause = true;
+                        setClause = false;
                     }
                     else if (upper == "SET")
                     {
-                        inSetClause = true;
-                        inWhereClause = false;
+                        setClause = true;
+                        whereClause = false;
+                        indent++;
                     }
                     else if (upper is "SELECT" or "FROM" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
                     {
-                        inWhereClause = false;
-                        if (upper != "RETURNING")
-                            inSetClause = false;
+                        whereClause = false;
+                        setClause = false;
+                        if (upper == "SELECT")
+                            indent++;
                     }
                 }
-                else if (parenthesisDepth == 0 && inWhereClause && upper is "AND" or "OR")
+                else if (depth == 0 && whereClause && (upper is "AND" or "OR"))
                 {
                     NewLine();
                 }
@@ -119,7 +124,7 @@ internal static class FirebirdSqlFormatter
                 {
                     if (lineHasContent)
                         NewLine();
-                    AppendToken("BEGIN", false);
+                    Append("BEGIN", false);
                     indent++;
                     NewLine();
                     continue;
@@ -130,14 +135,13 @@ internal static class FirebirdSqlFormatter
                     if (lineHasContent)
                         NewLine();
                     indent = Math.Max(0, indent - 1);
-                    AppendToken("END", false);
+                    Append("END", false);
                     if (next is not ";" and not "," and not ")" and not "." and not "ELSE")
                         NewLine();
                     continue;
                 }
 
-                var formattedWord = Keywords.Contains(raw) ? upper : raw;
-                AppendToken(formattedWord);
+                Append(Keywords.Contains(raw) ? upper : raw);
                 if (upper is "THEN" or "DO" or "ELSE")
                     NewLine();
                 continue;
@@ -146,42 +150,42 @@ internal static class FirebirdSqlFormatter
             switch (raw)
             {
                 case "(":
-                    AppendToken(raw, previous is not "" and not ".");
-                    parenthesisDepth++;
+                    Append(raw, previous.Length > 0 && previous != ".");
+                    depth++;
                     break;
                 case ")":
-                    TrimLineEnd();
-                    AppendToken(raw, false);
-                    parenthesisDepth = Math.Max(0, parenthesisDepth - 1);
+                    TrimEndSpaces();
+                    Append(raw, false);
+                    depth = Math.Max(0, depth - 1);
                     break;
                 case ",":
-                    TrimLineEnd();
+                    TrimEndSpaces();
                     output.Append(',');
-                    if (parenthesisDepth == 0 && (inSetClause || previous.Length > 0))
+                    if (depth == 0 && (setClause || previous.Length > 0))
                         NewLine();
                     else
                         output.Append(' ');
                     previous = ",";
                     break;
                 case ".":
-                    TrimLineEnd();
+                    TrimEndSpaces();
                     output.Append('.');
                     previous = ".";
                     break;
                 case ";":
-                    TrimLineEnd();
+                    TrimEndSpaces();
                     output.Append(';');
                     previous = ";";
-                    if (parenthesisDepth == 0)
+                    if (depth == 0)
                         NewLine();
                     break;
                 default:
-                    AppendToken(raw, raw is not "::" and not "->");
+                    Append(raw, raw is not "::" and not "->" && previous != "(");
                     break;
             }
         }
 
-        TrimLineEnd();
+        TrimEndSpaces();
         var result = output.ToString().TrimEnd();
         return result.Length == 0 ? result : result + Environment.NewLine;
     }
