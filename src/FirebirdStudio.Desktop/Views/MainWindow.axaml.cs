@@ -214,8 +214,12 @@ public sealed partial class MainWindow : Window
         _resultsTab = this.FindControl<TabItem>("ResultsTab")!;
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
         this.FindControl<Button>("ClearMessagesButton")!.Click += (_, _) => ClearMessages();
-        this.FindControl<Button>("ClearHistoryDockButton")!.Click += async (_, _) => await ClearQueryHistoryAndResultsAsync();
-        this.FindControl<Button>("ClearHistoryTabButton")!.Click += async (_, _) => await ClearQueryHistoryAndResultsAsync();
+        this.FindControl<Button>("ClearHistoryDockButton")!.Click += async (_, _) => await ClearQueryHistoryAsync();
+        this.FindControl<Button>("ClearHistoryTabButton")!.Click += async (_, _) => await ClearQueryHistoryAsync();
+        this.FindControl<Button>("ClearResultsButton")!.Click += (_, _) => ClearResults();
+        var toggleConnectionDisplayButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
+        toggleConnectionDisplayButton.Click += async (_, _) =>
+            await SetConnectionDisplayModeAsync(_preferences.ConnectionDisplayMode == "Detailed" ? "Minimal" : "Detailed");
         _footerNotificationText = this.FindControl<TextBlock>("FooterNotificationText")!;
         _connectionStateText = this.FindControl<TextBlock>("ConnectionStateText")!;
         _currentVersionText = this.FindControl<TextBlock>("CurrentVersionText")!;
@@ -1644,29 +1648,35 @@ public sealed partial class MainWindow : Window
         _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
     }
 
-    private async Task ClearQueryHistoryAndResultsAsync()
+    private async Task ClearQueryHistoryAsync()
     {
-        if (_isQueryExecuting)
-        {
-            ShowFooterNotification("Wait for the running query to finish before clearing history and results.", "#9A7100");
-            return;
-        }
-
         try
         {
             await _queryHistoryStore.SaveAsync(Array.Empty<QueryHistoryEntry>());
+            _queryHistory.Clear();
+            _queryHistoryList.SelectedItem = null;
+            _queryHistoryTabList.SelectedItem = null;
+            _statusText.Text = "Query history cleared.";
+            ShowFooterNotification("Query history cleared", "#397B45");
         }
         catch (Exception exception)
         {
             ReportError("Clearing query history", exception);
+        }
+    }
+
+    private void ClearResults()
+    {
+        if (_isQueryExecuting)
+        {
+            ShowFooterNotification("Wait for the running query to finish before clearing results.", "#9A7100");
             return;
         }
 
-        _queryHistory.Clear();
         _queryResultsGrid.ItemsSource = null;
         _queryResultsGrid.Columns.Clear();
-        _statusText.Text = "Query history and results cleared.";
-        ShowFooterNotification("Query history and results cleared", "#397B45");
+        _statusText.Text = "Query results cleared.";
+        ShowFooterNotification("Query results cleared", "#397B45");
     }
 
     private async void OnExecuteClick(object? sender, RoutedEventArgs e) => await ExecuteSelectedSqlAsync();
@@ -1921,10 +1931,13 @@ public sealed partial class MainWindow : Window
     private static IDataTemplate CreateConnectionTemplate(bool showDetails) =>
         new FuncDataTemplate<ConnectionProfile>((profile, _) =>
         {
+            if (profile is null)
+                return new TextBlock();
+
             var content = new StackPanel { Spacing = 2, Margin = new Thickness(2, 4) };
             content.Children.Add(new TextBlock
             {
-                Text = profile.Name,
+                Text = profile.Name ?? string.Empty,
                 FontWeight = FontWeight.SemiBold
             });
 
@@ -1932,13 +1945,13 @@ public sealed partial class MainWindow : Window
             {
                 content.Children.Add(new TextBlock
                 {
-                    Text = profile.Host,
+                    Text = profile.Host ?? string.Empty,
                     FontSize = 10,
                     Opacity = 0.7
                 });
                 content.Children.Add(new TextBlock
                 {
-                    Text = profile.Database,
+                    Text = profile.Database ?? string.Empty,
                     FontSize = 10,
                     Opacity = 0.7,
                     TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis
@@ -1954,6 +1967,11 @@ public sealed partial class MainWindow : Window
         _connectionsList.ItemTemplate = CreateConnectionTemplate(showDetails);
         this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!.IsChecked = showDetails;
         this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!.IsChecked = !showDetails;
+        var toggleButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
+        toggleButton.Content = showDetails ? "Minimal" : "Detailed";
+        toggleButton.ToolTip.Tip = showDetails
+            ? "Switch to minimal connection names"
+            : "Switch to detailed connection information";
     }
 
     private async Task SetConnectionDisplayModeAsync(string mode)
@@ -1962,12 +1980,22 @@ public sealed partial class MainWindow : Window
             mode == _preferences.ConnectionDisplayMode)
             return;
 
+        var previousPreferences = _preferences;
         _preferences = _preferences with { ConnectionDisplayMode = mode };
-        ApplyConnectionDisplayMode();
-        await SavePreferencesAsync(
-            mode == "Detailed"
+        try
+        {
+            await _preferencesStore.SaveAsync(_preferences);
+            ApplyConnectionDisplayMode();
+            _statusText.Text = mode == "Detailed"
                 ? "Detailed connection display enabled."
-                : "Minimal connection display enabled.");
+                : "Minimal connection display enabled.";
+        }
+        catch (Exception exception)
+        {
+            _preferences = previousPreferences;
+            ApplyConnectionDisplayMode();
+            ReportError("Saving connection display preference", exception);
+        }
     }
 
     private void SetHistoryDockMode(bool dockRight)
