@@ -77,6 +77,14 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Fact]
+    public void PreservesNamedParameterTokens()
+    {
+        var formatted = FirebirdSqlFormatter.Format("select * from customer where id=:CUSTOMER_ID;");
+
+        Assert.Contains("id = :CUSTOMER_ID", formatted);
+    }
+
+    [Fact]
     public void EmptyInputRemainsEmpty()
     {
         Assert.Equal(string.Empty, FirebirdSqlFormatter.Format("  \r\n "));
