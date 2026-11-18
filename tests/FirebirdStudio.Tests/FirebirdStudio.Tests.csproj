@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -18,5 +19,6 @@
     <ProjectReference Include="..\..\src\FirebirdStudio.Core\FirebirdStudio.Core.csproj" />
     <ProjectReference Include="..\..\src\FirebirdStudio.Application\FirebirdStudio.Application.csproj" />
     <ProjectReference Include="..\..\src\FirebirdStudio.Infrastructure\FirebirdStudio.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\FirebirdStudio.Desktop\FirebirdStudio.Desktop.csproj" />
   </ItemGroup>
 </Project>
