@@ -210,7 +210,7 @@ internal static class FirebirdSqlFormatter
                     }
                     break;
                 default:
-                    Append(raw, raw is not "::" and not "->" && previous is not "(" and not ":");
+                    Append(raw, raw is not "::" and not "->" && previous is not "(" and not ":" and not ".");
                     break;
             }
         }
