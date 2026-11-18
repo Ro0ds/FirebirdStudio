@@ -15,7 +15,7 @@ internal static class FirebirdSqlFormatter
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES",
         "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
         "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
-        "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARCHAR", "VARBINARY"
+        "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARBINARY"
     };
 
     private readonly record struct Token(string Text, bool IsWord, bool IsComment = false);
@@ -89,7 +89,7 @@ internal static class FirebirdSqlFormatter
 
             if (token.IsWord)
             {
-                if (upper is "CREATE" or "RECREATE" or "ALTER")
+                if (upper is "CREATE" or "RECREATE")
                     ddlHeader = true;
                 else if (upper == "TABLE" && ddlHeader)
                     tableDefinitionPending = true;
