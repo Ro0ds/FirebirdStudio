@@ -82,12 +82,12 @@ public sealed class FirebirdSqlFormatterTests
     {
         var formatted = FirebirdSqlFormatter.Format("alter table customer add column email varchar(120), drop column old_name, alter column name type varchar(80);");
 
-        Assert.Contains("ALTER TABLE customer\\nADD COLUMN email VARCHAR(120),\\nDROP COLUMN old_name,\\nALTER COLUMN name TYPE VARCHAR(80);", formatted);
+        Assert.Contains("ALTER TABLE customer\nADD COLUMN email VARCHAR(120),\nDROP COLUMN old_name,\nALTER COLUMN name TYPE VARCHAR(80);", formatted);
     }
 
     [Theory]
-    [InlineData("create domain d_customer_name as varchar(80) default 'unknown' not null check (value <> '');", "CREATE DOMAIN d_customer_name AS VARCHAR(80)\\nDEFAULT 'unknown' NOT NULL\\nCHECK (value <> '');")]
-    [InlineData("create procedure p_test(a integer) returns(b integer) as begin b=a; suspend; end", "CREATE PROCEDURE p_test(a INTEGER)\\nRETURNS (b INTEGER)\\nAS\\nBEGIN")]
+    [InlineData("create domain d_customer_name as varchar(80) default 'unknown' not null check (value <> '');", "CREATE DOMAIN d_customer_name AS VARCHAR(80)\nDEFAULT 'unknown' NOT NULL\nCHECK (value <> '');")]
+    [InlineData("create procedure p_test(a integer) returns(b integer) as begin b=a; suspend; end", "CREATE PROCEDURE p_test(a INTEGER)\nRETURNS (b INTEGER)\nAS\nBEGIN")]
     public void FormatsDomainAndProcedureDdl(string sql, string expected)
     {
         var formatted = FirebirdSqlFormatter.Format(sql);
