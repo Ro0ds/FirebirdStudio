@@ -343,7 +343,7 @@ for token in ["Avalonia", "TargetFramework>net10.0"]:
         sys.exit(1)
 for token in [
     "WaitForParentExitAsync", "VerifyPackageAsync", "ExtractSafelyAsync",
-    "RollbackAsync", "MaxExpandedBytes", "File.Move(temporary, destination, overwrite: true)",
+    "RollbackAsync", "EnsureNoReparsePoints", "MaxExpandedBytes", "File.Move(temporary, destination, overwrite: true)",
 ]:
     if token not in updater_source:
         print(f"External updater safety behavior is missing: {token}")

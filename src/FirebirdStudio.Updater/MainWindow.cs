@@ -262,6 +262,7 @@ internal sealed class MainWindow : Window
             var source = Path.Combine(staging, relative);
             var destination = Path.GetFullPath(Path.Combine(_installDirectory!, relative));
             EnsurePathInside(_installDirectory!, destination);
+            EnsureNoReparsePoints(_installDirectory!, destination);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var existed = File.Exists(destination);
             var backupPath = Path.Combine(backup, relative);
@@ -269,6 +270,8 @@ internal sealed class MainWindow : Window
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
                 File.Copy(destination, backupPath, overwrite: false);
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                    File.SetUnixFileMode(backupPath, File.GetUnixFileMode(destination));
             }
             applied.Add(new AppliedFile(destination, backupPath, existed));
             var temporary = destination + ".firebirdstudio-update-" + Guid.NewGuid().ToString("N");
@@ -296,6 +299,8 @@ internal sealed class MainWindow : Window
                 {
                     var temporary = file.Destination + ".firebirdstudio-rollback-" + Guid.NewGuid().ToString("N");
                     File.Copy(file.Backup, temporary, overwrite: false);
+                    if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                        File.SetUnixFileMode(temporary, File.GetUnixFileMode(file.Backup));
                     File.Move(temporary, file.Destination, overwrite: true);
                 }
                 else if (File.Exists(file.Destination)) File.Delete(file.Destination);
@@ -312,6 +317,31 @@ internal sealed class MainWindow : Window
             relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
             throw new InvalidDataException("The application executable must be inside the installation directory.");
         if (!File.Exists(_appPath)) throw new FileNotFoundException("The application executable could not be found.", _appPath);
+    }
+
+    private static void EnsureNoReparsePoints(string root, string destination)
+    {
+        var current = Path.GetFullPath(root);
+        Check(current);
+        var relative = Path.GetRelativePath(current, destination);
+        foreach (var segment in relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        {
+            if (segment.Length == 0 || segment == ".")
+                continue;
+            current = Path.Combine(current, segment);
+            Check(current);
+        }
+
+        static void Check(string path)
+        {
+            try
+            {
+                if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException($"The update target contains a symbolic link or reparse point: {path}");
+            }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
+        }
     }
 
     private static void EnsurePathInside(string root, string path)
