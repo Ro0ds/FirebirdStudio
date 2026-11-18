@@ -331,3 +331,39 @@ if "command.Parameters.AddWithValue(parameterName" not in provider_source:
     print("SQL execution does not bind supplied parameter values through the Firebird provider.")
     sys.exit(1)
 print("Connection-time metadata paging, in-place append, SQL source formatting, and named parameter binding source checks passed.")
+
+
+# External Windows updater packaging and safety checks
+updater_script = (root / "scripts/updater/Apply-Update.ps1").read_text(encoding="utf-8")
+for token in [
+    "ExpectedSizeBytes", "ExpectedSha256", "Get-SafeArchivePath",
+    "The update archive contains a symbolic link", "The update archive expands beyond the updater safety limits",
+    "protectedExtensions", "File.Replace(", "Attempting rollback",
+    "Rollback completed", "Rollback backups retained", "Start-Process -FilePath $executablePath",
+]:
+    if token not in updater_script:
+        print(f"External updater safety behavior is missing: {token}")
+        sys.exit(1)
+
+desktop_project_source = (root / "src/FirebirdStudio.Desktop/FirebirdStudio.Desktop.csproj").read_text(encoding="utf-8")
+for token in ['Link="Updater\\Apply-Update.ps1"', 'CopyToPublishDirectory="PreserveNewest"']:
+    if token not in desktop_project_source:
+        print(f"Published desktop package is missing updater content configuration: {token}")
+        sys.exit(1)
+if 'CopyToOutputDirectory="PreserveNewest"' in desktop_project_source:
+    print("The external updater should be shipped in publish output, not ordinary development builds.")
+    sys.exit(1)
+
+downloader_source = (root / "src/FirebirdStudio.Desktop/Services/GitHubUpdateDownloader.cs").read_text(encoding="utf-8")
+if "long SizeBytes, string Sha256" not in downloader_source:
+    print("The verified update artifact metadata is not passed to the installer.")
+    sys.exit(1)
+for token in [
+    "Install and restart", "StartExternalUpdater(downloadedUpdate)",
+    "PrepareForUpdateShutdownAsync", "-ExpectedSizeBytes", "-ExpectedSha256",
+    "Closing database sessions before update", "_isPreparedForUpdateShutdown",
+]:
+    if token not in main_window_source:
+        print(f"Desktop external updater handoff is missing: {token}")
+        sys.exit(1)
+print("External Windows updater packaging, archive validation, rollback, and process handoff source checks passed.")
