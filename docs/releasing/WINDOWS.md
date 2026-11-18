@@ -31,6 +31,8 @@ Two portable ZIP packages are produced:
 
 The self-contained package is deliberately published as a folder and then zipped. It is not bundled into a self-extracting single executable, avoiding the size and extraction behavior of that deployment mode.
 
+Both packages include the external Windows updater at `Updater/Apply-Update.ps1`. It is used by the in-app **Install and restart** action after a package has been downloaded and verified. The updater requires the Windows PowerShell executable (`powershell.exe`), which is included with supported Windows desktop installations.
+
 ## Generated files
 
 The script writes its generated outputs under releases/:
