@@ -987,6 +987,9 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
+            if (ReferenceEquals(_metadataLoadingCancellation, metadataCancellation))
+                _metadataLoadingCancellation = null;
+            metadataCancellation.Dispose();
             if (loadGeneration == _metadataLoadGeneration)
             {
                 _isMetadataRefreshRunning = false;
@@ -1076,7 +1079,17 @@ public sealed partial class MainWindow : Window
 
             _isMetadataSearchActive = true;
             _metadataObjects.Clear();
-            _metadataObjects.AddRange(results);
+            const int searchUiBatchSize = 50;
+            for (var index = 0; index < results.Count; index += searchUiBatchSize)
+            {
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (_connectionsList.SelectedItem is not ConnectionProfile activeProfile ||
+                    activeProfile.Id != profile.Id)
+                    return;
+
+                _metadataObjects.AddRange(results.Skip(index).Take(searchUiBatchSize).ToArray());
+                await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            }
 
             var filterDescription = kindFilter is null ? "database objects and columns" : kindFilter == "Column" ? "columns" : kindFilter.ToLowerInvariant();
             _statusText.Text = results.Count == 0
