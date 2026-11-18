@@ -31,8 +31,8 @@ Firebird-version compatibility testing and large-database performance testing ar
 ## Phase 2 — SQL development
 
 - Execution plan viewer.
-- SQL parameters.
-- SQL formatter.
+- [x] SQL parameters (named parameters with typed values and safe provider binding).
+- [x] SQL formatter (Query → Format SQL; `Ctrl+Shift+F`; formats the selection or the full editor when nothing is selected).
 - Query bookmarks and reusable snippets.
 - Improved result grid and BLOB viewer.
 
