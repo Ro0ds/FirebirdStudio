@@ -704,6 +704,8 @@ public sealed partial class MainWindow : Window
             var destinationPath = Path.Combine(destinationDirectory, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             File.Copy(file, destinationPath, overwrite: true);
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                File.SetUnixFileMode(destinationPath, File.GetUnixFileMode(file));
         }
     }
 
