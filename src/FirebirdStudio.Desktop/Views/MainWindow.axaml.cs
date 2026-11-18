@@ -572,7 +572,8 @@ public sealed partial class MainWindow : Window
                 openFolderButton.IsVisible = true;
                 cancelButton.Content = "Close";
 
-                if (OperatingSystem.IsWindows())
+                var updaterScript = Path.Combine(AppContext.BaseDirectory, "Updater", "Apply-Update.ps1");
+                if (OperatingSystem.IsWindows() && File.Exists(updaterScript))
                 {
                     statusText.Text =
                         $"Download complete and SHA-256 verified.\n\n{downloadedUpdate.FileName}\n\nInstall and restart Firebird Studio to apply this update.";
@@ -580,8 +581,11 @@ public sealed partial class MainWindow : Window
                 }
                 else
                 {
+                    var reason = OperatingSystem.IsWindows()
+                        ? "Automatic installation is available in published packages, not development builds."
+                        : "Automatic installation is currently supported on Windows only.";
                     statusText.Text =
-                        $"Download complete. SHA-256 verified. The ZIP package is ready for manual extraction. Automatic installation is currently supported on Windows only.\n\n{downloadedUpdate.FileName}";
+                        $"Download complete. SHA-256 verified. The ZIP package is ready for manual extraction. {reason}\n\n{downloadedUpdate.FileName}";
                 }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
