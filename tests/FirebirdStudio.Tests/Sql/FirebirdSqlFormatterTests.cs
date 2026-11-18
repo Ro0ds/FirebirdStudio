@@ -17,6 +17,18 @@ public sealed class FirebirdSqlFormatterTests
         Assert.Contains("\nORDER BY c.name;", formatted);
     }
 
+    [Theory]
+    [InlineData("select e.* from empresa e", "SELECT e.*\\nFROM empresa e")]
+    [InlineData("select e.name from empresa e", "SELECT e.name\\nFROM empresa e")]
+    public void KeepsQualifiedColumnsAndWildcardsTogether(string sql, string expected)
+    {
+        var formatted = FirebirdSqlFormatter.Format(sql);
+
+        Assert.Contains(expected, formatted);
+        Assert.DoesNotContain("e. *", formatted);
+        Assert.DoesNotContain("e. name", formatted);
+    }
+
     [Fact]
     public void KeepsMultiwordJoinModifiersTogether()
     {
