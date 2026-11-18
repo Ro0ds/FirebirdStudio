@@ -96,6 +96,22 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Fact]
+    public void FormatsCreateOrAlterTriggerClauses()
+    {
+        var formatted = FirebirdSqlFormatter.Format("create or alter trigger trg_customer for customer active before insert position 0 as begin new.created_at = current_timestamp; end");
+
+        Assert.Contains("CREATE OR ALTER TRIGGER trg_customer FOR customer ACTIVE\nBEFORE INSERT\nPOSITION 0\nAS\nBEGIN", formatted);
+    }
+
+    [Fact]
+    public void DoesNotTreatDomainCharacterSetAsAnUpdateSetClause()
+    {
+        var formatted = FirebirdSqlFormatter.Format("create domain d_name as varchar(80) character set \"NONE\" default 'unknown' not null;");
+
+        Assert.Contains("VARCHAR(80) CHARACTER SET \"NONE\"\nDEFAULT 'unknown' NOT NULL;", formatted);
+    }
+
+    [Fact]
     public void KeepsMultiwordJoinModifiersTogether()
     {
         var formatted = FirebirdSqlFormatter.Format("select c.id from customer c left outer join orders o on o.customer_id=c.id;");
