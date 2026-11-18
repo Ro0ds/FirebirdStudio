@@ -13,7 +13,7 @@ internal static class FirebirdSqlFormatter
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES",
-        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
+        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
         "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
         "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARCHAR", "VARBINARY"
     };
@@ -182,7 +182,7 @@ internal static class FirebirdSqlFormatter
             switch (raw)
             {
                 case "(":
-                    Append(raw, previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR");
+                    Append(raw, tableDefinitionPending || previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR" or "KEY" or "CHECK");
                     depth++;
                     if (tableDefinitionPending)
                     {
