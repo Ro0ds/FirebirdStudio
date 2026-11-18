@@ -287,7 +287,7 @@ internal sealed class MainWindow : Window
         await Task.CompletedTask;
     }
 
-    private static Task<List<Exception>> RollbackAsync(IReadOnlyList<AppliedFile> applied)
+    private Task<List<Exception>> RollbackAsync(IReadOnlyList<AppliedFile> applied)
     {
         var errors = new List<Exception>();
         for (var i = applied.Count - 1; i >= 0; i--)
@@ -295,6 +295,7 @@ internal sealed class MainWindow : Window
             var file = applied[i];
             try
             {
+                EnsureNoReparsePoints(_installDirectory!, file.Destination);
                 if (file.Existed)
                 {
                     var temporary = file.Destination + ".firebirdstudio-rollback-" + Guid.NewGuid().ToString("N");
