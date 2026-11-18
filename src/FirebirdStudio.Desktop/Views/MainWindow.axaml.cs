@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Styling;
 using Avalonia.Interactivity;
@@ -224,6 +225,11 @@ public sealed partial class MainWindow : Window
         _currentVersionText.Text = $"Firebird Studio {currentVersion}";
 
         _connectionsList.ItemsSource = _profiles;
+        _connectionsList.ItemTemplate = CreateConnectionTemplate(showDetails: true);
+        var detailedConnectionsMenuItem = this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!;
+        var minimalConnectionsMenuItem = this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!;
+        detailedConnectionsMenuItem.Click += async (_, _) => await SetConnectionDisplayModeAsync("Detailed");
+        minimalConnectionsMenuItem.Click += async (_, _) => await SetConnectionDisplayModeAsync("Minimal");
         _metadataTree.ItemsSource = _metadataObjects;
         _queryHistoryList.ItemsSource = _queryHistory;
         _queryHistoryTabList.ItemsSource = _queryHistory;
@@ -276,6 +282,7 @@ public sealed partial class MainWindow : Window
             if (_preferences.Theme == "Default")
                 _preferences = _preferences with { Theme = "Light" };
             ApplyTheme();
+            ApplyConnectionDisplayMode();
             SetHistoryDockMode(true);
         }
         catch (Exception exception)
@@ -1909,6 +1916,58 @@ public sealed partial class MainWindow : Window
             editor.TextArea.TextView.Redraw();
         foreach (var editor in _readOnlySqlEditors)
             editor.TextArea.TextView.Redraw();
+    }
+
+    private static IDataTemplate CreateConnectionTemplate(bool showDetails) =>
+        new FuncDataTemplate<ConnectionProfile>((profile, _) =>
+        {
+            var content = new StackPanel { Spacing = 2, Margin = new Thickness(2, 4) };
+            content.Children.Add(new TextBlock
+            {
+                Text = profile.Name,
+                FontWeight = FontWeight.SemiBold
+            });
+
+            if (showDetails)
+            {
+                content.Children.Add(new TextBlock
+                {
+                    Text = profile.Host,
+                    FontSize = 10,
+                    Opacity = 0.7
+                });
+                content.Children.Add(new TextBlock
+                {
+                    Text = profile.Database,
+                    FontSize = 10,
+                    Opacity = 0.7,
+                    TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis
+                });
+            }
+
+            return content;
+        });
+
+    private void ApplyConnectionDisplayMode()
+    {
+        var showDetails = _preferences.ConnectionDisplayMode == "Detailed";
+        _connectionsList.ItemTemplate = CreateConnectionTemplate(showDetails);
+        this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!.IsChecked = showDetails;
+        this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!.IsChecked = !showDetails;
+    }
+
+    private async Task SetConnectionDisplayModeAsync(string mode)
+    {
+        if (mode is not ("Detailed" or "Minimal") ||
+            mode == _preferences.ConnectionDisplayMode)
+            return;
+
+        _preferences = _preferences with { ConnectionDisplayMode = mode };
+        ApplyConnectionDisplayMode();
+        await SavePreferencesAsync(
+            mode == "Detailed"
+                ? "Detailed connection display enabled."
+                : "Minimal connection display enabled.");
     }
 
     private void SetHistoryDockMode(bool dockRight)
