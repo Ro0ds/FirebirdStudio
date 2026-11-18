@@ -173,7 +173,7 @@ internal static class FirebirdSqlFormatter
             switch (raw)
             {
                 case "(":
-                    Append(raw, previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS");
+                    Append(raw, previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR");
                     depth++;
                     break;
                 case ")":
