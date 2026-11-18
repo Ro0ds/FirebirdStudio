@@ -9,6 +9,7 @@
 - Text values are clipped to 4,000 characters in the preview. BLOB and ARRAY values are represented by placeholders to avoid eagerly materializing large values; other binary values are represented by a maximum 64-byte hexadecimal preview.
 - Named parameters written as `:PARAMETER_NAME` are detected outside SQL string literals, quoted identifiers, and comments. Before execution, a dialog asks for each value and its type (Text, Integer, Decimal, Date, Time, Timestamp, Boolean, or NULL). Placeholders are normalized for the Firebird ADO.NET provider and values are bound as parameters; they are not interpolated into SQL text.
 - The Cancel action requests cancellation through the provider token. The server/provider may take time to honor cancellation.
+- The SQL editor can format the selected SQL text, or the full document when there is no selection, using Query → Format SQL (`Ctrl+Shift+F`). Formatting is a presentation transformation; review the result before executing complex procedural SQL.
 - Errors automatically select the Messages page and display a temporary footer notification. The Messages page keeps the latest 500 success, information, and error events in reverse chronological order, each with a timestamp and soft green/yellow/red severity styling. Error entries retain exception types, stack traces, and inner-exception details (with long individual details truncated at 30,000 characters). Successful SQL execution adds a green entry and switches from Messages to Results only when Messages was the selected page.
 
 ## Persistent history
