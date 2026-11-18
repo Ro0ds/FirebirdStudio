@@ -244,6 +244,36 @@ public sealed class FirebirdSessionManagerTests
     }
 
     [Fact]
+    public async Task MetadataPagingKeepsAllObjectsAccessibleInVeryLargeCatalogs()
+    {
+        const int objectCount = 17_000;
+        const int pageSize = 200;
+        var expected = Enumerable.Range(0, objectCount)
+            .Select(index => new DatabaseMetadataObject(
+                "Domains", $"D_{index:D5}", null, "type: 8"))
+            .ToArray();
+        var factory = new FakeConnectionFactory { Metadata = expected };
+        await using var manager = new FirebirdSessionManager(factory);
+        var profile = TestProfile.Create();
+        await manager.ConnectAsync(profile, "secret");
+
+        var actual = new List<DatabaseMetadataObject>();
+        var offset = 0;
+        while (true)
+        {
+            var page = await manager.GetMetadataPageAsync(profile.Id, "Domains", offset, pageSize);
+            if (page.Count == 0)
+                break;
+
+            actual.AddRange(page);
+            offset += page.Count;
+        }
+
+        Assert.Equal(objectCount, actual.Count);
+        Assert.Equal(expected.Select(item => item.Name), actual.Select(item => item.Name));
+    }
+
+    [Fact]
     public async Task LazyMetadataDetailsAndCompletionMetadataAreForwardedThroughTheActiveSession()
     {
         var factory = new FakeConnectionFactory();
