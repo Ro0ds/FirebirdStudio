@@ -1650,6 +1650,12 @@ public sealed partial class MainWindow : Window
 
     private async Task ClearQueryHistoryAsync()
     {
+        if (_isQueryExecuting)
+        {
+            ShowFooterNotification("Wait for the running query to finish before clearing query history.", "#9A7100");
+            return;
+        }
+
         try
         {
             await _queryHistoryStore.SaveAsync(Array.Empty<QueryHistoryEntry>());
