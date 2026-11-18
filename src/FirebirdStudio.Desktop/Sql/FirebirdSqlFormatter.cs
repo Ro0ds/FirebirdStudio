@@ -12,7 +12,7 @@ internal static class FirebirdSqlFormatter
         "FUNCTION", "GROUP", "HAVING", "IF", "IN", "INNER", "INSERT", "INTO", "IS", "JOIN",
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
-        "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES",
+        "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES", "BEFORE", "AFTER", "POSITION", "DECLARE",
         "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
         "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
         "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARBINARY"
@@ -33,6 +33,7 @@ internal static class FirebirdSqlFormatter
         var previous = string.Empty;
         var whereClause = false;
         var setClause = false;
+        var updateStatement = false;
         var joinContinuation = false;
         var blockDepth = 0;
         var caseDepth = 0;
@@ -92,6 +93,9 @@ internal static class FirebirdSqlFormatter
 
             if (token.IsWord)
             {
+                if (upper == "UPDATE" && depth == 0)
+                    updateStatement = true;
+
                 if (upper is "CREATE" or "RECREATE" or "ALTER" or "DROP")
                 {
                     ddlVerb = upper;
@@ -125,7 +129,7 @@ internal static class FirebirdSqlFormatter
                 if (upper == "JOIN" && joinContinuation)
                     joinContinuation = false;
 
-                if (clause || join || depth == 0 && upper == "SET")
+                if (clause || join || depth == 0 && updateStatement && upper == "SET")
                 {
                     if (lineHasContent)
                         NewLine();
@@ -258,6 +262,7 @@ internal static class FirebirdSqlFormatter
                         indent = blockDepth;
                         whereClause = false;
                         setClause = false;
+                        updateStatement = false;
                         ddlHeader = false;
                         tableDefinitionPending = false;
                         ddlVerb = string.Empty;
