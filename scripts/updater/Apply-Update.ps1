@@ -27,7 +27,11 @@ function Get-SafeArchivePath {
     }
 
     $segments = $EntryName.TrimEnd('/').Split('/')
-    if ($segments.Count -eq 0 -or ($segments | Where-Object { $_ -eq '..' -or $_ -eq '.' -or $_ -eq '' })) {
+    if ($segments.Count -eq 0 -or ($segments | Where-Object {
+        $_ -eq '..' -or $_ -eq '.' -or $_ -eq '' -or $_.Contains(':') -or
+        $_.EndsWith('.') -or $_.EndsWith(' ') -or
+        $_ -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\.|$)'
+    })) {
         throw "Unsafe ZIP entry path: '$EntryName'."
     }
 
