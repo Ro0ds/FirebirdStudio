@@ -201,6 +201,12 @@ internal sealed class MainWindow : Window
             }
             if (written != entry.Length)
                 throw new InvalidDataException($"Extracted size did not match ZIP metadata: {relative}");
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            {
+                var unixMode = (UnixFileMode)(((uint)entry.ExternalAttributes >> 16) & 0x1FF);
+                if (unixMode != 0)
+                    File.SetUnixFileMode(destination, unixMode);
+            }
             files.Add(relative);
         }
         if (files.Count == 0) throw new InvalidDataException("The update archive contains no files.");
@@ -269,6 +275,8 @@ internal sealed class MainWindow : Window
             try
             {
                 File.Copy(source, temporary, overwrite: false);
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                    File.SetUnixFileMode(temporary, File.GetUnixFileMode(source));
                 File.Move(temporary, destination, overwrite: true);
             }
             finally { if (File.Exists(temporary)) File.Delete(temporary); }

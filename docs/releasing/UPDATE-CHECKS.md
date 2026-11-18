@@ -31,7 +31,7 @@ The desktop application launches the separately published `FirebirdStudio.Update
 - The updater independently rechecks the package byte length and SHA-256 before extracting anything.
 - Archive paths are validated before extraction. Absolute paths, traversal segments, duplicate file paths, symbolic links, Windows reserved names, alternate data streams, database/backup extensions, and excessive archive expansion are rejected.
 - Installation is an overlay: only files present in the release package are added or replaced. Files absent from the package are not deleted.
-- Existing files are copied to a versioned backup directory before replacement. Each replacement is staged in the destination directory and moved into place. If a later operation fails, changed files are restored and newly added files are removed.
+- Existing files are copied to a versioned backup directory before replacement. Each replacement is staged in the destination directory and moved into place. Unix executable permissions from ZIP entries are preserved on Linux and macOS. If a later operation fails, changed files are restored and newly added files are removed.
 - If rollback succeeds, the previous application version is restarted. If rollback is incomplete, the updater leaves the backup and log in the update cache and does not restart automatically.
 - The updater log is written to `updater.log` in the versioned update cache.
 - The updater runs with the current user's permissions and does not request elevation. The installation directory must be writable by that user.
