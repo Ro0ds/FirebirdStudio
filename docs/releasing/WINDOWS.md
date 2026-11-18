@@ -48,4 +48,17 @@ The manifest does not include its own checksum because that would be self-refere
 
 When creating a GitHub Release, attach both ZIP packages, `release-manifest.json`, and `checksums.txt` from this directory. The in-app downloader requires the manifest and matching ZIP package to be release assets; the checksum text file is provided for manual verification. A checksum downloaded from the same release location detects accidental corruption but does not independently authenticate the publisher; release signing is a separate future task.
 
-This script creates local artifacts only. It does not create a GitHub Release, upload files, or configure GitHub Actions.
+## Automated GitHub publishing
+
+The repository includes a manually triggered GitHub Actions workflow at `.github/workflows/publish-windows-release.yml`.
+
+To publish:
+
+1. Update the root `VERSION` file to a new SemVer version that has not already been tagged.
+2. Commit and push that version change to `main`.
+3. Open the repository's **Actions** tab and select **Publish Windows release**.
+4. Select **Run workflow** on the `main` branch.
+
+The workflow runs on a Windows GitHub-hosted runner, executes the existing packaging script (including the solution tests), and creates a GitHub Release with both ZIP packages, the manifest, and checksums. It refuses to publish if the version's Git tag already exists. It does not change `VERSION`, and it never runs automatically on push or pull-request events.
+
+This first automation covers **Windows x64 only**, matching the existing packaging script. Linux and macOS release packages are not produced by this workflow; those targets need their own packaging and validation before they can be published.
