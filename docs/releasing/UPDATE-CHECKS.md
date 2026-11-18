@@ -27,7 +27,8 @@ Firebird Studio checks the GitHub Releases stable channel for a newer version. T
 
 On Windows, a verified download can be installed with **Install and restart**. The desktop application starts the bundled external PowerShell helper, then saves the SQL editor workspace, cancels background work, closes active Firebird sessions, and exits. The helper waits for the application process to terminate before touching application files.
 
-- The helper is packaged at `Updater/Apply-Update.ps1` in both Windows distributions. It uses the Windows PowerShell executable already supplied by Windows.
+- The helper is packaged at `Updater/Apply-Update.ps1` in both Windows distributions and runs from a copy in the writable update cache, allowing its bundled copy to be updated safely. It uses the Windows PowerShell executable already supplied by Windows.
+- The application install directory must be writable by the current user. The updater does not request elevation or modify protected system-wide installations.
 - Before extraction, it independently checks the downloaded archive's expected byte length and SHA-256 again.
 - ZIP entry paths are validated before extraction. Absolute paths, traversal segments, duplicate paths, symbolic links, and database/backup file extensions are rejected.
 - Installation is an overlay: only files present in the release package are replaced or added. Files absent from the package are not deleted.
