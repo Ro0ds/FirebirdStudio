@@ -172,7 +172,7 @@ internal static class FirebirdSqlFormatter
                 }
 
                 Append(Keywords.Contains(raw) ? upper : raw);
-                if (upper is "SELECT" or "SET")
+                if (depth == 0 && tableDefinitionDepth == 0 && (upper is "SELECT" or "SET"))
                     indent++;
                 if (upper is "THEN" or "DO" or "ELSE")
                     NewLine();
