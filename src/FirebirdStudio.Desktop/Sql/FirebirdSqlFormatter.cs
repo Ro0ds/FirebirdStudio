@@ -195,9 +195,7 @@ internal static class FirebirdSqlFormatter
                     previous = ".";
                     break;
                 case ":":
-                    TrimEndSpaces();
-                    output.Append(':');
-                    previous = ":";
+                    Append(":", true);
                     break;
                 case ";":
                     TrimEndSpaces();
