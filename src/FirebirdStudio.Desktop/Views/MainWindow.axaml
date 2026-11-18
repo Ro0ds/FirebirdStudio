@@ -59,7 +59,7 @@
           <MenuItem Header="_Query">
             <MenuItem Header="Execute (F5)" x:Name="ExecuteMenuItem" IsEnabled="False" InputGesture="F5" />
             <MenuItem Header="SQL autocomplete (Ctrl+Space)" x:Name="SqlAutocompleteMenuItem" IsEnabled="False" />
-            <MenuItem Header="Format SQL (Ctrl+Shift+F)" x:Name="FormatSqlMenuItem" />
+            <MenuItem Header="Format SQL" x:Name="FormatSqlMenuItem" InputGesture="Ctrl+Shift+F" />
             <MenuItem Header="Cancel execution" x:Name="CancelQueryMenuItem" IsEnabled="False" />
           </MenuItem>
           <MenuItem Header="_View">
