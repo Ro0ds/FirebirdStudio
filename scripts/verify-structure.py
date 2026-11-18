@@ -340,6 +340,7 @@ for token in [
     "The update archive contains a symbolic link", "The update archive expands beyond the updater safety limits",
     "protectedExtensions", "::Replace(", "Attempting rollback",
     "Rollback completed", "Rollback backups retained", "Start-Process -FilePath $executablePath",
+    "The update target is a reparse point", "$restartFailed = $true",
 ]:
     if token not in updater_script:
         print(f"External updater safety behavior is missing: {token}")
