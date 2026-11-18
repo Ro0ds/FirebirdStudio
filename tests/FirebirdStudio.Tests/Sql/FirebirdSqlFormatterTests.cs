@@ -38,6 +38,18 @@ public sealed class FirebirdSqlFormatterTests
         Assert.Contains("CREATE TABLE customer (\n    id INTEGER NOT NULL,\n    name VARCHAR(100),\n    created_at TIMESTAMP,\n    CONSTRAINT pk_customer PRIMARY KEY (id)\n);", formatted);
     }
 
+    [Theory]
+    [InlineData("select cast(1 as numeric) from rdb$database;", "CAST(1 AS NUMERIC)")]
+    [InlineData("select cast(base as numeric(14,2)) from rdb$database;", "CAST(base AS NUMERIC(14, 2))")]
+    [InlineData("select cast((base + base_1) as numeric(14,2)) from rdb$database;", "CAST((base + base_1) AS NUMERIC(14, 2))")]
+    public void DoesNotInsertSpacesAfterOpeningParentheses(string sql, string expected)
+    {
+        var formatted = FirebirdSqlFormatter.Format(sql);
+
+        Assert.Contains(expected, formatted);
+        Assert.DoesNotContain("( ", formatted);
+    }
+
     [Fact]
     public void KeepsAllCreateTableColumnsAtTheSameIndentationWithCharacterSets()
     {
