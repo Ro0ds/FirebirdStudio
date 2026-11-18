@@ -33,6 +33,7 @@ internal static class FirebirdSqlFormatter
         var setClause = false;
         var joinContinuation = false;
         var blockDepth = 0;
+        var caseDepth = 0;
 
         void TrimEndSpaces()
         {
@@ -89,6 +90,8 @@ internal static class FirebirdSqlFormatter
                 var joinModifier = upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS";
                 var join = depth == 0 && (upper == "JOIN" && !joinContinuation ||
                     joinModifier && (next == "JOIN" || next == "OUTER"));
+                if (upper == "JOIN" && joinContinuation)
+                    joinContinuation = false;
 
                 if (clause || join || depth == 0 && upper == "SET")
                 {
@@ -141,6 +144,7 @@ internal static class FirebirdSqlFormatter
                 if (upper == "CASE")
                 {
                     Append("CASE");
+                    caseDepth++;
                     indent++;
                     continue;
                 }
@@ -150,7 +154,9 @@ internal static class FirebirdSqlFormatter
                     if (lineHasContent)
                         NewLine();
                     indent = Math.Max(0, indent - 1);
-                    if (blockDepth > 0)
+                    if (caseDepth > 0)
+                        caseDepth--;
+                    else if (blockDepth > 0)
                         blockDepth--;
                     Append("END", false);
                     if (next is not ";" and not "," and not ")" and not "." and not "ELSE")
