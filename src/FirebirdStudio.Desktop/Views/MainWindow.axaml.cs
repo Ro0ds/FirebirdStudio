@@ -1969,9 +1969,9 @@ public sealed partial class MainWindow : Window
         this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!.IsChecked = !showDetails;
         var toggleButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
         toggleButton.Content = showDetails ? "Minimal" : "Detailed";
-        toggleButton.ToolTip.Tip = showDetails
+        ToolTip.SetTip(toggleButton, showDetails
             ? "Switch to minimal connection names"
-            : "Switch to detailed connection information";
+            : "Switch to detailed connection information");
     }
 
     private async Task SetConnectionDisplayModeAsync(string mode)
