@@ -67,9 +67,9 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Theory]
-    [InlineData("create index ix_customer_name on customer(name);", "CREATE INDEX ix_customer_name\\nON customer(name);")]
-    [InlineData("create view active_customer as select id,name from customer where active=1;", "CREATE VIEW active_customer\\nAS\\nSELECT id, name\\nFROM customer\\nWHERE active = 1;")]
-    [InlineData("alter table customer add column email varchar(120), drop column old_name;", "ALTER TABLE customer\\nADD COLUMN email VARCHAR(120),\\nDROP COLUMN old_name;")]
+    [InlineData("create index ix_customer_name on customer(name);", "CREATE INDEX ix_customer_name\nON customer(name);")]
+    [InlineData("create view active_customer as select id,name from customer where active=1;", "CREATE VIEW active_customer\nAS\nSELECT id, name\nFROM customer\nWHERE active = 1;")]
+    [InlineData("alter table customer add column email varchar(120), drop column old_name;", "ALTER TABLE customer\nADD COLUMN email VARCHAR(120),\nDROP COLUMN old_name;")]
     public void FormatsCommonDdlStatementClauses(string sql, string expected)
     {
         var formatted = FirebirdSqlFormatter.Format(sql);
