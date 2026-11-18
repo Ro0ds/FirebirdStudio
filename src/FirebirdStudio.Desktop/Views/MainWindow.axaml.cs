@@ -2883,7 +2883,7 @@ public sealed partial class MainWindow : Window
                 ?? Array.Empty<DatabaseMetadataObject>();
             _tableConstraintsList.ItemsSource = constraints;
             _tableDdlText.Text = table.Kind == "Tables"
-                ? FirebirdSqlFormatter.Format(BuildTableDdl(table.Name, fields, constraints))
+                ? BuildTableDdl(table.Name, fields, constraints)
                 : FirebirdSqlFormatter.Format(details.FirstOrDefault(item => item.Kind == "View source")?.Details
                     ?? "-- View definition is not available.");
             _tableDdlText.TextArea.TextView.Redraw();
