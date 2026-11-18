@@ -194,6 +194,11 @@ internal static class FirebirdSqlFormatter
                     output.Append('.');
                     previous = ".";
                     break;
+                case ":":
+                    TrimEndSpaces();
+                    output.Append(':');
+                    previous = ":";
+                    break;
                 case ";":
                     TrimEndSpaces();
                     output.Append(';');
@@ -207,7 +212,7 @@ internal static class FirebirdSqlFormatter
                     }
                     break;
                 default:
-                    Append(raw, raw is not "::" and not "->" && previous != "(");
+                    Append(raw, raw is not "::" and not "->" && previous is not "(" and not ":");
                     break;
             }
         }
