@@ -15,6 +15,12 @@
     <PackageReference Include="Avalonia.AvaloniaEdit" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\..\scripts\updater\Apply-Update.ps1"
+             Link="Updater\Apply-Update.ps1"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\FirebirdStudio.Core\FirebirdStudio.Core.csproj" />
     <ProjectReference Include="..\FirebirdStudio.Application\FirebirdStudio.Application.csproj" />
     <ProjectReference Include="..\FirebirdStudio.Infrastructure\FirebirdStudio.Infrastructure.csproj" />
