@@ -130,6 +130,13 @@ internal static class FirebirdSqlFormatter
                     continue;
                 }
 
+                if (upper == "CASE")
+                {
+                    Append("CASE");
+                    indent++;
+                    continue;
+                }
+
                 if (upper == "END")
                 {
                     if (lineHasContent)
@@ -150,7 +157,7 @@ internal static class FirebirdSqlFormatter
             switch (raw)
             {
                 case "(":
-                    Append(raw, previous.Length > 0 && previous != ".");
+                    Append(raw, previous is "FROM" or "IN" or "VALUES" or "AS" or "EXISTS");
                     depth++;
                     break;
                 case ")":
