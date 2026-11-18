@@ -325,7 +325,7 @@ internal sealed class MainWindow : Window
         var current = Path.GetFullPath(root);
         Check(current);
         var relative = Path.GetRelativePath(current, destination);
-        foreach (var segment in relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        foreach (var segment in relative.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries))
         {
             if (segment.Length == 0 || segment == ".")
                 continue;
