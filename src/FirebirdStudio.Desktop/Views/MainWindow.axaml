@@ -28,6 +28,8 @@
     <!-- TreeViewItem uses a StackPanel by default. Virtualize each expanded
          category so thousands of metadata rows do not create thousands of controls. -->
     <Style Selector="TreeViewItem">
+      <!-- Virtualized containers are recycled; persist expansion on the data item. -->
+      <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
       <Setter Property="ItemsPanel">
         <ItemsPanelTemplate>
           <VirtualizingStackPanel />
