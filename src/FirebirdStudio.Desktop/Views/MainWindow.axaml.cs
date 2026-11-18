@@ -572,8 +572,8 @@ public sealed partial class MainWindow : Window
                 openFolderButton.IsVisible = true;
                 cancelButton.Content = "Close";
 
-                var updaterScript = Path.Combine(AppContext.BaseDirectory, "Updater", "Apply-Update.ps1");
-                if (OperatingSystem.IsWindows() && File.Exists(updaterScript))
+                var updaterExecutable = GetUpdaterExecutablePath();
+                if (File.Exists(updaterExecutable))
                 {
                     statusText.Text =
                         $"Download complete and SHA-256 verified.\n\n{downloadedUpdate.FileName}\n\nInstall and restart Firebird Studio to apply this update.";
@@ -581,9 +581,7 @@ public sealed partial class MainWindow : Window
                 }
                 else
                 {
-                    var reason = OperatingSystem.IsWindows()
-                        ? "Automatic installation is available in published packages, not development builds."
-                        : "Automatic installation is currently supported on Windows only.";
+                    var reason = "Automatic installation is available in published packages. Development builds can still use manual extraction.";
                     statusText.Text =
                         $"Download complete. SHA-256 verified. The ZIP package is ready for manual extraction. {reason}\n\n{downloadedUpdate.FileName}";
                 }
@@ -624,11 +622,14 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private static string GetUpdaterExecutablePath() =>
+        Path.Combine(
+            AppContext.BaseDirectory,
+            "Updater",
+            OperatingSystem.IsWindows() ? "FirebirdStudio.Updater.exe" : "FirebirdStudio.Updater");
+
     private void StartExternalUpdater(DownloadedUpdate update)
     {
-        if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("Automatic update installation is currently supported on Windows only.");
-
         if (_isQueryExecuting)
             throw new InvalidOperationException("Wait for the running SQL query to finish before installing an update.");
 
@@ -638,49 +639,72 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException("The current application executable path could not be determined.");
 
         executablePath = Path.GetFullPath(executablePath);
-        if (!executablePath.StartsWith(
-                installDirectory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                StringComparison.OrdinalIgnoreCase))
+        var relativeExecutablePath = Path.GetRelativePath(installDirectory, executablePath);
+        if (Path.IsPathRooted(relativeExecutablePath) ||
+            relativeExecutablePath.Equals("..", StringComparison.Ordinal) ||
+            relativeExecutablePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Automatic installation is available for packaged installations, not for applications started through the .NET development host.");
 
-        var bundledUpdaterScript = Path.Combine(installDirectory, "Updater", "Apply-Update.ps1");
-        if (!File.Exists(bundledUpdaterScript))
-            throw new FileNotFoundException("The external updater script is missing from this installation.", bundledUpdaterScript);
+        var bundledUpdaterDirectory = Path.Combine(installDirectory, "Updater");
+        var bundledUpdaterExecutable = GetUpdaterExecutablePath();
+        if (!File.Exists(bundledUpdaterExecutable))
+            throw new FileNotFoundException(
+                "The external updater application is missing from this installation.",
+                bundledUpdaterExecutable);
 
-        // Run a copy from the writable update cache so the installer can replace its bundled copy.
-        var updaterScript = Path.Combine(update.DirectoryPath, "Apply-Update.ps1");
-        File.Copy(bundledUpdaterScript, updaterScript, overwrite: true);
+        // Run from the writable cache, not from the directory that the updater must replace.
+        var updaterRuntimeDirectory = Path.Combine(update.DirectoryPath, "UpdaterRuntime");
+        if (Directory.Exists(updaterRuntimeDirectory))
+            Directory.Delete(updaterRuntimeDirectory, recursive: true);
+        CopyDirectory(bundledUpdaterDirectory, updaterRuntimeDirectory);
 
-        var startInfo = new ProcessStartInfo("powershell.exe")
+        var updaterExecutable = Path.Combine(
+            updaterRuntimeDirectory,
+            OperatingSystem.IsWindows() ? "FirebirdStudio.Updater.exe" : "FirebirdStudio.Updater");
+        if (!File.Exists(updaterExecutable))
+            throw new FileNotFoundException("The copied updater executable is missing.", updaterExecutable);
+
+        var startInfo = new ProcessStartInfo(updaterExecutable)
         {
             UseShellExecute = false,
-            CreateNoWindow = true,
+            CreateNoWindow = false,
             WorkingDirectory = installDirectory
         };
-        startInfo.ArgumentList.Add("-NoLogo");
-        startInfo.ArgumentList.Add("-NoProfile");
-        startInfo.ArgumentList.Add("-STA");
-        startInfo.ArgumentList.Add("-NonInteractive");
-        startInfo.ArgumentList.Add("-ExecutionPolicy");
-        startInfo.ArgumentList.Add("Bypass");
-        startInfo.ArgumentList.Add("-File");
-        startInfo.ArgumentList.Add(updaterScript);
-        startInfo.ArgumentList.Add("-ParentProcessId");
-        startInfo.ArgumentList.Add(Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
-        startInfo.ArgumentList.Add("-ArchivePath");
-        startInfo.ArgumentList.Add(update.FilePath);
-        startInfo.ArgumentList.Add("-ExpectedSizeBytes");
-        startInfo.ArgumentList.Add(update.SizeBytes.ToString(CultureInfo.InvariantCulture));
-        startInfo.ArgumentList.Add("-ExpectedSha256");
-        startInfo.ArgumentList.Add(update.Sha256);
-        startInfo.ArgumentList.Add("-InstallDirectory");
-        startInfo.ArgumentList.Add(installDirectory);
-        startInfo.ArgumentList.Add("-ExecutablePath");
-        startInfo.ArgumentList.Add(executablePath);
+        AddArgument(startInfo, "--parent-pid", Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+        AddArgument(startInfo, "--archive", update.FilePath);
+        AddArgument(startInfo, "--expected-size", update.SizeBytes.ToString(CultureInfo.InvariantCulture));
+        AddArgument(startInfo, "--expected-sha256", update.Sha256);
+        AddArgument(startInfo, "--install-dir", installDirectory);
+        AddArgument(startInfo, "--app-path", executablePath);
+        AddArgument(startInfo, "--log-path", Path.Combine(update.DirectoryPath, "updater.log"));
 
         _ = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Windows did not start the external update installer.");
+            ?? throw new InvalidOperationException("The operating system did not start the external updater.");
+    }
+
+    private static void AddArgument(ProcessStartInfo startInfo, string name, string value)
+    {
+        startInfo.ArgumentList.Add(name);
+        startInfo.ArgumentList.Add(value);
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+        foreach (var directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, directory);
+            Directory.CreateDirectory(Path.Combine(destinationDirectory, relativePath));
+        }
+
+        foreach (var file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, file);
+            var destinationPath = Path.Combine(destinationDirectory, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+            File.Copy(file, destinationPath, overwrite: true);
+        }
     }
 
     private static string FormatBytes(long bytes)

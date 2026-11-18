@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FirebirdStudio.Infrastructu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FirebirdStudio.Desktop", "src\FirebirdStudio.Desktop\FirebirdStudio.Desktop.csproj", "{A0A2C6C1-11D1-4F8D-A3C0-000000000004}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FirebirdStudio.Updater", "src\FirebirdStudio.Updater\FirebirdStudio.Updater.csproj", "{A0A2C6C1-11D1-4F8D-A3C0-000000000006}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FirebirdStudio.Tests", "tests\FirebirdStudio.Tests\FirebirdStudio.Tests.csproj", "{A0A2C6C1-11D1-4F8D-A3C0-000000000005}"
 EndProject
 Global
@@ -34,6 +36,10 @@ Global
         {A0A2C6C1-11D1-4F8D-A3C0-000000000004}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {A0A2C6C1-11D1-4F8D-A3C0-000000000004}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {A0A2C6C1-11D1-4F8D-A3C0-000000000004}.Release|Any CPU.Build.0 = Release|Any CPU
+        {A0A2C6C1-11D1-4F8D-A3C0-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {A0A2C6C1-11D1-4F8D-A3C0-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {A0A2C6C1-11D1-4F8D-A3C0-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {A0A2C6C1-11D1-4F8D-A3C0-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
         {A0A2C6C1-11D1-4F8D-A3C0-000000000005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {A0A2C6C1-11D1-4F8D-A3C0-000000000005}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {A0A2C6C1-11D1-4F8D-A3C0-000000000005}.Release|Any CPU.ActiveCfg = Release|Any CPU

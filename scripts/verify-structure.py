@@ -333,26 +333,26 @@ if "command.Parameters.AddWithValue(parameterName" not in provider_source:
 print("Connection-time metadata paging, in-place append, SQL source formatting, and named parameter binding source checks passed.")
 
 
-# External Windows updater packaging and safety checks
-updater_script = (root / "scripts/updater/Apply-Update.ps1").read_text(encoding="utf-8")
+# Cross-platform external .NET updater packaging and safety checks
+updater_project_source = (root / "src/FirebirdStudio.Updater/FirebirdStudio.Updater.csproj").read_text(encoding="utf-8")
+updater_source = (root / "src/FirebirdStudio.Updater/MainWindow.cs").read_text(encoding="utf-8")
+desktop_project_source = (root / "src/FirebirdStudio.Desktop/FirebirdStudio.Desktop.csproj").read_text(encoding="utf-8")
+for token in ["Avalonia", "TargetFramework>net10.0"]:
+    if token not in updater_project_source:
+        print(f"Separate .NET updater project is missing: {token}")
+        sys.exit(1)
 for token in [
-    "ExpectedSizeBytes", "ExpectedSha256", "Get-SafeArchivePath",
-    "The update archive contains a symbolic link", "The update archive expands beyond the updater safety limits",
-    "protectedExtensions", "::Replace(", "Attempting rollback",
-    "Rollback completed", "Rollback backups retained", "Start-Process -FilePath $executablePath",
-    "The update target is a reparse point", "$restartFailed = $true",
+    "WaitForParentExitAsync", "VerifyPackageAsync", "ExtractSafelyAsync",
+    "RollbackFilesAsync", "MaxExpandedBytes", "File.Move(temporary, destination, overwrite: true)",
 ]:
-    if token not in updater_script:
+    if token not in updater_source:
         print(f"External updater safety behavior is missing: {token}")
         sys.exit(1)
-
-desktop_project_source = (root / "src/FirebirdStudio.Desktop/FirebirdStudio.Desktop.csproj").read_text(encoding="utf-8")
-for token in ['Link="Updater\\Apply-Update.ps1"', 'CopyToPublishDirectory="PreserveNewest"']:
-    if token not in desktop_project_source:
-        print(f"Published desktop package is missing updater content configuration: {token}")
-        sys.exit(1)
-if 'CopyToOutputDirectory="PreserveNewest"' in desktop_project_source:
-    print("The external updater should be shipped in publish output, not ordinary development builds.")
+if "PublishExternalUpdater" not in desktop_project_source:
+    print("The desktop project is missing the updater publish target.")
+    sys.exit(1)
+if "Apply-Update.ps1" in desktop_project_source or "powershell.exe" in main_window_source:
+    print("The updater must not depend on PowerShell.")
     sys.exit(1)
 
 downloader_source = (root / "src/FirebirdStudio.Desktop/Services/GitHubUpdateDownloader.cs").read_text(encoding="utf-8")
@@ -361,10 +361,10 @@ if "long SizeBytes, string Sha256" not in downloader_source:
     sys.exit(1)
 for token in [
     "Install and restart", "StartExternalUpdater(downloadedUpdate)",
-    "PrepareForUpdateShutdownAsync", "-ExpectedSizeBytes", "-ExpectedSha256",
+    "PrepareForUpdateShutdownAsync", "--expected-size", "--expected-sha256",
     "Closing database sessions before update", "_isPreparedForUpdateShutdown",
 ]:
     if token not in main_window_source:
         print(f"Desktop external updater handoff is missing: {token}")
         sys.exit(1)
-print("External Windows updater packaging, archive validation, rollback, and process handoff source checks passed.")
+print("Cross-platform external .NET updater packaging, archive validation, rollback, and process handoff source checks passed.")
