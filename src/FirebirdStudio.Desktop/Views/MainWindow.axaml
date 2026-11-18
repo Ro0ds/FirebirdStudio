@@ -226,7 +226,14 @@
                 </TabControl>
               </Grid>
             </TabItem>
-            <TabItem Header="Query History" x:Name="QueryHistoryTab" IsVisible="False">
+            <TabItem IsVisible="False" x:Name="QueryHistoryTab">
+              <TabItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <TextBlock Text="Query History" VerticalAlignment="Center" />
+                  <Button x:Name="ClearHistoryTabButton" Content="Clear" Padding="5,2" FontSize="10"
+                          ToolTip.Tip="Clear query history and current results" />
+                </StackPanel>
+              </TabItem.Header>
               <ListBox x:Name="QueryHistoryTabList" SelectionMode="Single">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="services:QueryHistoryEntry">
@@ -246,7 +253,14 @@
             <TabItem Header="Results" x:Name="ResultsTab">
               <TableView x:CompileBindings="False" x:Name="QueryResultsGrid" FontSize="11" CanUserResizeColumns="True" />
             </TabItem>
-            <TabItem Header="Messages" x:Name="MessagesTab">
+            <TabItem x:Name="MessagesTab">
+              <TabItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <TextBlock Text="Messages" VerticalAlignment="Center" />
+                  <Button x:Name="ClearMessagesButton" Content="Clear" Padding="5,2" FontSize="10"
+                          ToolTip.Tip="Clear the message log" />
+                </StackPanel>
+              </TabItem.Header>
               <ScrollViewer x:Name="MessagesScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="9" Spacing="8">
                   <TextBlock x:Name="StatusText" Text="Loading saved connection profiles..."
@@ -279,8 +293,13 @@
         <Border Grid.Column="2" x:Name="QueryHistoryPanel" Padding="8" MinWidth="220"
                 BorderThickness="1,0,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
           <Grid RowDefinitions="Auto,*">
-            <TextBlock Grid.Row="0" Text="QUERY HISTORY" FontSize="11" FontWeight="Bold"
-                       Margin="2,2,2,8" />
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,2,2,8">
+              <TextBlock Grid.Column="0" Text="QUERY HISTORY" FontSize="11" FontWeight="Bold"
+                         VerticalAlignment="Center" />
+              <Button Grid.Column="1" x:Name="ClearHistoryDockButton" Content="Clear"
+                      Padding="5,2" FontSize="10"
+                      ToolTip.Tip="Clear query history and current results" />
+            </Grid>
             <ListBox Grid.Row="1" x:Name="QueryHistoryList" SelectionMode="Single">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="services:QueryHistoryEntry">
