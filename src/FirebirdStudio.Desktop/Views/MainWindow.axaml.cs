@@ -212,6 +212,9 @@ public sealed partial class MainWindow : Window
         _resultsMessagesTabs = this.FindControl<TabControl>("ResultsMessagesTabs")!;
         _resultsTab = this.FindControl<TabItem>("ResultsTab")!;
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
+        this.FindControl<Button>("ClearMessagesButton")!.Click += (_, _) => ClearMessages();
+        this.FindControl<Button>("ClearHistoryDockButton")!.Click += async (_, _) => await ClearQueryHistoryAndResultsAsync();
+        this.FindControl<Button>("ClearHistoryTabButton")!.Click += async (_, _) => await ClearQueryHistoryAndResultsAsync();
         _footerNotificationText = this.FindControl<TextBlock>("FooterNotificationText")!;
         _connectionStateText = this.FindControl<TextBlock>("ConnectionStateText")!;
         _currentVersionText = this.FindControl<TextBlock>("CurrentVersionText")!;
@@ -1625,6 +1628,38 @@ public sealed partial class MainWindow : Window
             MetadataCategoryOrder = _metadataObjects.Select(item => item.Name).ToArray()
         };
         await SavePreferencesAsync("Metadata category order saved.");
+    }
+
+    private void ClearMessages()
+    {
+        _messages.Clear();
+        _statusText.Text = "Message log cleared.";
+        _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
+    }
+
+    private async Task ClearQueryHistoryAndResultsAsync()
+    {
+        if (_isQueryExecuting)
+        {
+            ShowFooterNotification("Wait for the running query to finish before clearing history and results.", "#9A7100");
+            return;
+        }
+
+        try
+        {
+            await _queryHistoryStore.SaveAsync(Array.Empty<QueryHistoryEntry>());
+        }
+        catch (Exception exception)
+        {
+            ReportError("Clearing query history", exception);
+            return;
+        }
+
+        _queryHistory.Clear();
+        _queryResultsGrid.ItemsSource = null;
+        _queryResultsGrid.Columns.Clear();
+        _statusText.Text = "Query history and results cleared.";
+        ShowFooterNotification("Query history and results cleared", "#397B45");
     }
 
     private async void OnExecuteClick(object? sender, RoutedEventArgs e) => await ExecuteSelectedSqlAsync();
