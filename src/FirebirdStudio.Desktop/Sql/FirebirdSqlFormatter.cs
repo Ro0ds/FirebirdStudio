@@ -32,6 +32,7 @@ internal static class FirebirdSqlFormatter
         var lineHasContent = false;
         var previous = string.Empty;
         var whereClause = false;
+        var selectClause = false;
         var setClause = false;
         var updateStatement = false;
         var joinContinuation = false;
@@ -145,15 +146,18 @@ internal static class FirebirdSqlFormatter
                     if (upper is "WHERE" or "HAVING")
                     {
                         whereClause = true;
+                        selectClause = false;
                         setClause = false;
                     }
                     else if (upper == "SET")
                     {
                         setClause = true;
+                        selectClause = false;
                         whereClause = false;
                     }
                     else if (upper is "SELECT" or "FROM" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
                     {
+                        selectClause = upper == "SELECT";
                         whereClause = false;
                         setClause = false;
                     }
@@ -238,7 +242,7 @@ internal static class FirebirdSqlFormatter
                 case ",":
                     TrimEndSpaces();
                     output.Append(',');
-                    if (tableDefinitionDepth == depth || depth == 0 && setClause)
+                    if (tableDefinitionDepth == depth || depth == 0 && (setClause || selectClause))
                         NewLine();
                     else
                         output.Append(' ');
@@ -261,6 +265,7 @@ internal static class FirebirdSqlFormatter
                         NewLine();
                         indent = blockDepth;
                         whereClause = false;
+                        selectClause = false;
                         setClause = false;
                         updateStatement = false;
                         ddlHeader = false;
