@@ -18,8 +18,8 @@ public sealed class FirebirdSqlFormatterTests
     }
 
     [Theory]
-    [InlineData("select e.* from empresa e", "SELECT e.*\\nFROM empresa e")]
-    [InlineData("select e.name from empresa e", "SELECT e.name\\nFROM empresa e")]
+    [InlineData("select e.* from empresa e", "SELECT e.*\nFROM empresa e")]
+    [InlineData("select e.name from empresa e", "SELECT e.name\nFROM empresa e")]
     public void KeepsQualifiedColumnsAndWildcardsTogether(string sql, string expected)
     {
         var formatted = FirebirdSqlFormatter.Format(sql);
@@ -35,7 +35,7 @@ public sealed class FirebirdSqlFormatterTests
         const string sql = "create table customer(id integer not null,name varchar(100),created_at timestamp,constraint pk_customer primary key(id));";
         var formatted = FirebirdSqlFormatter.Format(sql);
 
-        Assert.Contains("CREATE TABLE customer (\\n    id INTEGER NOT NULL,\\n    name VARCHAR(100),\\n    created_at TIMESTAMP,\\n    CONSTRAINT pk_customer PRIMARY KEY (id)\\n);", formatted);
+        Assert.Contains("CREATE TABLE customer (\n    id INTEGER NOT NULL,\n    name VARCHAR(100),\n    created_at TIMESTAMP,\n    CONSTRAINT pk_customer PRIMARY KEY (id)\n);", formatted);
     }
 
     [Fact]
