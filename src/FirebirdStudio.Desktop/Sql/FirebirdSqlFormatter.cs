@@ -114,7 +114,7 @@ internal static class FirebirdSqlFormatter
                 var ddlClause = depth == 0 && (
                     ddlObject == "VIEW" && upper == "AS" ||
                     ddlObject == "INDEX" && upper == "ON" ||
-                    ddlObject == "DOMAIN" && upper is "DEFAULT" or "CHECK" or "COLLATE" or "TYPE" or "ADD" or "DROP" ||
+                    ddlObject == "DOMAIN" && (upper is "DEFAULT" or "CHECK" or "COLLATE" or "TYPE" or "ADD" or "DROP" || upper == "SET" && next == "DEFAULT") ||
                     (ddlObject is "PROCEDURE" or "FUNCTION") && upper is "RETURNS" or "AS" or "DECLARE" ||
                     ddlObject == "TRIGGER" && upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE" ||
                     ddlVerb == "ALTER" && ddlObject == "TABLE" && upper is "ADD" or "DROP" or "ALTER" or "RENAME");
