@@ -43,6 +43,7 @@ public sealed partial class MainWindow : Window
     private readonly ObservableCollection<ConnectionProfile> _profiles = [];
     private readonly BatchObservableCollection<DatabaseMetadataObject> _metadataObjects = [];
     private CancellationTokenSource? _metadataLoadingCancellation;
+    private readonly Dictionary<string, CancellationTokenSource> _metadataPageCancellations = new(StringComparer.OrdinalIgnoreCase);
     private int _metadataLoadGeneration;
     private readonly ObservableCollection<QueryHistoryEntry> _queryHistory = [];
     private CancellationTokenSource? _queryExecutionCancellation;
@@ -1010,6 +1011,13 @@ public sealed partial class MainWindow : Window
             cancellation.Dispose();
         }
 
+        foreach (var pageCancellation in _metadataPageCancellations.Values)
+        {
+            pageCancellation.Cancel();
+            pageCancellation.Dispose();
+        }
+        _metadataPageCancellations.Clear();
+
         _loadingMetadataCategories.Clear();
         _metadataCategoriesWithMore.Clear();
         _isMetadataRefreshRunning = false;
@@ -1278,12 +1286,13 @@ public sealed partial class MainWindow : Window
         if (!cancellationToken.CanBeCanceled && _metadataLoadingCancellation is not null)
             cancellationToken = _metadataLoadingCancellation.Token;
         var generation = loadGeneration ?? _metadataLoadGeneration;
-        using var pageCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var pageToken = pageCancellation.Token;
-
         if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
             string.IsNullOrWhiteSpace(categoryName) || !_loadingMetadataCategories.Add(categoryName))
             return;
+
+        var pageCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _metadataPageCancellations[categoryName] = pageCancellation;
+        var pageToken = pageCancellation.Token;
 
         var categoryIndex = _metadataObjects.ToList().FindIndex(item =>
             item.Kind == "Category" && string.Equals(item.Name, categoryName, StringComparison.OrdinalIgnoreCase));
@@ -1379,6 +1388,9 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
+            if (ReferenceEquals(_metadataPageCancellations.GetValueOrDefault(categoryName), pageCancellation))
+                _metadataPageCancellations.Remove(categoryName);
+            pageCancellation.Dispose();
             if (generation == _metadataLoadGeneration)
             {
                 _loadingMetadataCategories.Remove(categoryName);
