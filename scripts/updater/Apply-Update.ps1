@@ -64,6 +64,7 @@ $newFiles = [Collections.Generic.List[string]]::new()
 $completed = $false
 $rollbackFailed = $false
 $parentExited = $false
+$restartFailed = $false
 
 try {
     Write-UpdateLog 'Updater started.'
@@ -149,6 +150,10 @@ try {
         if (Test-Path -LiteralPath $targetPath -PathType Container) {
             throw "A directory already exists where the update expects a file: '$targetPath'."
         }
+        if ((Test-Path -LiteralPath $targetPath -PathType Leaf) -and
+            ((Get-Item -LiteralPath $targetPath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw "The update target is a reparse point: '$targetPath'."
+        }
 
         if (Test-Path -LiteralPath $targetPath -PathType Leaf) {
             $backupPath = Join-Path $backupRoot $relativePath
@@ -223,6 +228,7 @@ if ($parentExited -and ($completed -or -not $rollbackFailed)) {
         Start-Process -FilePath $executablePath -WorkingDirectory $installDirectory
         Write-UpdateLog 'Firebird Studio restart requested.'
     } catch {
+        $restartFailed = $true
         Write-UpdateLog ("Could not restart Firebird Studio: " + $_.Exception.Message)
     }
 }
@@ -240,7 +246,13 @@ if (-not $completed) {
     exit 1
 }
 
-[void][System.Windows.Forms.MessageBox]::Show(
-    'Firebird Studio was updated successfully and is restarting.',
-    'Firebird Studio updated', 'OK', 'Information')
+if ($restartFailed) {
+    [void][System.Windows.Forms.MessageBox]::Show(
+        "The update was installed successfully, but Firebird Studio could not be restarted automatically." + [Environment]::NewLine + [Environment]::NewLine + "Launch it manually from: $executablePath" + [Environment]::NewLine + [Environment]::NewLine + "Log: $script:LogPath",
+        'Firebird Studio updated', 'OK', 'Warning')
+} else {
+    [void][System.Windows.Forms.MessageBox]::Show(
+        'Firebird Studio was updated successfully and is restarting.',
+        'Firebird Studio updated', 'OK', 'Information')
+}
 exit 0
