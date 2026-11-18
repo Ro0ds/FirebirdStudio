@@ -37,6 +37,7 @@ public sealed partial class MainWindow : Window
     private readonly CancellationTokenSource _updateCheckLifetime = new();
     private Task _updateCheckTask = Task.CompletedTask;
     private string? _lastNotifiedReleaseTag;
+    private bool _isPreparedForUpdateShutdown;
     private readonly QueryHistoryStore _queryHistoryStore = new();
     private readonly SqlEditorRecoveryStore _sqlEditorRecoveryStore = new();
     private StudioPreferences _preferences = StudioPreferences.Default;
@@ -609,6 +610,7 @@ public sealed partial class MainWindow : Window
             try
             {
                 StartExternalUpdater(downloadedUpdate);
+                await PrepareForUpdateShutdownAsync();
                 Close();
             }
             catch (Exception exception)
@@ -2994,8 +2996,41 @@ public sealed partial class MainWindow : Window
         UpdateActionAvailability();
     }
 
+    private async Task PrepareForUpdateShutdownAsync()
+    {
+        _updateCheckLifetime.Cancel();
+        _queryExecutionCancellation?.Cancel();
+        _metadataSearchCancellation?.Cancel();
+        _footerNotificationCancellation?.Cancel();
+
+        try
+        {
+            await SaveSqlEditorRecoveryNowAsync(confirmation: null);
+        }
+        catch (Exception exception)
+        {
+            ReportError("Saving SQL editor workspace before update", exception);
+        }
+
+        _recoverySaveCancellation?.Cancel();
+
+        try
+        {
+            await ((IAsyncDisposable)_sessionManager).DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            ReportError("Closing database sessions before update", exception);
+        }
+
+        _isPreparedForUpdateShutdown = true;
+    }
+
     private async void OnWindowClosed(object? sender, EventArgs e)
     {
+        if (_isPreparedForUpdateShutdown)
+            return;
+
         _updateCheckLifetime.Cancel();
         _queryExecutionCancellation?.Cancel();
         _metadataSearchCancellation?.Cancel();
