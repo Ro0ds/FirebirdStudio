@@ -338,7 +338,7 @@ updater_script = (root / "scripts/updater/Apply-Update.ps1").read_text(encoding=
 for token in [
     "ExpectedSizeBytes", "ExpectedSha256", "Get-SafeArchivePath",
     "The update archive contains a symbolic link", "The update archive expands beyond the updater safety limits",
-    "protectedExtensions", "File.Replace(", "Attempting rollback",
+    "protectedExtensions", "::Replace(", "Attempting rollback",
     "Rollback completed", "Rollback backups retained", "Start-Process -FilePath $executablePath",
 ]:
     if token not in updater_script:
