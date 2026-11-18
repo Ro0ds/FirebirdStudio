@@ -37,6 +37,7 @@ public sealed partial class MainWindow : Window
     private readonly CancellationTokenSource _updateCheckLifetime = new();
     private Task _updateCheckTask = Task.CompletedTask;
     private string? _lastNotifiedReleaseTag;
+    private bool _isPreparedForUpdateShutdown;
     private readonly QueryHistoryStore _queryHistoryStore = new();
     private readonly SqlEditorRecoveryStore _sqlEditorRecoveryStore = new();
     private StudioPreferences _preferences = StudioPreferences.Default;
@@ -469,7 +470,9 @@ public sealed partial class MainWindow : Window
 
     private async Task DownloadUpdateAsync(AvailableRelease release)
     {
-        var cancellation = new CancellationTokenSource();
+        using var cancellation = new CancellationTokenSource();
+        DownloadedUpdate? downloadedUpdate = null;
+        var installRequested = false;
         var progressBar = new ProgressBar
         {
             Minimum = 0,
@@ -508,6 +511,13 @@ public sealed partial class MainWindow : Window
             CanResize = false
         };
 
+        var installButton = CreateDialogButton("Install and restart", () =>
+        {
+            installRequested = true;
+            dialog.Close();
+        });
+        installButton.IsVisible = false;
+
         var cancelButton = new Button { Content = "Cancel download" };
         cancelButton.Click += (_, _) =>
         {
@@ -536,7 +546,7 @@ public sealed partial class MainWindow : Window
                     Orientation = Avalonia.Layout.Orientation.Horizontal,
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
                     Spacing = 8,
-                    Children = { openFolderButton, cancelButton }
+                    Children = { installButton, openFolderButton, cancelButton }
                 }
             }
         };
@@ -557,15 +567,27 @@ public sealed partial class MainWindow : Window
                             : $"Downloading… {FormatBytes(value.BytesReceived)}";
                     }));
 
-                var downloaded = await _updateDownloader.DownloadAsync(
+                downloadedUpdate = await _updateDownloader.DownloadAsync(
                     release, progress, cancellation.Token);
 
-                statusText.Text =
-                    $"Download complete. SHA-256 verified. The ZIP package is ready; no files have been installed or changed.\n\n{downloaded.FileName}";
                 progressBar.Value = 100;
-                downloadDirectory = downloaded.DirectoryPath;
+                downloadDirectory = downloadedUpdate.DirectoryPath;
                 openFolderButton.IsVisible = true;
                 cancelButton.Content = "Close";
+
+                var updaterExecutable = GetUpdaterExecutablePath();
+                if (File.Exists(updaterExecutable))
+                {
+                    statusText.Text =
+                        $"Download complete and SHA-256 verified.\n\n{downloadedUpdate.FileName}\n\nInstall and restart Firebird Studio to apply this update.";
+                    installButton.IsVisible = true;
+                }
+                else
+                {
+                    var reason = "Automatic installation is available in published packages. Development builds can still use manual extraction.";
+                    statusText.Text =
+                        $"Download complete. SHA-256 verified. The ZIP package is ready for manual extraction. {reason}\n\n{downloadedUpdate.FileName}";
+                }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
@@ -587,6 +609,107 @@ public sealed partial class MainWindow : Window
         };
 
         await dialog.ShowDialog(this);
+
+        if (installRequested && downloadedUpdate is not null)
+        {
+            try
+            {
+                StartExternalUpdater(downloadedUpdate);
+                await PrepareForUpdateShutdownAsync();
+                Close();
+            }
+            catch (Exception exception)
+            {
+                ReportError("Starting the external update installer", exception);
+            }
+        }
+    }
+
+    private static string GetUpdaterExecutablePath() =>
+        Path.Combine(
+            AppContext.BaseDirectory,
+            "Updater",
+            OperatingSystem.IsWindows() ? "FirebirdStudio.Updater.exe" : "FirebirdStudio.Updater");
+
+    private void StartExternalUpdater(DownloadedUpdate update)
+    {
+        if (_isQueryExecuting)
+            throw new InvalidOperationException("Wait for the running SQL query to finish before installing an update.");
+
+        var installDirectory = Path.GetFullPath(AppContext.BaseDirectory);
+        var executablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executablePath))
+            throw new InvalidOperationException("The current application executable path could not be determined.");
+
+        executablePath = Path.GetFullPath(executablePath);
+        var relativeExecutablePath = Path.GetRelativePath(installDirectory, executablePath);
+        if (Path.IsPathRooted(relativeExecutablePath) ||
+            relativeExecutablePath.Equals("..", StringComparison.Ordinal) ||
+            relativeExecutablePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Automatic installation is available for packaged installations, not for applications started through the .NET development host.");
+
+        var bundledUpdaterDirectory = Path.Combine(installDirectory, "Updater");
+        var bundledUpdaterExecutable = GetUpdaterExecutablePath();
+        if (!File.Exists(bundledUpdaterExecutable))
+            throw new FileNotFoundException(
+                "The external updater application is missing from this installation.",
+                bundledUpdaterExecutable);
+
+        // Run from the writable cache, not from the directory that the updater must replace.
+        var updaterRuntimeDirectory = Path.Combine(update.DirectoryPath, "UpdaterRuntime");
+        if (Directory.Exists(updaterRuntimeDirectory))
+            Directory.Delete(updaterRuntimeDirectory, recursive: true);
+        CopyDirectory(bundledUpdaterDirectory, updaterRuntimeDirectory);
+
+        var updaterExecutable = Path.Combine(
+            updaterRuntimeDirectory,
+            OperatingSystem.IsWindows() ? "FirebirdStudio.Updater.exe" : "FirebirdStudio.Updater");
+        if (!File.Exists(updaterExecutable))
+            throw new FileNotFoundException("The copied updater executable is missing.", updaterExecutable);
+
+        var startInfo = new ProcessStartInfo(updaterExecutable)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = false,
+            WorkingDirectory = installDirectory
+        };
+        AddArgument(startInfo, "--parent-pid", Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+        AddArgument(startInfo, "--archive", update.FilePath);
+        AddArgument(startInfo, "--expected-size", update.SizeBytes.ToString(CultureInfo.InvariantCulture));
+        AddArgument(startInfo, "--expected-sha256", update.Sha256);
+        AddArgument(startInfo, "--install-dir", installDirectory);
+        AddArgument(startInfo, "--app-path", executablePath);
+        AddArgument(startInfo, "--log-path", Path.Combine(update.DirectoryPath, "updater.log"));
+
+        _ = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("The operating system did not start the external updater.");
+    }
+
+    private static void AddArgument(ProcessStartInfo startInfo, string name, string value)
+    {
+        startInfo.ArgumentList.Add(name);
+        startInfo.ArgumentList.Add(value);
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+        foreach (var directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, directory);
+            Directory.CreateDirectory(Path.Combine(destinationDirectory, relativePath));
+        }
+
+        foreach (var file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, file);
+            var destinationPath = Path.Combine(destinationDirectory, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+            File.Copy(file, destinationPath, overwrite: true);
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                File.SetUnixFileMode(destinationPath, File.GetUnixFileMode(file));
+        }
     }
 
     private static string FormatBytes(long bytes)
@@ -3013,8 +3136,41 @@ public sealed partial class MainWindow : Window
         UpdateActionAvailability();
     }
 
+    private async Task PrepareForUpdateShutdownAsync()
+    {
+        _updateCheckLifetime.Cancel();
+        _queryExecutionCancellation?.Cancel();
+        _metadataSearchCancellation?.Cancel();
+        _footerNotificationCancellation?.Cancel();
+
+        try
+        {
+            await SaveSqlEditorRecoveryNowAsync(confirmation: null);
+        }
+        catch (Exception exception)
+        {
+            ReportError("Saving SQL editor workspace before update", exception);
+        }
+
+        _recoverySaveCancellation?.Cancel();
+
+        try
+        {
+            await ((IAsyncDisposable)_sessionManager).DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            ReportError("Closing database sessions before update", exception);
+        }
+
+        _isPreparedForUpdateShutdown = true;
+    }
+
     private async void OnWindowClosed(object? sender, EventArgs e)
     {
+        if (_isPreparedForUpdateShutdown)
+            return;
+
         _updateCheckLifetime.Cancel();
         _queryExecutionCancellation?.Cancel();
         _metadataSearchCancellation?.Cancel();

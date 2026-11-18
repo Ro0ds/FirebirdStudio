@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -11,16 +12,28 @@ internal sealed record UpdateDownloadProgress(long BytesReceived, long TotalByte
         : Math.Clamp(BytesReceived * 100d / TotalBytes, 0, 100);
 }
 
-internal sealed record DownloadedUpdate(string FilePath, string DirectoryPath, string FileName);
+internal sealed record DownloadedUpdate(string FilePath, string DirectoryPath, string FileName, long SizeBytes, string Sha256);
 
 internal sealed class GitHubUpdateDownloader
 {
     private const string ManifestFileName = "release-manifest.json";
     private const long MaximumManifestSize = 1_048_576;
-    private static readonly HttpClient HttpClient = new()
+    private static readonly HttpClient HttpClient = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
     {
-        Timeout = TimeSpan.FromMinutes(10)
-    };
+        var handler = new HttpClientHandler
+        {
+            SslProtocols = OperatingSystem.IsWindows()
+                ? SslProtocols.Tls12
+                : SslProtocols.None
+        };
+
+        return new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromMinutes(10)
+        };
+    }
 
     public async Task<DownloadedUpdate> DownloadAsync(
         AvailableRelease release,
@@ -67,7 +80,7 @@ internal sealed class GitHubUpdateDownloader
                 await ComputeSha256Async(destinationPath, cancellationToken) == artifact.Sha256)
             {
                 progress?.Report(new UpdateDownloadProgress(artifact.SizeBytes, artifact.SizeBytes));
-                return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName);
+                return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName, artifact.SizeBytes, artifact.Sha256);
             }
 
             File.Delete(destinationPath);
@@ -95,7 +108,7 @@ internal sealed class GitHubUpdateDownloader
 
             File.Move(partialPath, destinationPath, overwrite: true);
             progress?.Report(new UpdateDownloadProgress(artifact.SizeBytes, artifact.SizeBytes));
-            return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName);
+            return new DownloadedUpdate(destinationPath, updateDirectory, artifact.FileName, artifact.SizeBytes, artifact.Sha256);
         }
         catch
         {

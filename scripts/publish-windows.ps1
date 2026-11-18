@@ -59,6 +59,10 @@ foreach ($path in @($frameworkPublish, $selfContainedPublish)) {
     if (-not (Test-Path (Join-Path $path "FirebirdStudio.Desktop.exe"))) {
         throw "Expected application executable was not produced in: $path"
     }
+    $updaterPath = Join-Path $path "Updater/FirebirdStudio.Updater.exe"
+    if (-not (Test-Path $updaterPath)) {
+        throw "The separate .NET updater was not published in: $updaterPath"
+    }
 }
 
 Write-Host "Creating portable ZIP archives..."

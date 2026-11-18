@@ -331,3 +331,40 @@ if "command.Parameters.AddWithValue(parameterName" not in provider_source:
     print("SQL execution does not bind supplied parameter values through the Firebird provider.")
     sys.exit(1)
 print("Connection-time metadata paging, in-place append, SQL source formatting, and named parameter binding source checks passed.")
+
+
+# Cross-platform external .NET updater packaging and safety checks
+updater_project_source = (root / "src/FirebirdStudio.Updater/FirebirdStudio.Updater.csproj").read_text(encoding="utf-8")
+updater_source = (root / "src/FirebirdStudio.Updater/MainWindow.cs").read_text(encoding="utf-8")
+desktop_project_source = (root / "src/FirebirdStudio.Desktop/FirebirdStudio.Desktop.csproj").read_text(encoding="utf-8")
+for token in ["Avalonia", "TargetFramework>net10.0"]:
+    if token not in updater_project_source:
+        print(f"Separate .NET updater project is missing: {token}")
+        sys.exit(1)
+for token in [
+    "WaitForParentExitAsync", "VerifyPackageAsync", "ExtractSafelyAsync",
+    "RollbackAsync", "EnsureNoReparsePoints", "MaxExpandedBytes", "File.Move(temporary, destination, overwrite: true)",
+]:
+    if token not in updater_source:
+        print(f"External updater safety behavior is missing: {token}")
+        sys.exit(1)
+if "PublishExternalUpdater" not in desktop_project_source:
+    print("The desktop project is missing the updater publish target.")
+    sys.exit(1)
+if "Apply-Update.ps1" in desktop_project_source or "powershell.exe" in main_window_source:
+    print("The updater must not depend on PowerShell.")
+    sys.exit(1)
+
+downloader_source = (root / "src/FirebirdStudio.Desktop/Services/GitHubUpdateDownloader.cs").read_text(encoding="utf-8")
+if "long SizeBytes, string Sha256" not in downloader_source:
+    print("The verified update artifact metadata is not passed to the installer.")
+    sys.exit(1)
+for token in [
+    "Install and restart", "StartExternalUpdater(downloadedUpdate)",
+    "PrepareForUpdateShutdownAsync", "--expected-size", "--expected-sha256",
+    "Closing database sessions before update", "_isPreparedForUpdateShutdown",
+]:
+    if token not in main_window_source:
+        print(f"Desktop external updater handoff is missing: {token}")
+        sys.exit(1)
+print("Cross-platform external .NET updater packaging, archive validation, rollback, and process handoff source checks passed.")

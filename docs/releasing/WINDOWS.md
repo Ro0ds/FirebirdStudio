@@ -6,7 +6,7 @@ This repository uses the root **VERSION** file as the single release-version sou
 
 - Windows x64
 - .NET 10 SDK (the repository's global.json selects the 10.0.100 feature band)
-- PowerShell 7 or Windows PowerShell 5.1
+- PowerShell 7 or Windows PowerShell 5.1 (for the packaging script only)
 
 ## Build release packages
 
@@ -29,21 +29,23 @@ Two portable ZIP packages are produced:
 | FirebirdStudio-<version>-win-x64-framework-dependent.zip | Single-file executable | Requires the .NET 10 Desktop Runtime |
 | FirebirdStudio-<version>-win-x64-self-contained.zip | Folder deployment | Includes the .NET runtime |
 
-The self-contained package is deliberately published as a folder and then zipped. It is not bundled into a self-extracting single executable, avoiding the size and extraction behavior of that deployment mode.
+The self-contained package is deliberately published as a folder and then zipped. It is not bundled into a self-extracting single executable.
+
+Both packages include the separate .NET updater application under `Updater/`. The desktop publish target builds and publishes the updater for the same runtime identifier and deployment mode as Firebird Studio. The updater is copied to the writable update cache before launch so it can safely replace its installed copy.
 
 ## Generated files
 
-The script writes its generated outputs under releases/:
+The script writes its generated outputs under `releases/`:
 
 - The two versioned ZIP packages.
-- checksums.txt, containing SHA-256 hashes for both ZIP files.
-- release-manifest.json, describing the version, stable channel, target OS/architecture, deployment mode, runtime requirement, file size, and SHA-256 for each package.
-- Temporary publish directories under releases/.staging/.
+- `checksums.txt`, containing SHA-256 hashes for both ZIP files.
+- `release-manifest.json`, describing the version, stable channel, target OS/architecture, deployment mode, runtime requirement, file size, and SHA-256 for each package.
+- Temporary publish directories under `releases/.staging/`.
 
-Existing files elsewhere under releases/ are preserved. The two ZIP files for the current version and the staging directories owned by this script are replaced on each run.
+Existing files elsewhere under `releases/` are preserved. The two ZIP files for the current version and the staging directories owned by this script are replaced on each run.
 
 The manifest does not include its own checksum because that would be self-referential.
 
-When creating a GitHub Release, attach both ZIP packages, `release-manifest.json`, and `checksums.txt` from this directory. The in-app downloader requires the manifest and matching ZIP package to be release assets; the checksum text file is provided for manual verification. The checksum file covers the distributable ZIP packages only. A checksum downloaded from the same release location detects accidental corruption but does not independently authenticate the publisher; release signing is a separate future task.
+When creating a GitHub Release, attach both ZIP packages, `release-manifest.json`, and `checksums.txt` from this directory. The in-app downloader requires the manifest and matching ZIP package to be release assets; the checksum text file is provided for manual verification. A checksum downloaded from the same release location detects accidental corruption but does not independently authenticate the publisher; release signing is a separate future task.
 
-This script creates local artifacts only. It does not create a GitHub Release, upload files, configure GitHub Actions, or implement the in-app updater.
+This script creates local artifacts only. It does not create a GitHub Release, upload files, or configure GitHub Actions.

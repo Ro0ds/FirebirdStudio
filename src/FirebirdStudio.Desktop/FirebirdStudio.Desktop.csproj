@@ -14,6 +14,9 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
   </ItemGroup>
+  <Target Name="PublishExternalUpdater" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' != ''">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../FirebirdStudio.Updater/FirebirdStudio.Updater.csproj&quot; -c $(Configuration) -f net10.0 -r $(RuntimeIdentifier) --self-contained $(SelfContained) -p:Version=$(Version) -o &quot;$(PublishDir)Updater&quot;" />
+  </Target>
   <ItemGroup>
     <ProjectReference Include="..\FirebirdStudio.Core\FirebirdStudio.Core.csproj" />
     <ProjectReference Include="..\FirebirdStudio.Application\FirebirdStudio.Application.csproj" />
