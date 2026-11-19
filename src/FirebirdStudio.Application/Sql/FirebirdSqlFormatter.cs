@@ -1,15 +1,15 @@
 using System.Text;
 
-namespace FirebirdStudio.Desktop.Sql;
+namespace FirebirdStudio.Application.Sql;
 
-internal static class FirebirdSqlFormatter
+public static class FirebirdSqlFormatter
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
         "ALL", "ALTER", "AND", "AS", "ASC", "BEGIN", "BETWEEN", "BY", "CASE", "CAST", "COMMIT",
         "CONSTRAINT", "CREATE", "CROSS", "DELETE", "DESC", "DISTINCT", "DO", "DROP", "ELSE",
         "END", "EXCEPTION", "EXECUTE", "EXISTS", "FETCH", "FOR", "FOREIGN", "FROM", "FULL",
-        "FUNCTION", "GROUP", "HAVING", "IF", "IN", "INNER", "INSERT", "INTO", "IS", "JOIN",
+        "FUNCTION", "GROUP", "HAVING", "IF", "IN", "INDEX", "INNER", "INSERT", "INTO", "IS", "JOIN",
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES", "BEFORE", "AFTER", "POSITION", "DECLARE",
@@ -20,10 +20,14 @@ internal static class FirebirdSqlFormatter
 
     private readonly record struct Token(string Text, bool IsWord, bool IsComment = false);
 
-    public static string Format(string? source)
+    public static string Format(string? source) => Format(source, proceduralSource: false);
+
+    public static string FormatProceduralSource(string? source) => Format(source, proceduralSource: true);
+
+    private static string Format(string? source, bool proceduralSource)
     {
         if (string.IsNullOrWhiteSpace(source))
-            return source ?? string.Empty;
+            return string.Empty;
 
         var tokens = Tokenize(source);
         var output = new StringBuilder(source.Length + 64);
@@ -43,6 +47,9 @@ internal static class FirebirdSqlFormatter
         var tableDefinitionDepth = 0;
         var ddlVerb = string.Empty;
         var ddlObject = string.Empty;
+        var sourcePreamble = proceduralSource;
+        var viewBody = false;
+        var triggerHeader = false;
 
         void TrimEndSpaces()
         {
@@ -94,7 +101,13 @@ internal static class FirebirdSqlFormatter
 
             if (token.IsWord)
             {
-                if (upper == "UPDATE" && depth == 0)
+                if (previous is ":" or ".")
+                {
+                    Append(raw);
+                    continue;
+                }
+
+                if (upper == "UPDATE" && depth == 0 && (ddlObject != "TRIGGER" || blockDepth > 0))
                     updateStatement = true;
 
                 if (string.IsNullOrEmpty(ddlObject) &&
@@ -107,36 +120,44 @@ internal static class FirebirdSqlFormatter
                 {
                     ddlObject = upper;
                     ddlHeader = false;
+                    triggerHeader = upper == "TRIGGER";
                     if (upper == "TABLE" && (ddlVerb is "CREATE" or "RECREATE"))
                         tableDefinitionPending = true;
                 }
 
-                var ddlClause = depth == 0 && (
-                    ddlObject == "VIEW" && upper == "AS" ||
+                var ddlClause = depth == 0 && blockDepth == 0 && (
+                    sourcePreamble && (upper is "AS" or "DECLARE") ||
+                    ddlObject == "VIEW" && !viewBody && upper == "AS" ||
                     ddlObject == "INDEX" && upper == "ON" ||
                     ddlObject == "DOMAIN" && (upper is "CHECK" or "COLLATE" or "TYPE" or "ADD" or "DROP" || upper == "DEFAULT" && previous is not "SET" and not "DROP" || upper == "SET" && next == "DEFAULT") ||
                     (ddlObject is "PROCEDURE" or "FUNCTION" or "PACKAGE") && (upper is "RETURNS" or "AS" or "DECLARE") ||
                     ddlObject == "TRIGGER" && (upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE") ||
                     ddlVerb == "ALTER" && ddlObject == "TABLE" && (upper is "ADD" or "DROP" or "ALTER" or "RENAME"));
-                if (ddlClause && lineHasContent)
-                    NewLine();
+                if (ddlObject == "VIEW" && depth == 0 && upper == "AS")
+                    viewBody = true;
 
-                var clause = depth == 0 &&
+                if (ddlClause)
+                {
+                    indent = 0;
+                    if (lineHasContent)
+                        NewLine();
+                }
+
+                var clause = depth == 0 && caseDepth == 0 &&
                     (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
                      upper == "GROUP" && next == "BY" || upper == "ORDER" && next == "BY");
                 var joinModifier = upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS";
-                var join = depth == 0 && (upper == "JOIN" && !joinContinuation ||
+                var join = depth == 0 && caseDepth == 0 && (upper == "JOIN" && !joinContinuation ||
                     joinModifier && (next == "JOIN" || next == "OUTER"));
                 if (upper == "JOIN" && joinContinuation)
                     joinContinuation = false;
 
                 if (clause || join || depth == 0 && updateStatement && upper == "SET")
                 {
-                    if (lineHasContent)
+                    if (lineHasContent && !(upper == "SELECT" && previous == "FOR"))
                         NewLine();
 
-                    if (upper is "FROM" or "WHERE" or "HAVING" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
-                        indent = Math.Max(0, indent - 1);
+                    indent = blockDepth;
 
                     if (joinModifier && (next == "JOIN" || next == "OUTER"))
                         joinContinuation = true;
@@ -155,20 +176,23 @@ internal static class FirebirdSqlFormatter
                         selectClause = false;
                         whereClause = false;
                     }
-                    else if (upper is "SELECT" or "FROM" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
+                    else
                     {
                         selectClause = upper == "SELECT";
                         whereClause = false;
                         setClause = false;
                     }
                 }
-                else if (depth == 0 && whereClause && (upper is "AND" or "OR"))
+                else if (depth == 0 && caseDepth == 0 && whereClause && (upper is "AND" or "OR"))
                 {
                     NewLine();
                 }
 
                 if (upper == "BEGIN")
                 {
+                    sourcePreamble = false;
+                    triggerHeader = false;
+                    indent = blockDepth;
                     if (lineHasContent)
                         NewLine();
                     Append("BEGIN", false);
@@ -190,21 +214,38 @@ internal static class FirebirdSqlFormatter
                 {
                     if (lineHasContent)
                         NewLine();
-                    indent = Math.Max(0, indent - 1);
                     if (caseDepth > 0)
+                    {
                         caseDepth--;
-                    else if (blockDepth > 0)
-                        blockDepth--;
+                        indent = Math.Max(blockDepth, indent - 1);
+                    }
+                    else
+                    {
+                        blockDepth = Math.Max(0, blockDepth - 1);
+                        indent = blockDepth;
+                    }
                     Append("END", false);
                     if (next is not ";" and not "," and not ")" and not "." and not "ELSE")
                         NewLine();
                     continue;
                 }
 
-                Append(Keywords.Contains(raw) ? upper : raw);
-                if (depth == 0 && tableDefinitionDepth == 0 && (upper is "SELECT" or "SET"))
+                if (caseDepth > 0 && (upper is "WHEN" or "ELSE"))
+                    NewLine();
+
+                var isTriggerActiveKeyword = triggerHeader && upper == "ACTIVE" &&
+                                             !previous.Equals("TRIGGER", StringComparison.OrdinalIgnoreCase) &&
+                                             !previous.Equals("FOR", StringComparison.OrdinalIgnoreCase);
+                var isAlterColumnType = ddlVerb == "ALTER" && ddlObject == "TABLE" && depth == 0 &&
+                                        upper == "TYPE" && i >= 2 &&
+                                        tokens[i - 2].Text.Equals("COLUMN", StringComparison.OrdinalIgnoreCase);
+                Append(Keywords.Contains(raw) || isTriggerActiveKeyword || isAlterColumnType ? upper : raw);
+                if (triggerHeader && (upper is "BEFORE" or "AFTER"))
+                    triggerHeader = false;
+                if (depth == 0 && tableDefinitionDepth == 0 &&
+                    (upper == "SELECT" || upper == "SET" && updateStatement))
                     indent++;
-                if (upper is "THEN" or "DO" or "ELSE")
+                if (caseDepth == 0 && (upper is "THEN" or "DO" or "ELSE"))
                     NewLine();
                 continue;
             }
@@ -268,10 +309,13 @@ internal static class FirebirdSqlFormatter
                         selectClause = false;
                         setClause = false;
                         updateStatement = false;
+                        joinContinuation = false;
                         ddlHeader = false;
                         tableDefinitionPending = false;
                         ddlVerb = string.Empty;
                         ddlObject = string.Empty;
+                        triggerHeader = false;
+                        viewBody = false;
                     }
                     break;
                 default:

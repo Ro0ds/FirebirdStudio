@@ -19,6 +19,5 @@
     <ProjectReference Include="..\..\src\FirebirdStudio.Core\FirebirdStudio.Core.csproj" />
     <ProjectReference Include="..\..\src\FirebirdStudio.Application\FirebirdStudio.Application.csproj" />
     <ProjectReference Include="..\..\src\FirebirdStudio.Infrastructure\FirebirdStudio.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\FirebirdStudio.Desktop\FirebirdStudio.Desktop.csproj" />
   </ItemGroup>
 </Project>
