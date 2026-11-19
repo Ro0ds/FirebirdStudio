@@ -8,7 +8,7 @@ public sealed class FirebirdSqlFormatterTests
     public void FormatsMinifiedSelectIntoClausesAndLines()
     {
         const string sql = "select c.name,c.email,o.total from customers c inner join orders o on o.customer_id=c.id where c.active=1 order by c.name;";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains("SELECT c.name,\n    c.email,\n    o.total", formatted);
         Assert.Contains("\nFROM customers c", formatted);
@@ -22,7 +22,7 @@ public sealed class FirebirdSqlFormatterTests
     [InlineData("select e.name from empresa e", "SELECT e.name\nFROM empresa e")]
     public void KeepsQualifiedColumnsAndWildcardsTogether(string sql, string expected)
     {
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains(expected, formatted);
         Assert.DoesNotContain("e. *", formatted);
@@ -33,7 +33,7 @@ public sealed class FirebirdSqlFormatterTests
     public void FormatsCreateTableColumnAndConstraintDefinitionsOnSeparateLines()
     {
         const string sql = "create table customer(id integer not null,name varchar(100),created_at timestamp,constraint pk_customer primary key(id));";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains("CREATE TABLE customer (\n    id INTEGER NOT NULL,\n    name VARCHAR(100),\n    created_at TIMESTAMP,\n    CONSTRAINT pk_customer PRIMARY KEY (id)\n);", formatted);
     }
@@ -44,7 +44,7 @@ public sealed class FirebirdSqlFormatterTests
     [InlineData("select cast((base + base_1) as numeric(14,2)) from rdb$database;", "CAST((base + base_1) AS NUMERIC(14, 2))")]
     public void DoesNotInsertSpacesAfterOpeningParentheses(string sql, string expected)
     {
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains(expected, formatted);
         Assert.DoesNotContain("( ", formatted);
@@ -54,7 +54,7 @@ public sealed class FirebirdSqlFormatterTests
     public void KeepsAllCreateTableColumnsAtTheSameIndentationWithCharacterSets()
     {
         const string sql = "CREATE TABLE \"EMPRESA\" (\"COD_EMP\" INTEGER NOT NULL,\"NOME\" VARCHAR(200) CHARACTER SET \"NONE\" NOT NULL,\"ENDERECO\" VARCHAR(60) CHARACTER SET \"NONE\",\"COD_CIDADE\" INTEGER,\"DDD_FONE\" NUMERIC(2,0),CONSTRAINT \"PK_EMPRESA\" PRIMARY KEY (\"COD_EMP\"));";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
         var lines = formatted.Split('\n');
 
         Assert.Contains("    \"COD_EMP\" INTEGER NOT NULL,", lines);
@@ -72,7 +72,7 @@ public sealed class FirebirdSqlFormatterTests
     [InlineData("alter table customer add column email varchar(120), drop column old_name;", "ALTER TABLE customer\nADD COLUMN email VARCHAR(120),\nDROP COLUMN old_name;")]
     public void FormatsCommonDdlStatementClauses(string sql, string expected)
     {
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains(expected, formatted);
     }
@@ -80,7 +80,7 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void FormatsAlterTableDropAndAlterActionsAsSeparateClauses()
     {
-        var formatted = FirebirdSqlFormatter.Format("alter table customer add column email varchar(120), drop column old_name, alter column name type varchar(80);");
+        var formatted = FormatAndNormalize("alter table customer add column email varchar(120), drop column old_name, alter column name type varchar(80);");
 
         Assert.Contains("ALTER TABLE customer\nADD COLUMN email VARCHAR(120),\nDROP COLUMN old_name,\nALTER COLUMN name TYPE VARCHAR(80);", formatted);
     }
@@ -90,7 +90,7 @@ public sealed class FirebirdSqlFormatterTests
     [InlineData("create procedure p_test(a integer) returns(b integer) as begin b=a; suspend; end", "CREATE PROCEDURE p_test(a INTEGER)\nRETURNS (b INTEGER)\nAS\nBEGIN")]
     public void FormatsDomainAndProcedureDdl(string sql, string expected)
     {
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains(expected, formatted);
     }
@@ -98,7 +98,7 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void FormatsCreateOrAlterTriggerClauses()
     {
-        var formatted = FirebirdSqlFormatter.Format("create or alter trigger trg_customer for customer active before insert position 0 as begin new.created_at = current_timestamp; end");
+        var formatted = FormatAndNormalize("create or alter trigger trg_customer for customer active before insert position 0 as begin new.created_at = current_timestamp; end");
 
         Assert.Contains("CREATE OR ALTER TRIGGER trg_customer FOR customer ACTIVE\nBEFORE INSERT\nPOSITION 0\nAS\nBEGIN", formatted);
     }
@@ -106,7 +106,7 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void DoesNotTreatDomainCharacterSetAsAnUpdateSetClause()
     {
-        var formatted = FirebirdSqlFormatter.Format("create domain d_name as varchar(80) character set \"NONE\" default 'unknown' not null;");
+        var formatted = FormatAndNormalize("create domain d_name as varchar(80) character set \"NONE\" default 'unknown' not null;");
 
         Assert.Contains("VARCHAR(80) CHARACTER SET \"NONE\"\nDEFAULT 'unknown' NOT NULL;", formatted);
     }
@@ -114,7 +114,7 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void KeepsMultiwordJoinModifiersTogether()
     {
-        var formatted = FirebirdSqlFormatter.Format("select c.id from customer c left outer join orders o on o.customer_id=c.id;");
+        var formatted = FormatAndNormalize("select c.id from customer c left outer join orders o on o.customer_id=c.id;");
 
         Assert.Contains("LEFT OUTER JOIN orders o", formatted);
     }
@@ -123,7 +123,7 @@ public sealed class FirebirdSqlFormatterTests
     public void FormatsExistingMultilineSelectListsConsistently()
     {
         const string sql = "SELECT\n    ID,\n    NAME\nFROM CUSTOMER\nWHERE ACTIVE = 1;";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains("SELECT ID,\n    NAME\nFROM CUSTOMER\nWHERE ACTIVE = 1;", formatted);
     }
@@ -132,7 +132,7 @@ public sealed class FirebirdSqlFormatterTests
     public void DoesNotRewriteStringLiteralsOrQuotedIdentifiers()
     {
         const string sql = "select \"select\", 'from  where  x', 'it''s ok' from customer where name='a  b';";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains("\"select\"", formatted);
         Assert.Contains("'from  where  x'", formatted);
@@ -144,7 +144,7 @@ public sealed class FirebirdSqlFormatterTests
     public void KeepsCommentsAsCommentsAndOnTheirOwnLine()
     {
         const string sql = "select id from customer -- keep this\nwhere id=1 /* and this */;";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains("-- keep this", formatted);
         Assert.Contains("/* and this */", formatted);
@@ -154,7 +154,7 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void FormatsUpdateAssignmentsOnSeparateLines()
     {
-        var formatted = FirebirdSqlFormatter.Format("update customer set name='A',active=1 where id=2;");
+        var formatted = FormatAndNormalize("update customer set name='A',active=1 where id=2;");
 
         Assert.Contains("UPDATE customer\nSET name = 'A',\n    active = 1\nWHERE id = 2;", formatted);
     }
@@ -163,7 +163,7 @@ public sealed class FirebirdSqlFormatterTests
     public void HandlesProceduralBeginEndWithoutChangingLiterals()
     {
         const string sql = "execute block as begin if (1=1) then begin insert into log_table(message) values('begin end'); end end";
-        var formatted = FirebirdSqlFormatter.Format(sql);
+        var formatted = FormatAndNormalize(sql);
 
         Assert.Contains("BEGIN\n", formatted);
         Assert.Contains("'begin end'", formatted);
@@ -173,7 +173,7 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void PreservesNamedParameterTokens()
     {
-        var formatted = FirebirdSqlFormatter.Format("select * from customer where id=:CUSTOMER_ID;");
+        var formatted = FormatAndNormalize("select * from customer where id=:CUSTOMER_ID;");
 
         Assert.Contains("id = :CUSTOMER_ID", formatted);
     }
@@ -181,6 +181,11 @@ public sealed class FirebirdSqlFormatterTests
     [Fact]
     public void EmptyInputRemainsEmpty()
     {
-        Assert.Equal(string.Empty, FirebirdSqlFormatter.Format("  \r\n "));
+        Assert.Equal(string.Empty, FormatAndNormalize("  \r\n "));
     }
+    private static string FormatAndNormalize(string? sql) =>
+        FirebirdSqlFormatter.Format(sql)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n');
+
 }
