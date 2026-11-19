@@ -3005,46 +3005,6 @@ public sealed partial class MainWindow : Window
     }
 
     
-    private static string? BuildForeignKeyDdl(DatabaseMetadataObject constraint, IReadOnlyList<string> localColumns)
-    {
-        var referencePairs = constraint.Children?
-            .Select(item => ReadDetail(item.Details, "references"))
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Select(value =>
-            {
-                var separator = value!.LastIndexOf('.');
-                return separator > 0 && separator < value.Length - 1
-                    ? (Table: value[..separator], Column: value[(separator + 1)..])
-                    : (Table: string.Empty, Column: string.Empty);
-            })
-            .ToArray() ?? Array.Empty<(string Table, string Column)>();
-        if (referencePairs.Length == 0 || referencePairs.Any(pair => pair.Table.Length == 0 || pair.Column.Length == 0))
-            return null;
-
-        var referencedTable = referencePairs[0].Table;
-        if (referencePairs.Any(pair => !string.Equals(pair.Table, referencedTable, StringComparison.OrdinalIgnoreCase)) ||
-            referencePairs.Length != localColumns.Count)
-            return null;
-
-        var referencedColumns = referencePairs.Select(pair => QuoteIdentifier(pair.Column));
-        var clause = $"  CONSTRAINT {QuoteIdentifier(constraint.Name)} FOREIGN KEY ({string.Join(", ", localColumns)}) " +
-                     $"REFERENCES {QuoteIdentifier(referencedTable)} ({string.Join(", ", referencedColumns)})";
-        var updateRule = ReadRule(constraint.Details, "ON UPDATE");
-        var deleteRule = ReadRule(constraint.Details, "ON DELETE");
-        if (updateRule is not null)
-            clause += $" ON UPDATE {updateRule}";
-        if (deleteRule is not null)
-            clause += $" ON DELETE {deleteRule}";
-        return clause;
-    }
-
-    private static string? ReadRule(string details, string prefix)
-    {
-        var part = details.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .FirstOrDefault(value => value.StartsWith(prefix + " ", StringComparison.OrdinalIgnoreCase));
-        return part is null ? null : part[(prefix.Length + 1)..].Trim();
-    }
-
     private static string QuoteIdentifier(string identifier) =>
         "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
