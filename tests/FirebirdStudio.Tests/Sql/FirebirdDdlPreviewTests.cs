@@ -22,7 +22,7 @@ public sealed class FirebirdDdlPreviewTests
 
         var preview = FirebirdDdlPreview.BuildTableDdl("Orders", fields, constraints).ReplaceLineEndings("\n");
 
-        Assert.StartsWith(
+        const string expected =
             """
             CREATE TABLE "Orders" (
                 "Amount" NUMERIC(2, 0) NOT NULL,
@@ -31,7 +31,9 @@ public sealed class FirebirdDdlPreviewTests
             );
 
             -- Generated from the metadata currently exposed by Firebird Studio.
-            """, preview);
+            """;
+
+        Assert.StartsWith(expected.ReplaceLineEndings("\n"), preview);
     }
 
     [Fact]
