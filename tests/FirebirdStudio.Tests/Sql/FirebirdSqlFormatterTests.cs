@@ -61,7 +61,7 @@ public sealed class FirebirdSqlFormatterTests
         Assert.Contains("    \"NOME\" VARCHAR(200) CHARACTER SET \"NONE\" NOT NULL,", lines);
         Assert.Contains("    \"ENDERECO\" VARCHAR(60) CHARACTER SET \"NONE\",", lines);
         Assert.Contains("    \"COD_CIDADE\" INTEGER,", lines);
-        Assert.Contains("    \"DDD_FONE\" NUMERIC(2,0),", lines);
+        Assert.Contains("    \"DDD_FONE\" NUMERIC(2, 0),", lines);
         Assert.Contains("    CONSTRAINT \"PK_EMPRESA\" PRIMARY KEY (\"COD_EMP\")", lines);
         Assert.DoesNotContain(lines, line => line.StartsWith("        ", StringComparison.Ordinal));
     }
