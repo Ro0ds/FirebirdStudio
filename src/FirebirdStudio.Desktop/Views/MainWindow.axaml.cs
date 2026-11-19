@@ -3005,9 +3005,6 @@ public sealed partial class MainWindow : Window
     }
 
     
-    private static string QuoteIdentifier(string identifier) =>
-        "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
-
     private int GetCategoryOrderIndex(string category)
     {
         for (var index = 0; index < _preferences.MetadataCategoryOrder.Count; index++)
