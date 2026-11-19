@@ -118,8 +118,12 @@ internal static class FirebirdSqlFormatter
                     (ddlObject is "PROCEDURE" or "FUNCTION" or "PACKAGE") && (upper is "RETURNS" or "AS" or "DECLARE") ||
                     ddlObject == "TRIGGER" && (upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE") ||
                     ddlVerb == "ALTER" && ddlObject == "TABLE" && (upper is "ADD" or "DROP" or "ALTER" or "RENAME"));
-                if (ddlClause && lineHasContent)
-                    NewLine();
+                if (ddlClause)
+                {
+                    indent = 0;
+                    if (lineHasContent)
+                        NewLine();
+                }
 
                 var clause = depth == 0 &&
                     (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
