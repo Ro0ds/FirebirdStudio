@@ -66,6 +66,10 @@
               <MenuItem Header="Dock on right" x:Name="HistoryDockRightMenuItem" IsChecked="True" ToggleType="Radio" GroupName="HistoryDock" />
               <MenuItem Header="Tab beside SQL Editor" x:Name="HistoryDockTabMenuItem" ToggleType="Radio" GroupName="HistoryDock" />
             </MenuItem>
+            <MenuItem Header="Database connections">
+              <MenuItem Header="Detailed (name, host, path)" x:Name="ConnectionDisplayDetailedMenuItem" IsChecked="True" ToggleType="Radio" GroupName="ConnectionDisplay" />
+              <MenuItem Header="Minimal (name only)" x:Name="ConnectionDisplayMinimalMenuItem" ToggleType="Radio" GroupName="ConnectionDisplay" />
+            </MenuItem>
           </MenuItem>
           <MenuItem Header="_Help">
             <MenuItem Header="Check for updates…" x:Name="CheckForUpdatesMenuItem" />
@@ -86,17 +90,14 @@
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <Grid Grid.Column="0" RowDefinitions="Auto,*,5,*" MinHeight="0" Margin="10">
-        <TextBlock Text="DATABASE CONNECTIONS" FontWeight="Bold" FontSize="11" Margin="0,0,0,10" />
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+          <TextBlock Grid.Column="0" Text="DATABASE CONNECTIONS" FontWeight="Bold" FontSize="11"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="1" x:Name="ToggleConnectionDisplayButton" Content="Minimal"
+                  Padding="6,3" FontSize="10" ToolTip.Tip="Switch connection list display mode" />
+        </Grid>
         <ListBox Grid.Row="1" x:Name="ConnectionsList" SelectionMode="Single">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="connections:ConnectionProfile">
-              <StackPanel Spacing="2" Margin="2,4">
-                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Host}" FontSize="10" Opacity="0.7" />
-                <TextBlock Text="{Binding Database}" FontSize="10" Opacity="0.7" TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
+
         </ListBox>
         <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
         <Grid Grid.Row="3" RowDefinitions="Auto,Auto,*" MinHeight="0">
@@ -226,7 +227,14 @@
                 </TabControl>
               </Grid>
             </TabItem>
-            <TabItem Header="Query History" x:Name="QueryHistoryTab" IsVisible="False">
+            <TabItem IsVisible="False" x:Name="QueryHistoryTab">
+              <TabItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <TextBlock Text="Query History" VerticalAlignment="Center" />
+                  <Button x:Name="ClearHistoryTabButton" Content="Clear" Padding="5,2" FontSize="10"
+                          ToolTip.Tip="Clear query history" />
+                </StackPanel>
+              </TabItem.Header>
               <ListBox x:Name="QueryHistoryTabList" SelectionMode="Single">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="services:QueryHistoryEntry">
@@ -243,10 +251,24 @@
           <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch"
                         ResizeDirection="Rows" Background="#777777" Opacity="0.35" Margin="3,0,0,0" />
           <TabControl Grid.Row="2" x:Name="ResultsMessagesTabs">
-            <TabItem Header="Results" x:Name="ResultsTab">
+            <TabItem x:Name="ResultsTab">
+              <TabItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <TextBlock Text="Results" VerticalAlignment="Center" />
+                  <Button x:Name="ClearResultsButton" Content="Clear" Padding="5,2" FontSize="10"
+                          ToolTip.Tip="Clear the current query results" />
+                </StackPanel>
+              </TabItem.Header>
               <TableView x:CompileBindings="False" x:Name="QueryResultsGrid" FontSize="11" CanUserResizeColumns="True" />
             </TabItem>
-            <TabItem Header="Messages" x:Name="MessagesTab">
+            <TabItem x:Name="MessagesTab">
+              <TabItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <TextBlock Text="Messages" VerticalAlignment="Center" />
+                  <Button x:Name="ClearMessagesButton" Content="Clear" Padding="5,2" FontSize="10"
+                          ToolTip.Tip="Clear the message log" />
+                </StackPanel>
+              </TabItem.Header>
               <ScrollViewer x:Name="MessagesScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="9" Spacing="8">
                   <TextBlock x:Name="StatusText" Text="Loading saved connection profiles..."
@@ -279,8 +301,13 @@
         <Border Grid.Column="2" x:Name="QueryHistoryPanel" Padding="8" MinWidth="220"
                 BorderThickness="1,0,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
           <Grid RowDefinitions="Auto,*">
-            <TextBlock Grid.Row="0" Text="QUERY HISTORY" FontSize="11" FontWeight="Bold"
-                       Margin="2,2,2,8" />
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,2,2,8">
+              <TextBlock Grid.Column="0" Text="QUERY HISTORY" FontSize="11" FontWeight="Bold"
+                         VerticalAlignment="Center" />
+              <Button Grid.Column="1" x:Name="ClearHistoryDockButton" Content="Clear"
+                      Padding="5,2" FontSize="10"
+                      ToolTip.Tip="Clear query history" />
+            </Grid>
             <ListBox Grid.Row="1" x:Name="QueryHistoryList" SelectionMode="Single">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="services:QueryHistoryEntry">

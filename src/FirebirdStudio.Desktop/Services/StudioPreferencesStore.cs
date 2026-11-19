@@ -4,9 +4,11 @@ namespace FirebirdStudio.Desktop.Services;
 
 internal sealed record StudioPreferences(
     string Theme,
-    IReadOnlyList<string> MetadataCategoryOrder)
+    IReadOnlyList<string> MetadataCategoryOrder,
+    string ConnectionDisplayMode = "Detailed")
 {
-    public static StudioPreferences Default { get; } = new("Light", Array.Empty<string>());
+    public static StudioPreferences Default { get; } =
+        new("Light", Array.Empty<string>(), "Detailed");
 }
 
 internal sealed class StudioPreferencesStore
@@ -58,7 +60,10 @@ internal sealed class StudioPreferencesStore
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray() ?? Array.Empty<string>();
-            return new StudioPreferences(theme, order);
+            var connectionDisplayMode = preferences.ConnectionDisplayMode is "Detailed" or "Minimal"
+                ? preferences.ConnectionDisplayMode
+                : "Detailed";
+            return new StudioPreferences(theme, order, connectionDisplayMode);
         }
         finally
         {
