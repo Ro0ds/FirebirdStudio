@@ -51,6 +51,10 @@ Firebird-version compatibility testing and large-database performance testing ar
 - Database validation.
 - Advanced transaction and lock monitoring.
 
+## Desktop identity and usability
+
+The [desktop redesign plan](design/DESKTOP-REDESIGN.md) defines the proposed themes, workspace layout, accessibility checks, and incremental PR milestones. The [development and release workflow](releasing/DEVELOPMENT.md) describes how changes move from `development` to `main`.
+
 ## Product direction
 
 Prioritize Firebird-specific depth, reliable support for older databases, fast metadata navigation, SQL development, and dependable administration. Avoid adding complexity or broad features without a clear benefit to Firebird users.

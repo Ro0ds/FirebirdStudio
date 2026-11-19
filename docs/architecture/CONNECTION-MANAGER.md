@@ -71,7 +71,7 @@ Linux may have no Secret Service session in headless environments. When the nati
 - Native credential-store behavior has not yet been integration-tested on Windows, macOS, or Linux.
 - No retry/backoff, connection health, or reconnect behavior exists yet.
 - No cross-process profile file locking exists yet.
-- Deterministic automated tests have been added for profile validation/persistence, provider connection-string mapping, credential adapter behavior with a fake `ILatchkey`, and session lifecycle with a fake provider connection. They have not yet been compiled or executed in this environment.
+- Deterministic automated tests have been added for profile validation/persistence, provider connection-string mapping, credential adapter behavior with a fake `ILatchkey`, and session lifecycle with a fake provider connection. The [automated test guide](../../tests/README.md) describes this coverage and the remaining integration tests.
 - Connection option compatibility with Firebird 2.5, 3, 4, and 5 still requires real-server integration tests.
 
 
