@@ -129,7 +129,7 @@ public sealed partial class MainWindow : Window
         var sqlEditor = this.FindControl<AvaloniaEdit.TextEditor>("SqlEditor")!;
         var sqlEditorTab = this.FindControl<TabItem>("SqlEditorTab")!;
         ConfigureSqlEditorTab(sqlEditorTab, sqlEditor);
-        sqlEditor.TextArea.TextView.LineTransformers.Add(new FirebirdSqlSyntaxColorizer(() => _preferences.Theme == "Dark"));
+        ApplySqlSyntaxHighlighting(sqlEditor);
 
         var repository = new JsonConnectionProfileRepository();
         _profileManager = new ConnectionProfileManager(repository);
@@ -193,7 +193,7 @@ public sealed partial class MainWindow : Window
         _tableConstraintsList = this.FindControl<ListBox>("TableConstraintsList")!;
         _tableConstraintsList.DoubleTapped += OnConstraintDoubleTapped;
         _tableDdlText = this.FindControl<AvaloniaEdit.TextEditor>("TableDdlText")!;
-        _tableDdlText.TextArea.TextView.LineTransformers.Add(new FirebirdSqlSyntaxColorizer(() => _preferences.Theme == "Dark"));
+        ApplySqlSyntaxHighlighting(_tableDdlText);
         _readOnlySqlEditors.Add(_tableDdlText);
         _workspaceGrid = this.FindControl<Grid>("WorkspaceGrid")!;
         _historySplitter = this.FindControl<GridSplitter>("HistorySplitter")!;
@@ -1972,6 +1972,13 @@ public sealed partial class MainWindow : Window
             editor.TextArea.TextView.Redraw();
     }
 
+    private void ApplySqlSyntaxHighlighting(AvaloniaEdit.TextEditor editor)
+    {
+        // AvaloniaEdit applies the selection foreground after syntax colors.
+        editor.TextArea.TextView.LineTransformers.Insert(
+            0, new FirebirdSqlSyntaxColorizer(() => _preferences.Theme == "Dark"));
+    }
+
     private static IDataTemplate CreateConnectionTemplate(bool showDetails) =>
         new FuncDataTemplate<ConnectionProfile>((profile, _) =>
         {
@@ -2346,7 +2353,7 @@ public sealed partial class MainWindow : Window
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         };
-        editor.TextArea.TextView.LineTransformers.Add(new FirebirdSqlSyntaxColorizer(() => _preferences.Theme == "Dark"));
+        ApplySqlSyntaxHighlighting(editor);
 
         var content = new Grid();
         content.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
@@ -2692,8 +2699,7 @@ public sealed partial class MainWindow : Window
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         };
-        editor.TextArea.TextView.LineTransformers.Add(
-            new FirebirdSqlSyntaxColorizer(() => _preferences.Theme == "Dark"));
+        ApplySqlSyntaxHighlighting(editor);
         _readOnlySqlEditors.Add(editor);
         return editor;
     }
