@@ -3004,51 +3004,7 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private static string BuildTableDdl(
-        string tableName,
-        IReadOnlyList<DatabaseMetadataObject> fields,
-        IReadOnlyList<DatabaseMetadataObject> constraints)
-    {
-        var definitions = new List<string>();
-        foreach (var field in fields)
-        {
-            var definition = $"  {QuoteIdentifier(field.Name)} {DescribeFieldType(field.Details)}";
-            var typeCode = ReadDetail(field.Details, "type code");
-            var characterSet = ReadDetail(field.Details, "charset");
-            if (((typeCode is "14" or "37") || (typeCode == "261" && ReadDetail(field.Details, "subtype") == "1")) &&
-                !string.IsNullOrWhiteSpace(characterSet))
-                definition += $" CHARACTER SET {QuoteIdentifier(characterSet)}";
-            if (field.Details.Contains("not null", StringComparison.OrdinalIgnoreCase))
-                definition += " NOT NULL";
-            definitions.Add(definition);
-        }
-
-        foreach (var constraint in constraints)
-        {
-            var type = ReadDetail(constraint.Details, "Type");
-            var keyColumns = constraint.Children?.Select(item => QuoteIdentifier(item.Name)).ToArray()
-                ?? Array.Empty<string>();
-            if (keyColumns.Length == 0 || type is null)
-                continue;
-
-            var clause = type switch
-            {
-                "PRIMARY KEY" => $"  CONSTRAINT {QuoteIdentifier(constraint.Name)} PRIMARY KEY ({string.Join(", ", keyColumns)})",
-                "UNIQUE" => $"  CONSTRAINT {QuoteIdentifier(constraint.Name)} UNIQUE ({string.Join(", ", keyColumns)})",
-                "FOREIGN KEY" => BuildForeignKeyDdl(constraint, keyColumns),
-                _ => null
-            };
-            if (clause is not null)
-                definitions.Add(clause);
-        }
-
-        var ddl = $"CREATE TABLE {QuoteIdentifier(tableName)} (" + Environment.NewLine +
-                  string.Join("," + Environment.NewLine, definitions) + Environment.NewLine + ");";
-        return ddl + Environment.NewLine + Environment.NewLine +
-               "-- Generated from the metadata currently exposed by Firebird Studio." + Environment.NewLine +
-               "-- Review domain identity, defaults, computed fields, check constraints and dependencies before using this as a migration script.";
-    }
-
+    
     private static string? BuildForeignKeyDdl(DatabaseMetadataObject constraint, IReadOnlyList<string> localColumns)
     {
         var referencePairs = constraint.Children?
