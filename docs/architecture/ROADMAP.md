@@ -4,12 +4,12 @@ The product-level four-phase roadmap is maintained in [`../ROADMAP.md`](../ROADM
 
 | Phase | Scope | Acceptance evidence | Status |
 |---|---|---|---|
-| 0 | Repository foundation and desktop shell | Restore/build/run on all three OS families | Scaffold only; build not verified |
-| 1A | Connection profiles and connection testing | Profile validation/persistence tests; real server tests on FB 2.5, 3, 4, 5 | Expanded registration fields implemented; build and server tests pending |
+| 0 | Repository foundation and desktop shell | Restore/build/run on all three OS families | Windows x64 packages published, Linux and macOS verification pending |
+| 1A | Connection profiles and connection testing | Profile validation/persistence tests; real server tests on FB 2.5, 3, 4, 5 | Expanded registration fields and deterministic tests implemented, real-server tests pending |
 | 1B | Persistent secure credential storage | Native keyring integration tests on Windows, macOS, Linux; fail-closed behavior | Latchkey adapter and remember/forget UI implemented provisionally; automated adapter tests use a fake; native platform integration tests pending |
-| 1C | Active connection/session lifecycle and reliability | Connect/disconnect, state transitions, detailed errors, SQL recovery, staged connection diagnostics, concurrency and disposal tests | Session lifecycle, detailed error reporting, timestamped severity-colored message history, idle/Ctrl+S editor recovery saves, crash restoration, and staged connection diagnostics implemented in the current Phase 1 release; build/test execution pending |
+| 1C | Active connection/session lifecycle and reliability | Connect/disconnect, state transitions, detailed errors, SQL recovery, staged connection diagnostics, concurrency and disposal tests | Session lifecycle, detailed error reporting, timestamped severity-colored message history, idle/Ctrl+S editor recovery saves, crash restoration, and staged connection diagnostics implemented, real-server verification pending |
 | 2 | Metadata explorer | Verified metadata fixtures per server version | Initial read-only catalog inventory implemented; real-server compatibility tests pending |
-| 3 | SQL editor and execution | Parameters, transactions, cancellation, errors, multi-statement behavior documented | Initial single-statement execution, transaction commit/rollback, cancellation, 500-row read-only TableView preview, F5 selection/current-line execution, table-inspection tab (fields/data/constraints/generated DDL), and persistent 250-entry query history with double-click restore and right/tab docking implemented; parameter binding and multi-statement scripts remain |
+| 3 | SQL editor and execution | Parameters, transactions, cancellation, errors, multi-statement behavior documented | Initial single-statement execution, transaction commit/rollback, cancellation, 500-row read-only TableView preview, `F5` execution of the selection or the single statement in the document, table-inspection tab (fields/data/constraints/generated DDL), and persistent 250-entry query history with double-click restore and right/tab docking implemented. Typed named parameter binding and SQL formatting are available. Multi-statement scripts remain planned |
 | 4 | Data grid and record editor | Paging, sorting, filtering, safe updates | Not implemented |
 | 5 | Object editors | Round-trip DDL tests for tables, views, procedures, triggers, domains, indexes | Not implemented |
 | 6 | Security administration | Roles, users, grants, privilege tests | Not implemented |
@@ -40,7 +40,7 @@ No phase is complete merely because its UI exists. Each phase requires acceptanc
 - [x] Expand standalone index nodes to show ordered index segments and catalog selectivity.
 - [x] Expand procedures to show ordered input/output parameters and procedure source.
 - [x] Persist top-level metadata category ordering; moving a category keeps its children attached.
-- [x] Persist system/light/dark theme selection.
+- [x] Persist light/dark theme selection.
 - [x] Page domain metadata in batches of 200; request more objects on demand instead of rendering the full catalog at once.
 - [ ] Add expression/source details for CHECK constraints and expression indexes.
 - [ ] Add object-specific child nodes for triggers and views.
@@ -57,7 +57,8 @@ The explorer remains read-only. It does not execute user SQL or modify database 
 - [x] Display the first 500 rows of the first result set and report when additional rows exist.
 - [x] Persist the latest 250 submitted statements locally, including failed/cancelled attempts.
 - [x] Restore a history entry into the SQL editor on double-click.
-- [ ] Add parameter binding, multi-statement script execution, multiple result sets, and a structured editable result grid.
+- [x] Bind typed named parameters through the Firebird provider.
+- [ ] Add multi-statement script execution, multiple result sets, and a structured editable result grid.
 - [ ] Verify provider transaction, cancellation, and result behavior against Firebird 2.5, 3, 4, and 5.
 
 Query history stores SQL text exactly as submitted. It is local application data, not a credential store; users should avoid embedding secrets in SQL literals.

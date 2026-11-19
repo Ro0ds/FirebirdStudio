@@ -9,7 +9,7 @@
 - Text values are clipped to 4,000 characters in the preview. BLOB and ARRAY values are represented by placeholders to avoid eagerly materializing large values; other binary values are represented by a maximum 64-byte hexadecimal preview.
 - Named parameters written as `:PARAMETER_NAME` are detected outside SQL string literals, quoted identifiers, and comments. Before execution, a dialog asks for each value and its type (Text, Integer, Decimal, Date, Time, Timestamp, Boolean, or NULL). Placeholders are normalized for the Firebird ADO.NET provider and values are bound as parameters; they are not interpolated into SQL text.
 - The Cancel action requests cancellation through the provider token. The server/provider may take time to honor cancellation.
-- The SQL editor can format the selected SQL text, or the full document when there is no selection, using Query → Format SQL (`Ctrl+Shift+F`). The formatter currently applies token-aware spacing and common DML/DDL clause layout; it is not a complete Firebird parser or lossless schema formatter. Review generated output, especially procedural DDL, before executing it. The table-inspector DDL preview is assembled from the metadata currently exposed by the application and is not passed through the SQL formatter.
+- The SQL editor can format the selected SQL text, or the full document when there is no selection, using Query → Format SQL (`Ctrl+Shift+F`). The formatter currently applies token-aware spacing and common DML/DDL clause layout; it is not a complete Firebird parser or lossless schema formatter. Review generated output, especially procedural DDL, before executing it. The table inspector displays its generated DDL directly. View sources use query-formatting rules, trigger and procedure sources use procedural formatting, and domain default and validation expressions retain their catalog text.
 - Errors automatically select the Messages page and display a temporary footer notification. The Messages page keeps the latest 500 success, information, and error events in reverse chronological order, each with a timestamp and soft green/yellow/red severity styling. Error entries retain exception types, stack traces, and inner-exception details (with long individual details truncated at 30,000 characters). Successful SQL execution adds a green entry and switches from Messages to Results only when Messages was the selected page.
 
 ## Persistent history
@@ -40,10 +40,10 @@ F5 executes the selected SQL text; without a selection, it executes the entire e
 - Table/view data browsing fetches 200 rows per request using Firebird `ROWS` pagination. Primary-key columns are used for forward/backward keyset seeks when available, avoiding deep-offset scans. Without a primary key, the browser falls back to offset paging and row order is not guaranteed. This is separate from the SQL editor's query-result preview limits.
 
 
-## SQL editor crash recovery
+## SQL editor workspace and crash recovery
 
 - Open SQL editor tabs, tab titles, query contents, and the active editor index are autosaved 700 ms after typing stops. `Ctrl+S` also writes the recovery snapshot immediately. Successful writes show a temporary centered footer confirmation (`Editor autosaved` or `Editor saved`).
 - Recovery snapshots are stored in `sql-editor-recovery.json` under the application-data directory. Writes use a temporary file and atomic replacement; Unix permissions are restricted to the current user.
 - When a recovery snapshot is found at startup, all saved editor tabs are restored and the Messages page displays a notification. Restored SQL is never executed automatically.
-- The recovery snapshot is deleted after a normal application exit. An unexpected process termination leaves it available for the next launch.
+- Normal shutdown saves the latest workspace and retains it for the next launch. After an unexpected shutdown, the next launch restores the most recent saved snapshot.
 - The recovery file contains SQL text and is local application data, not a secret store. Avoid embedding credentials or other secrets in SQL statements.

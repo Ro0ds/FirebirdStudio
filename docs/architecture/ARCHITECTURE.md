@@ -42,7 +42,7 @@ Avalonia views, view models, navigation, dialogs, and user interaction.
 - Do not assume all Firebird versions expose identical metadata or support identical SQL syntax.
 - Separate read-only comparison from synchronization.
 - A synchronization preview must be generated before applying changes.
-- Do not silently commit transactions for the user.
+- SQL editor execution currently uses one transaction per statement and commits it after success. The UI should make this behavior visible to the user. Explicit transaction controls remain planned.
 - Avoid loading unbounded result sets into memory.
 - Preserve SQL text and parameters separately.
 - Credentials are stored through the `ISecureCredentialStore` application port; the current Infrastructure adapter uses Latchkey native OS stores provisionally and must pass platform integration tests before release.

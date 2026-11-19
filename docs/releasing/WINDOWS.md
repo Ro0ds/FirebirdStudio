@@ -54,8 +54,8 @@ The repository includes a manually triggered GitHub Actions workflow at `.github
 
 To publish:
 
-1. Update the root `VERSION` file to a new SemVer version that has not already been tagged.
-2. Commit and push that version change to `main`.
+1. Prepare the next untagged SemVer version in the root `VERSION` file on a branch based on `development`. Merge that PR into `development` after validation.
+2. Merge the reviewed release PR from `development` into `main`. Follow the [development and release workflow](DEVELOPMENT.md).
 3. Open the repository's **Actions** tab and select **Publish Windows release**.
 4. Select **Run workflow** on the `main` branch.
 

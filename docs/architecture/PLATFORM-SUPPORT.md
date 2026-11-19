@@ -6,4 +6,4 @@ The current Avalonia documentation lists Windows 11 24H2 (x64/ARM64), macOS 26 (
 
 Linux currently uses X11 by default. Avalonia 12.1.0 introduced an opt-in native Wayland backend; otherwise Wayland sessions typically run through XWayland. Linux deployment prerequisites and native dependencies must be included in release documentation.
 
-Firebird Studio has not yet been compiled or smoke-tested on Windows, Linux, or macOS. Avalonia framework support is not evidence that this application has been validated on those platforms.
+Firebird Studio publishes Windows x64 packages and runs its automated tests as part of that release workflow. Linux and macOS packages and application smoke-test results remain pending. The [Firebird compatibility matrix](FIREBIRD-COMPATIBILITY.md) separately tracks real-server validation.
