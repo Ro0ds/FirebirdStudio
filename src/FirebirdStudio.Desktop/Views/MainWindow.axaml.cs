@@ -3005,6 +3005,94 @@ public sealed partial class MainWindow : Window
     }
 
     
+    private static string BuildTableDdl(
+        string tableName,
+        IReadOnlyList<DatabaseMetadataObject> fields,
+        IReadOnlyList<DatabaseMetadataObject> constraints)
+    {
+        var definitions = new List<string>();
+        foreach (var field in fields)
+        {
+            var definition = $"  {QuoteIdentifier(field.Name)} {DescribeFieldType(field.Details)}";
+            var typeCode = ReadDetail(field.Details, "type code");
+            var characterSet = ReadDetail(field.Details, "charset");
+            if (((typeCode is "14" or "37") || (typeCode == "261" && ReadDetail(field.Details, "subtype") == "1")) &&
+                !string.IsNullOrWhiteSpace(characterSet))
+                definition += $" CHARACTER SET {QuoteIdentifier(characterSet)}";
+            if (field.Details.Contains("not null", StringComparison.OrdinalIgnoreCase))
+                definition += " NOT NULL";
+            definitions.Add(definition);
+        }
+
+        foreach (var constraint in constraints)
+        {
+            var type = ReadDetail(constraint.Details, "Type");
+            var keyColumns = constraint.Children?.Select(item => QuoteIdentifier(item.Name)).ToArray()
+                ?? Array.Empty<string>();
+            if (keyColumns.Length == 0 || type is null)
+                continue;
+
+            var clause = type switch
+            {
+                "PRIMARY KEY" => $"  CONSTRAINT {QuoteIdentifier(constraint.Name)} PRIMARY KEY ({string.Join(", ", keyColumns)})",
+                "UNIQUE" => $"  CONSTRAINT {QuoteIdentifier(constraint.Name)} UNIQUE ({string.Join(", ", keyColumns)})",
+                "FOREIGN KEY" => BuildForeignKeyDdl(constraint, keyColumns),
+                _ => null
+            };
+            if (clause is not null)
+                definitions.Add(clause);
+        }
+
+        var ddl = $"CREATE TABLE {QuoteIdentifier(tableName)} (" + Environment.NewLine +
+                  string.Join("," + Environment.NewLine, definitions) + Environment.NewLine + ");";
+        return ddl + Environment.NewLine + Environment.NewLine +
+               "-- Generated from the metadata currently exposed by Firebird Studio." + Environment.NewLine +
+               "-- Review domain identity, defaults, computed fields, check constraints and dependencies before using this as a migration script.";
+    }
+
+    private static string? BuildForeignKeyDdl(DatabaseMetadataObject constraint, IReadOnlyList<string> localColumns)
+    {
+        var referencePairs = constraint.Children?
+            .Select(item => ReadDetail(item.Details, "references"))
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value =>
+            {
+                var separator = value!.LastIndexOf('.');
+                return separator > 0 && separator < value.Length - 1
+                    ? (Table: value[..separator], Column: value[(separator + 1)..])
+                    : (Table: string.Empty, Column: string.Empty);
+            })
+            .ToArray() ?? Array.Empty<(string Table, string Column)>();
+        if (referencePairs.Length == 0 || referencePairs.Any(pair => pair.Table.Length == 0 || pair.Column.Length == 0))
+            return null;
+
+        var referencedTable = referencePairs[0].Table;
+        if (referencePairs.Any(pair => !string.Equals(pair.Table, referencedTable, StringComparison.OrdinalIgnoreCase)) ||
+            referencePairs.Length != localColumns.Count)
+            return null;
+
+        var referencedColumns = referencePairs.Select(pair => QuoteIdentifier(pair.Column));
+        var clause = $"  CONSTRAINT {QuoteIdentifier(constraint.Name)} FOREIGN KEY ({string.Join(", ", localColumns)}) " +
+                     $"REFERENCES {QuoteIdentifier(referencedTable)} ({string.Join(", ", referencedColumns)})";
+        var updateRule = ReadRule(constraint.Details, "ON UPDATE");
+        var deleteRule = ReadRule(constraint.Details, "ON DELETE");
+        if (updateRule is not null)
+            clause += $" ON UPDATE {updateRule}";
+        if (deleteRule is not null)
+            clause += $" ON DELETE {deleteRule}";
+        return clause;
+    }
+
+    private static string? ReadRule(string details, string prefix)
+    {
+        var part = details.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault(value => value.StartsWith(prefix + " ", StringComparison.OrdinalIgnoreCase));
+        return part is null ? null : part[(prefix.Length + 1)..].Trim();
+    }
+
+    private static string QuoteIdentifier(string identifier) =>
+        "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
     private int GetCategoryOrderIndex(string category)
     {
         for (var index = 0; index < _preferences.MetadataCategoryOrder.Count; index++)
