@@ -16,6 +16,13 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: Require the main branch
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -cne 'refs/heads/main') {
+            throw "Select the main branch to publish a stable release. Selected ref: $env:GITHUB_REF"
+          }
+
       - name: Check out source
         uses: actions/checkout@v4
         with:
