@@ -6,120 +6,364 @@ internal static class FirebirdSqlFormatter
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
-        "AS", "BEGIN", "END", "IF", "THEN", "ELSE", "FOR", "WHILE", "DO", "SUSPEND", "EXIT",
-        "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "ON", "AND", "OR",
-        "NOT", "NULL", "IS", "IN", "EXISTS", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE",
-        "RETURNING", "ORDER", "BY", "GROUP", "HAVING", "UNION", "ALL", "DISTINCT", "CASE", "WHEN",
-        "CREATE", "ALTER", "DROP", "RECREATE", "PROCEDURE", "TRIGGER", "TABLE", "VIEW", "DOMAIN",
-        "RETURNS", "DECLARE", "VARIABLE", "EXCEPTION", "POST_EVENT", "EXECUTE", "STATEMENT", "PROCEDURE",
-        "COMMIT", "ROLLBACK", "START", "TRANSACTION", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "CONSTRAINT"
+        "ALL", "ALTER", "AND", "AS", "ASC", "BEGIN", "BETWEEN", "BY", "CASE", "CAST", "COMMIT",
+        "CONSTRAINT", "CREATE", "CROSS", "DELETE", "DESC", "DISTINCT", "DO", "DROP", "ELSE",
+        "END", "EXCEPTION", "EXECUTE", "EXISTS", "FETCH", "FOR", "FOREIGN", "FROM", "FULL",
+        "FUNCTION", "GROUP", "HAVING", "IF", "IN", "INNER", "INSERT", "INTO", "IS", "JOIN",
+        "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
+        "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
+        "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES", "BEFORE", "AFTER", "POSITION", "DECLARE",
+        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
+        "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
+        "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARBINARY"
     };
+
+    private readonly record struct Token(string Text, bool IsWord, bool IsComment = false);
 
     public static string Format(string? source)
     {
-        if (string.IsNullOrWhiteSpace(source)) return source ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(source))
+            return source ?? string.Empty;
+
+        var tokens = Tokenize(source);
         var output = new StringBuilder(source.Length + 64);
         var indent = 0;
-        var pendingSpace = false;
-        var single = false;
-        var quoted = false;
-        var lineComment = false;
-        var blockComment = false;
+        var depth = 0;
+        var lineHasContent = false;
+        var previous = string.Empty;
+        var whereClause = false;
+        var selectClause = false;
+        var setClause = false;
+        var updateStatement = false;
+        var joinContinuation = false;
+        var blockDepth = 0;
+        var caseDepth = 0;
+        var ddlHeader = false;
+        var tableDefinitionPending = false;
+        var tableDefinitionDepth = 0;
+        var ddlVerb = string.Empty;
+        var ddlObject = string.Empty;
+
+        void TrimEndSpaces()
+        {
+            while (output.Length > 0 && output[^1] == ' ')
+                output.Length--;
+        }
 
         void NewLine()
         {
-            while (output.Length > 0 && output[^1] == ' ') output.Length--;
-            if (output.Length > 0 && output[^1] != '\n') output.AppendLine();
-            output.Append(' ', Math.Max(0, indent) * 4);
-            pendingSpace = false;
-        }
-        void Space()
-        {
-            if (output.Length > 0 && output[^1] != ' ' && output[^1] != '\n') output.Append(' ');
+            TrimEndSpaces();
+            if (lineHasContent)
+                output.AppendLine();
+            lineHasContent = false;
+            previous = string.Empty;
         }
 
-        for (var i = 0; i < source.Length;)
+        void Append(string value, bool space = true)
         {
-            var c = source[i];
-            var n = i + 1 < source.Length ? source[i + 1] : '\0';
-            if (lineComment)
+            if (!lineHasContent)
             {
-                output.Append(c); i++;
-                if (c is '\r' or '\n') { lineComment = false; NewLine(); }
-                continue;
+                output.Append(' ', Math.Max(0, indent) * 4);
+                lineHasContent = true;
             }
-            if (blockComment)
+            else if (space && previous is not "(" and not "." and not ":" &&
+                     output.Length > 0 && output[^1] != ' ' && output[^1] != '\n')
             {
-                output.Append(c); i++;
-                if (c == '*' && n == '/') { output.Append('/'); i++; blockComment = false; }
-                continue;
+                output.Append(' ');
             }
-            if (single || quoted)
-            {
-                output.Append(c); i++;
-                if (single && c == '\'' && n == '\'') { output.Append(n); i++; }
-                else if (quoted && c == '"' && n == '"') { output.Append(n); i++; }
-                else if (single && c == '\'') single = false;
-                else if (quoted && c == '"') quoted = false;
-                continue;
-            }
-            if (c == '-' && n == '-') { Space(); output.Append("--"); i += 2; lineComment = true; continue; }
-            if (c == '/' && n == '*') { Space(); output.Append("/*"); i += 2; blockComment = true; continue; }
-            if (c == '\'') { if (pendingSpace) Space(); output.Append(c); i++; single = true; pendingSpace = false; continue; }
-            if (c == '"') { if (pendingSpace) Space(); output.Append(c); i++; quoted = true; pendingSpace = false; continue; }
-            if (char.IsWhiteSpace(c)) { pendingSpace = true; i++; continue; }
 
-            if (char.IsLetter(c) || c == '_')
+            output.Append(value);
+            previous = value;
+        }
+
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var token = tokens[i];
+            var raw = token.Text;
+            var upper = token.IsWord ? raw.ToUpperInvariant() : raw;
+            var next = i + 1 < tokens.Count ? tokens[i + 1].Text.ToUpperInvariant() : string.Empty;
+
+            if (token.IsComment)
             {
-                var start = i++;
-                while (i < source.Length && (char.IsLetterOrDigit(source[i]) || source[i] is '_' or '$' or '#')) i++;
-                var word = source[start..i];
-                var upper = Keywords.Contains(word) ? word.ToUpperInvariant() : word;
-                if (upper is "END" or "ELSE" or "WHEN")
-                {
-                    if (upper == "END") indent = Math.Max(0, indent - 1);
+                if (lineHasContent)
                     NewLine();
-                    output.Append(upper);
-                    pendingSpace = true;
-                }
-                else
+                Append(raw, false);
+                NewLine();
+                continue;
+            }
+
+            if (token.IsWord)
+            {
+                if (upper == "UPDATE" && depth == 0)
+                    updateStatement = true;
+
+                if (string.IsNullOrEmpty(ddlObject) &&
+                    (upper is "CREATE" or "RECREATE" or "ALTER" or "DROP"))
                 {
-                    if (pendingSpace) Space();
-                    if (upper == "BEGIN" && output.Length > 0 && output[^1] != '\n') NewLine();
-                    output.Append(upper);
-                    pendingSpace = true;
-                    if (upper == "BEGIN")
+                    ddlVerb = upper;
+                    ddlHeader = true;
+                }
+                else if (ddlHeader && upper is "TABLE" or "VIEW" or "INDEX" or "PROCEDURE" or "TRIGGER" or "FUNCTION" or "DOMAIN" or "EXCEPTION" or "GENERATOR" or "SEQUENCE" or "ROLE")
+                {
+                    ddlObject = upper;
+                    ddlHeader = false;
+                    if (upper == "TABLE" && (ddlVerb is "CREATE" or "RECREATE"))
+                        tableDefinitionPending = true;
+                }
+
+                var ddlClause = depth == 0 && (
+                    ddlObject == "VIEW" && upper == "AS" ||
+                    ddlObject == "INDEX" && upper == "ON" ||
+                    ddlObject == "DOMAIN" && (upper is "CHECK" or "COLLATE" or "TYPE" or "ADD" or "DROP" || upper == "DEFAULT" && previous is not "SET" and not "DROP" || upper == "SET" && next == "DEFAULT") ||
+                    (ddlObject is "PROCEDURE" or "FUNCTION" or "PACKAGE") && (upper is "RETURNS" or "AS" or "DECLARE") ||
+                    ddlObject == "TRIGGER" && (upper is "BEFORE" or "AFTER" or "POSITION" or "AS" or "DECLARE") ||
+                    ddlVerb == "ALTER" && ddlObject == "TABLE" && (upper is "ADD" or "DROP" or "ALTER" or "RENAME"));
+                if (ddlClause && lineHasContent)
+                    NewLine();
+
+                var clause = depth == 0 &&
+                    (upper is "SELECT" or "FROM" or "WHERE" or "HAVING" or "RETURNING" or "UNION" ||
+                     upper == "GROUP" && next == "BY" || upper == "ORDER" && next == "BY");
+                var joinModifier = upper is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS";
+                var join = depth == 0 && (upper == "JOIN" && !joinContinuation ||
+                    joinModifier && (next == "JOIN" || next == "OUTER"));
+                if (upper == "JOIN" && joinContinuation)
+                    joinContinuation = false;
+
+                if (clause || join || depth == 0 && updateStatement && upper == "SET")
+                {
+                    if (lineHasContent)
+                        NewLine();
+
+                    if (upper is "FROM" or "WHERE" or "HAVING" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
+                        indent = Math.Max(0, indent - 1);
+
+                    if (joinModifier && (next == "JOIN" || next == "OUTER"))
+                        joinContinuation = true;
+                    else if (upper == "JOIN")
+                        joinContinuation = false;
+
+                    if (upper is "WHERE" or "HAVING")
                     {
+                        whereClause = true;
+                        selectClause = false;
+                        setClause = false;
+                    }
+                    else if (upper == "SET")
+                    {
+                        setClause = true;
+                        selectClause = false;
+                        whereClause = false;
+                    }
+                    else if (upper is "SELECT" or "FROM" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
+                    {
+                        selectClause = upper == "SELECT";
+                        whereClause = false;
+                        setClause = false;
+                    }
+                }
+                else if (depth == 0 && whereClause && (upper is "AND" or "OR"))
+                {
+                    NewLine();
+                }
+
+                if (upper == "BEGIN")
+                {
+                    if (lineHasContent)
+                        NewLine();
+                    Append("BEGIN", false);
+                    blockDepth++;
+                    indent++;
+                    NewLine();
+                    continue;
+                }
+
+                if (upper == "CASE")
+                {
+                    Append("CASE");
+                    caseDepth++;
+                    indent++;
+                    continue;
+                }
+
+                if (upper == "END")
+                {
+                    if (lineHasContent)
+                        NewLine();
+                    indent = Math.Max(0, indent - 1);
+                    if (caseDepth > 0)
+                        caseDepth--;
+                    else if (blockDepth > 0)
+                        blockDepth--;
+                    Append("END", false);
+                    if (next is not ";" and not "," and not ")" and not "." and not "ELSE")
+                        NewLine();
+                    continue;
+                }
+
+                Append(Keywords.Contains(raw) ? upper : raw);
+                if (depth == 0 && tableDefinitionDepth == 0 && (upper is "SELECT" or "SET"))
+                    indent++;
+                if (upper is "THEN" or "DO" or "ELSE")
+                    NewLine();
+                continue;
+            }
+
+            switch (raw)
+            {
+                case "(":
+                    Append(raw, tableDefinitionPending || previous is "FROM" or "IN" or "INTO" or "VALUES" or "AS" or "EXISTS" or "IF" or "WHILE" or "FOR" or "KEY" or "CHECK" or "RETURNS");
+                    depth++;
+                    if (tableDefinitionPending)
+                    {
+                        tableDefinitionDepth = depth;
+                        tableDefinitionPending = false;
                         indent++;
                         NewLine();
                     }
-                    else if (upper == "CASE")
+                    break;
+                case ")":
+                    if (tableDefinitionDepth == depth)
                     {
-                        indent++;
+                        if (lineHasContent)
+                            NewLine();
+                        indent = Math.Max(0, indent - 1);
+                        tableDefinitionDepth = 0;
+                        TrimEndSpaces();
+                        Append(raw, false);
                     }
-                    if (upper is "THEN" or "DO") NewLine();
-                }
+                    else
+                    {
+                        TrimEndSpaces();
+                        Append(raw, false);
+                    }
+                    depth = Math.Max(0, depth - 1);
+                    break;
+                case ",":
+                    TrimEndSpaces();
+                    output.Append(',');
+                    if (tableDefinitionDepth == depth || depth == 0 && (setClause || selectClause))
+                        NewLine();
+                    else
+                        output.Append(' ');
+                    previous = ",";
+                    break;
+                case ".":
+                    TrimEndSpaces();
+                    output.Append('.');
+                    previous = ".";
+                    break;
+                case ":":
+                    Append(":", true);
+                    break;
+                case ";":
+                    TrimEndSpaces();
+                    output.Append(';');
+                    previous = ";";
+                    if (depth == 0)
+                    {
+                        NewLine();
+                        indent = blockDepth;
+                        whereClause = false;
+                        selectClause = false;
+                        setClause = false;
+                        updateStatement = false;
+                        ddlHeader = false;
+                        tableDefinitionPending = false;
+                        ddlVerb = string.Empty;
+                        ddlObject = string.Empty;
+                    }
+                    break;
+                default:
+                    Append(raw, raw is not "::" and not "->" && previous is not "(" and not ":" and not ".");
+                    break;
+            }
+        }
+
+        TrimEndSpaces();
+        var result = output.ToString().TrimEnd();
+        return result.Length == 0 ? result : result + Environment.NewLine;
+    }
+
+    private static List<Token> Tokenize(string source)
+    {
+        var tokens = new List<Token>();
+        for (var i = 0; i < source.Length;)
+        {
+            var c = source[i];
+            if (char.IsWhiteSpace(c))
+            {
+                i++;
                 continue;
             }
 
-            if (c == ';')
+            if (c == '-' && i + 1 < source.Length && source[i + 1] == '-')
             {
-                while (output.Length > 0 && output[^1] == ' ') output.Length--;
-                output.Append(';'); i++; NewLine(); continue;
+                var start = i;
+                i += 2;
+                while (i < source.Length && source[i] is not '\r' and not '\n')
+                    i++;
+                tokens.Add(new Token(source[start..i], false, true));
+                continue;
             }
-            if (c == ',')
+
+            if (c == '/' && i + 1 < source.Length && source[i + 1] == '*')
             {
-                while (output.Length > 0 && output[^1] == ' ') output.Length--;
-                output.Append(", "); i++; pendingSpace = false; continue;
+                var start = i;
+                i += 2;
+                while (i < source.Length)
+                {
+                    if (source[i] == '*' && i + 1 < source.Length && source[i + 1] == '/')
+                    {
+                        i += 2;
+                        break;
+                    }
+                    i++;
+                }
+                tokens.Add(new Token(source[start..i], false, true));
+                continue;
             }
-            if (c == '(') { if (pendingSpace) Space(); output.Append('('); i++; pendingSpace = false; continue; }
-            if (c == ')') { while (output.Length > 0 && output[^1] == ' ') output.Length--; output.Append(')'); i++; pendingSpace = true; continue; }
-            if (c == '.') { output.Append('.'); i++; pendingSpace = false; continue; }
-            if (pendingSpace) Space();
-            output.Append(c); i++; pendingSpace = false;
+
+            if (c is '\'' or '"')
+            {
+                var quote = c;
+                var start = i++;
+                while (i < source.Length)
+                {
+                    if (source[i++] != quote)
+                        continue;
+                    if (i < source.Length && source[i] == quote)
+                    {
+                        i++;
+                        continue;
+                    }
+                    break;
+                }
+                tokens.Add(new Token(source[start..i], false));
+                continue;
+            }
+
+            if (char.IsLetterOrDigit(c) || c is '_' or '$' or '#')
+            {
+                var start = i++;
+                while (i < source.Length &&
+                       (char.IsLetterOrDigit(source[i]) || source[i] is '_' or '$' or '#'))
+                    i++;
+                tokens.Add(new Token(source[start..i], true));
+                continue;
+            }
+
+            if (i + 1 < source.Length && source.Substring(i, 2) is "<=" or ">=" or "<>" or "!=" or "||" or "::" or "->")
+            {
+                tokens.Add(new Token(source.Substring(i, 2), false));
+                i += 2;
+                continue;
+            }
+
+            tokens.Add(new Token(c.ToString(), false));
+            i++;
         }
 
-        var formatted = output.ToString().Trim();
-        return formatted.Length == 0 ? formatted : formatted + Environment.NewLine;
+        return tokens;
     }
 }
