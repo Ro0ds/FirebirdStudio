@@ -9,11 +9,11 @@ internal static class FirebirdSqlFormatter
         "ALL", "ALTER", "AND", "AS", "ASC", "BEGIN", "BETWEEN", "BY", "CASE", "CAST", "COMMIT",
         "CONSTRAINT", "CREATE", "CROSS", "DELETE", "DESC", "DISTINCT", "DO", "DROP", "ELSE",
         "END", "EXCEPTION", "EXECUTE", "EXISTS", "FETCH", "FOR", "FOREIGN", "FROM", "FULL",
-        "FUNCTION", "GROUP", "HAVING", "IF", "IN", "INNER", "INSERT", "INTO", "IS", "JOIN",
+        "FUNCTION", "GROUP", "HAVING", "IF", "IN", "INDEX", "INNER", "INSERT", "INTO", "IS", "JOIN",
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES", "BEFORE", "AFTER", "POSITION", "DECLARE",
-        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
+        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "ACTIVE", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
         "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
         "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARBINARY"
     };
@@ -23,7 +23,7 @@ internal static class FirebirdSqlFormatter
     public static string Format(string? source)
     {
         if (string.IsNullOrWhiteSpace(source))
-            return source ?? string.Empty;
+            return string.Empty;
 
         var tokens = Tokenize(source);
         var output = new StringBuilder(source.Length + 64);
@@ -202,7 +202,8 @@ internal static class FirebirdSqlFormatter
                 }
 
                 Append(Keywords.Contains(raw) ? upper : raw);
-                if (depth == 0 && tableDefinitionDepth == 0 && (upper is "SELECT" or "SET"))
+                if (depth == 0 && tableDefinitionDepth == 0 &&
+                    (upper == "SELECT" || upper == "SET" && updateStatement))
                     indent++;
                 if (upper is "THEN" or "DO" or "ELSE")
                     NewLine();
