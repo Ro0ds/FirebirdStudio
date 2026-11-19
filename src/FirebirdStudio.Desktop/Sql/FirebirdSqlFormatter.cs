@@ -13,7 +13,7 @@ internal static class FirebirdSqlFormatter
         "LEFT", "LIKE", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "PRIMARY", "PROCEDURE",
         "RECREATE", "REFERENCES", "RETURNING", "RETURNS", "RIGHT", "ROLLBACK", "SELECT", "SET",
         "SUSPEND", "TABLE", "THEN", "TRANSACTION", "TRIGGER", "UNION", "UPDATE", "VALUES", "BEFORE", "AFTER", "POSITION", "DECLARE",
-        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "ACTIVE", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
+        "VIEW", "WHEN", "WHERE", "WHILE", "WITH", "KEY", "UNIQUE", "ADD", "COLUMN", "RENAME", "GENERATOR", "SEQUENCE", "DOMAIN", "EXCEPTION", "ROLE", "CHECK", "DEFAULT", "COLLATE", "COMPUTED", "USING", "BIGINT", "BLOB", "BOOLEAN", "CHAR", "CHARACTER",
         "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "INT", "NUMERIC", "PRECISION", "SMALLINT",
         "TIME", "TIMESTAMP", "VARCHAR", "VARYING", "NCHAR", "NATIONAL", "VARBINARY"
     };
@@ -136,7 +136,7 @@ internal static class FirebirdSqlFormatter
                         NewLine();
 
                     if (upper is "FROM" or "WHERE" or "HAVING" or "GROUP" or "ORDER" or "UNION" or "RETURNING")
-                        indent = Math.Max(0, indent - 1);
+                        indent = 0;
 
                     if (joinModifier && (next == "JOIN" || next == "OUTER"))
                         joinContinuation = true;
@@ -201,7 +201,8 @@ internal static class FirebirdSqlFormatter
                     continue;
                 }
 
-                Append(Keywords.Contains(raw) ? upper : raw);
+                var isTriggerActiveKeyword = ddlObject == "TRIGGER" && upper == "ACTIVE";
+                Append(Keywords.Contains(raw) || isTriggerActiveKeyword ? upper : raw);
                 if (depth == 0 && tableDefinitionDepth == 0 &&
                     (upper == "SELECT" || upper == "SET" && updateStatement))
                     indent++;
