@@ -43,6 +43,7 @@ internal static class FirebirdSqlFormatter
         var tableDefinitionDepth = 0;
         var ddlVerb = string.Empty;
         var ddlObject = string.Empty;
+        var triggerHeader = false;
 
         void TrimEndSpaces()
         {
@@ -107,6 +108,7 @@ internal static class FirebirdSqlFormatter
                 {
                     ddlObject = upper;
                     ddlHeader = false;
+                    triggerHeader = upper == "TRIGGER";
                     if (upper == "TABLE" && (ddlVerb is "CREATE" or "RECREATE"))
                         tableDefinitionPending = true;
                 }
@@ -205,8 +207,10 @@ internal static class FirebirdSqlFormatter
                     continue;
                 }
 
-                var isTriggerActiveKeyword = ddlObject == "TRIGGER" && upper == "ACTIVE";
+                var isTriggerActiveKeyword = triggerHeader && upper == "ACTIVE";
                 Append(Keywords.Contains(raw) || isTriggerActiveKeyword ? upper : raw);
+                if (triggerHeader && (upper is "BEFORE" or "AFTER"))
+                    triggerHeader = false;
                 if (depth == 0 && tableDefinitionDepth == 0 &&
                     (upper == "SELECT" || upper == "SET" && updateStatement))
                     indent++;
@@ -278,6 +282,7 @@ internal static class FirebirdSqlFormatter
                         tableDefinitionPending = false;
                         ddlVerb = string.Empty;
                         ddlObject = string.Empty;
+                        triggerHeader = false;
                     }
                     break;
                 default:
