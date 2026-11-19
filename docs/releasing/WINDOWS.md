@@ -59,6 +59,6 @@ To publish:
 3. Open the repository's **Actions** tab and select **Publish Windows release**.
 4. Select **Run workflow** on the `main` branch.
 
-The workflow runs on a Windows GitHub-hosted runner, executes the existing packaging script (including the solution tests), and creates a GitHub Release with both ZIP packages, the manifest, and checksums. It refuses to publish if the version's Git tag already exists. It does not change `VERSION`, and it never runs automatically on push or pull-request events.
+The workflow checks that the selected ref is `refs/heads/main` before checking out the source. On that branch, it runs on a Windows GitHub-hosted runner, executes the existing packaging script (including the solution tests), and creates a GitHub Release with both ZIP packages, the manifest, and checksums. It requires an unused version tag and runs only on manual dispatch.
 
 This first automation covers **Windows x64 only**, matching the existing packaging script. Linux and macOS release packages are not produced by this workflow; those targets need their own packaging and validation before they can be published.
