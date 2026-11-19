@@ -8,6 +8,7 @@
     x:Class="FirebirdStudio.Desktop.Views.MainWindow"
     Width="1500"
     Height="940"
+    WindowState="Maximized"
     MinWidth="1100"
     MinHeight="700"
     Title="Firebird Studio">
