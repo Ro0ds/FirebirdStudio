@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Styling;
 using Avalonia.Interactivity;
@@ -29,7 +28,7 @@ namespace FirebirdStudio.Desktop.Views;
 public sealed partial class MainWindow : Window
 {
     private readonly ConnectionProfileManager _profileManager;
-    private readonly FirebirdSessionManager _sessionManager;
+    private readonly IFirebirdSessionManager _sessionManager;
     private readonly ISecureCredentialStore _credentialStore;
     private readonly StudioPreferencesStore _preferencesStore = new();
     private readonly GitHubReleaseChecker _releaseChecker = new();
@@ -42,7 +41,8 @@ public sealed partial class MainWindow : Window
     private readonly QueryHistoryStore _queryHistoryStore = new();
     private readonly SqlEditorRecoveryStore _sqlEditorRecoveryStore = new();
     private StudioPreferences _preferences = StudioPreferences.Default;
-    private readonly ObservableCollection<ConnectionProfile> _profiles = [];
+    private readonly ObservableCollection<ConnectionListItem> _connectionItems = [];
+    private readonly HashSet<Guid> _pendingConnectionChanges = [];
     private readonly BatchObservableCollection<DatabaseMetadataObject> _metadataObjects = [];
     private CancellationTokenSource? _metadataLoadingCancellation;
     private readonly Dictionary<string, CancellationTokenSource> _metadataPageCancellations = new(StringComparer.OrdinalIgnoreCase);
@@ -74,6 +74,8 @@ public sealed partial class MainWindow : Window
     private int _currentTableDataOffset;
     private DatabaseTableDataPage? _currentTableDataPage;
     private readonly ListBox _connectionsList;
+    private readonly Button _editSelectedConnectionButton;
+    private readonly Button _connectionSessionButton;
     private readonly TreeView _metadataTree;
     private readonly TextBox _metadataSearchBox;
     private readonly Button _refreshMetadataButton;
@@ -122,6 +124,8 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock _currentVersionText;
     private string? _currentTableDetailsName;
 
+    private ConnectionProfile? SelectedConnection => (_connectionsList.SelectedItem as ConnectionListItem)?.Profile;
+
     public MainWindow()
     {
         AvaloniaXamlLoader.Load(this);
@@ -137,6 +141,11 @@ public sealed partial class MainWindow : Window
         _credentialStore = new LatchkeySecureCredentialStore();
 
         _connectionsList = this.FindControl<ListBox>("ConnectionsList")!;
+        _editSelectedConnectionButton = this.FindControl<Button>("EditSelectedConnectionButton")!;
+        _connectionSessionButton = this.FindControl<Button>("ConnectionSessionButton")!;
+        this.FindControl<Button>("NewConnectionButton")!.Click += OnAddConnectionClick;
+        _editSelectedConnectionButton.Click += OnEditConnectionClick;
+        _connectionSessionButton.Click += OnConnectionSessionClick;
         var createConnectionContextItem = new MenuItem { Header = "Create connection…" };
         _connectionContextEditItem = new MenuItem { Header = "Edit connection…", IsEnabled = false };
         _connectionContextConnectItem = new MenuItem { Header = "Connect to database", IsEnabled = false };
@@ -229,8 +238,7 @@ public sealed partial class MainWindow : Window
         Title = $"Firebird Studio - {currentVersion}";
         _currentVersionText.Text = $"Firebird Studio {currentVersion}";
 
-        _connectionsList.ItemsSource = _profiles;
-        _connectionsList.ItemTemplate = CreateConnectionTemplate(showDetails: true);
+        _connectionsList.ItemsSource = _connectionItems;
         var detailedConnectionsMenuItem = this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!;
         var minimalConnectionsMenuItem = this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!;
         detailedConnectionsMenuItem.Click += async (_, _) => await SetConnectionDisplayModeAsync("Detailed");
@@ -249,6 +257,7 @@ public sealed partial class MainWindow : Window
         _queryHistoryTabList.DoubleTapped += OnQueryHistoryDoubleTapped;
         _connectionsList.SelectionChanged += OnSelectionChanged;
         _connectionsList.DoubleTapped += OnConnectionsDoubleTapped;
+        _connectionsList.AddHandler(InputElement.KeyDownEvent, OnConnectionsKeyDown, RoutingStrategies.Tunnel);
         _connectionsList.PointerPressed += OnConnectionsPointerPressed;
         createConnectionContextItem.Click += OnAddConnectionClick;
         _connectionContextEditItem.Click += OnEditConnectionClick;
@@ -310,11 +319,11 @@ public sealed partial class MainWindow : Window
         try
         {
             var profiles = await _profileManager.GetAllAsync();
-            _profiles.Clear();
+            _connectionItems.Clear();
             foreach (var profile in profiles.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
-                _profiles.Add(profile);
+                _connectionItems.Add(new ConnectionListItem(profile));
 
-            _statusText.Text = $"Loaded {_profiles.Count} saved connection profile(s). Passwords are not stored in the profile file.";
+            _statusText.Text = $"Loaded {_connectionItems.Count} saved connection profile(s). Passwords are not stored in the profile file.";
             UpdateConnectionState();
         }
         catch (Exception exception)
@@ -746,7 +755,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnEditConnectionClick(object? sender, RoutedEventArgs e)
     {
-        if (_connectionsList.SelectedItem is ConnectionProfile profile)
+        if (SelectedConnection is { } profile)
             await ShowConnectionEditorAsync(profile);
     }
 
@@ -758,21 +767,28 @@ public sealed partial class MainWindow : Window
         if (editor.SavedProfile is not { } savedProfile)
             return;
 
-        var existingIndex = _profiles.ToList().FindIndex(item => item.Id == savedProfile.Id);
-        if (existingIndex >= 0)
-            _profiles[existingIndex] = savedProfile;
+        var row = _connectionItems.FirstOrDefault(item => item.Profile.Id == savedProfile.Id);
+        if (row is null)
+        {
+            row = new ConnectionListItem(savedProfile);
+            _connectionItems.Add(row);
+        }
         else
-            _profiles.Add(savedProfile);
+        {
+            row.UpdateProfile(savedProfile);
+        }
 
+        _connectionsList.SelectedItem = row;
+        UpdateConnectionState();
         _statusText.Text = $"Connection profile '{savedProfile.Name}' saved. No password was written to disk.";
-        _connectionsList.SelectedItem = savedProfile;
     }
 
     private async void OnRemoveConnectionClick(object? sender, RoutedEventArgs e)
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile)
+        if (_connectionsList.SelectedItem is not ConnectionListItem row)
             return;
 
+        var profile = row.Profile;
         if (_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
             _statusText.Text = "Disconnect this profile before removing it.";
@@ -786,7 +802,7 @@ public sealed partial class MainWindow : Window
         {
             // Remove the profile first. If persistence fails, keep its saved credential intact.
             await _profileManager.DeleteAsync(profile.Id);
-            _profiles.Remove(profile);
+            _connectionItems.Remove(row);
 
             try
             {
@@ -854,7 +870,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnConnectClick(object? sender, RoutedEventArgs e)
     {
-        if (_connectionsList.SelectedItem is ConnectionProfile profile)
+        if (SelectedConnection is { } profile)
             await ConnectProfileAsync(profile);
     }
 
@@ -866,28 +882,36 @@ public sealed partial class MainWindow : Window
         if (e.Source is Visual source)
         {
             var item = source as ListBoxItem ?? source.GetVisualAncestors().OfType<ListBoxItem>().FirstOrDefault();
-            if (item?.DataContext is ConnectionProfile profile)
-                _connectionsList.SelectedItem = profile;
+            if (item?.DataContext is ConnectionListItem row)
+                _connectionsList.SelectedItem = row;
         }
 
         UpdateActionAvailability();
-        UpdateConnectionContextMenuAvailability();
-    }
-
-    private void UpdateConnectionContextMenuAvailability()
-    {
-        var selected = _connectionsList.SelectedItem as ConnectionProfile;
-        var isConnected = selected is not null &&
-            _sessionManager.GetActiveSessions().Any(session => session.ProfileId == selected.Id);
-        _connectionContextEditItem.IsEnabled = selected is not null;
-        _connectionContextConnectItem.IsEnabled = selected is not null && !isConnected;
-        _connectionContextDisconnectItem.IsEnabled = selected is not null && isConnected;
-        _connectionContextDeleteItem.IsEnabled = selected is not null && !isConnected;
     }
 
     private async void OnConnectionsDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (_connectionsList.SelectedItem is ConnectionProfile profile)
+        if (SelectedConnection is { } profile)
+            await ConnectProfileAsync(profile);
+    }
+
+    private async void OnConnectionsKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None || SelectedConnection is not { } profile)
+            return;
+
+        e.Handled = true;
+        await ConnectProfileAsync(profile);
+    }
+
+    private async void OnConnectionSessionClick(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedConnection is not { } profile)
+            return;
+
+        if (_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
+            await DisconnectProfileAsync(profile);
+        else
             await ConnectProfileAsync(profile);
     }
 
@@ -899,6 +923,23 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        if (!_pendingConnectionChanges.Add(profile.Id))
+            return;
+
+        UpdateActionAvailability();
+        try
+        {
+            await OpenConnectionAsync(profile);
+        }
+        finally
+        {
+            _pendingConnectionChanges.Remove(profile.Id);
+            UpdateConnectionState();
+        }
+    }
+
+    private async Task OpenConnectionAsync(ConnectionProfile profile)
+    {
         string? savedPassword = null;
         string? credentialStoreNotice = null;
         try
@@ -919,7 +960,6 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        _connectButton.IsEnabled = false;
         _statusText.Text = $"Connecting to '{profile.Name}'...";
         try
         {
@@ -936,9 +976,13 @@ public sealed partial class MainWindow : Window
 
             if (result.Succeeded)
             {
-                _statusText.Text = "Connected. Loading database objects in the background; the window remains responsive.";
-                AddMessage("Information", "Database metadata", "Loading the first 200 objects from each category in the background. The window remains responsive; database requests may wait briefly while metadata is read.");
-                await RefreshMetadataAsync(profile);
+                if (SelectedConnection?.Id == profile.Id)
+                {
+                    _statusText.Text = "Connected. Loading database objects in the background; the window remains responsive.";
+                    AddMessage("Information", "Database metadata", "Loading the first 200 objects from each category in the background. The window remains responsive; database requests may wait briefly while metadata is read.");
+                    await RefreshMetadataAsync(profile);
+                }
+
                 try
                 {
                     if (passwordPrompt.RememberPassword && password.Length > 0)
@@ -977,23 +1021,33 @@ public sealed partial class MainWindow : Window
             savedPassword = null;
             credentialStoreNotice = null;
             passwordPrompt.ClearCapturedPassword();
-            UpdateActionAvailability();
         }
     }
 
     private async void OnDisconnectClick(object? sender, RoutedEventArgs e)
     {
-        CancelMetadataLoading();
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile)
+        if (SelectedConnection is { } profile)
+            await DisconnectProfileAsync(profile);
+    }
+
+    private async Task DisconnectProfileAsync(ConnectionProfile profile)
+    {
+        if (!_pendingConnectionChanges.Add(profile.Id))
             return;
 
-        _disconnectButton.IsEnabled = false;
+        if (SelectedConnection?.Id == profile.Id)
+            CancelMetadataLoading();
+
+        UpdateActionAvailability();
         try
         {
             await _sessionManager.DisconnectAsync(profile.Id);
-            _metadataObjects.Clear();
-            _currentTableDetailsName = null;
-            _tableDetailsTab.IsVisible = false;
+            if (SelectedConnection?.Id == profile.Id)
+            {
+                _metadataObjects.Clear();
+                _currentTableDetailsName = null;
+                _tableDetailsTab.IsVisible = false;
+            }
             _statusText.Text = $"Disconnected from '{profile.Name}'.";
             ReportInformation("Database connection", _statusText.Text);
         }
@@ -1003,12 +1057,12 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
+            _pendingConnectionChanges.Remove(profile.Id);
             UpdateConnectionState();
-            UpdateActionAvailability();
         }
     }
 
-    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         CancelMetadataLoading();
         _metadataSearchCancellation?.Cancel();
@@ -1023,36 +1077,63 @@ public sealed partial class MainWindow : Window
         _nextTableDataPageButton.IsEnabled = false;
         _tableDataPageStatus.Text = "No rows loaded";
         UpdateActionAvailability();
-        UpdateConnectionContextMenuAvailability();
+
+        if (_connectionsList.SelectedItem is ConnectionListItem { IsConnected: true } row)
+            await RefreshMetadataAsync(row.Profile);
     }
 
     private void UpdateActionAvailability()
     {
-        var selected = _connectionsList.SelectedItem as ConnectionProfile;
-        var isConnected = selected is not null &&
-            _sessionManager.GetActiveSessions().Any(session => session.ProfileId == selected.Id);
+        var selected = SelectedConnection;
+        var sessions = _sessionManager.GetActiveSessions();
+        var selectedSession = sessions.FirstOrDefault(session => session.ProfileId == selected?.Id);
+        var isConnected = selectedSession is not null;
+        var canChange = selected is not null && !_pendingConnectionChanges.Contains(selected.Id);
 
-        _editButton.IsEnabled = selected is not null;
-        _removeButton.IsEnabled = selected is not null && !isConnected;
-        _connectButton.IsEnabled = selected is not null && !isConnected;
-        _disconnectButton.IsEnabled = selected is not null && isConnected;
-        _refreshMetadataButton.IsEnabled = selected is not null && isConnected;
-        _refreshMetadataMenuItem.IsEnabled = selected is not null && isConnected;
-        _executeButton.IsEnabled = selected is not null && isConnected && !_isQueryExecuting;
-        _sqlAutocompleteMenuItem.IsEnabled = selected is not null && isConnected;
+        _editButton.IsEnabled = canChange;
+        _removeButton.IsEnabled = canChange && !isConnected;
+        _connectButton.IsEnabled = canChange && !isConnected;
+        _disconnectButton.IsEnabled = canChange && isConnected;
+        _connectionContextEditItem.IsEnabled = _editButton.IsEnabled;
+        _connectionContextDeleteItem.IsEnabled = _removeButton.IsEnabled;
+        _connectionContextConnectItem.IsEnabled = _connectButton.IsEnabled;
+        _connectionContextDisconnectItem.IsEnabled = _disconnectButton.IsEnabled;
+        _editSelectedConnectionButton.IsEnabled = _editButton.IsEnabled;
+        _connectionSessionButton.IsEnabled = canChange;
+        _connectionSessionButton.Content = isConnected ? "Disconnect" : "Connect";
+        ToolTip.SetTip(_connectionSessionButton,
+            isConnected ? "Disconnect from the selected database" : "Connect to the selected database");
+
+        _refreshMetadataButton.IsEnabled = isConnected;
+        _refreshMetadataMenuItem.IsEnabled = isConnected;
+        _executeButton.IsEnabled = isConnected && !_isQueryExecuting;
+        _sqlAutocompleteMenuItem.IsEnabled = isConnected;
         _cancelQueryButton.IsEnabled = _isQueryExecuting;
         UpdateMetadataReorderAvailability();
-        UpdateConnectionContextMenuAvailability();
+
+        _connectionStateText.Text = (selected, selectedSession) switch
+        {
+            ({ } profile, { } session) => $"Connected: {profile.Name} · {session.ServerVersion}",
+            ({ } profile, null) => $"Not connected: {profile.Name}",
+            _ when sessions.Count > 0 => $"{sessions.Count} active database session(s)",
+            _ => "Not connected"
+        };
+        var hasActiveSession = isConnected || selected is null && sessions.Count > 0;
+        _connectionStateText.Classes.Set("error", !hasActiveSession);
+        _connectionStateText.Classes.Set("success", hasActiveSession);
     }
 
     private async void OnRefreshMetadataClick(object? sender, RoutedEventArgs e)
     {
-        if (_connectionsList.SelectedItem is ConnectionProfile profile)
+        if (SelectedConnection is { } profile)
             await RefreshMetadataAsync(profile);
     }
 
     private async Task RefreshMetadataAsync(ConnectionProfile profile)
     {
+        if (SelectedConnection?.Id != profile.Id)
+            return;
+
         CancelMetadataLoading();
         var metadataCancellation = new CancellationTokenSource();
         _metadataLoadingCancellation = metadataCancellation;
@@ -1068,7 +1149,7 @@ public sealed partial class MainWindow : Window
                 () => _sessionManager.GetMetadataAsync(profile.Id, metadataCancellation.Token),
                 metadataCancellation.Token);
             if (metadataCancellation.IsCancellationRequested || loadGeneration != _metadataLoadGeneration ||
-                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+                SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
 
             _metadataObjects.Clear();
@@ -1095,12 +1176,14 @@ public sealed partial class MainWindow : Window
             var failedCategories = new List<string>();
             for (var index = 0; index < orderedCategories.Length; index++)
             {
-                if (_connectionsList.SelectedItem is not ConnectionProfile selectedProfile || selectedProfile.Id != profile.Id)
+                if (SelectedConnection is not { } selectedProfile || selectedProfile.Id != profile.Id)
                     return;
                 var categoryName = orderedCategories[index].Name;
                 _statusText.Text = $"Loading database objects in the background: {categoryName} ({index + 1}/{orderedCategories.Length}). Large catalogs may take some time; the window remains responsive.";
                 await LoadMetadataPageAsync(categoryName, 0, updateStatus: false,
                     cancellationToken: metadataCancellation.Token, loadGeneration: loadGeneration);
+                if (loadGeneration != _metadataLoadGeneration)
+                    return;
                 if (!_metadataNextOffsets.ContainsKey(categoryName))
                     failedCategories.Add(categoryName);
             }
@@ -1180,7 +1263,7 @@ public sealed partial class MainWindow : Window
         };
         if (searchTerm.Length == 0)
         {
-            if (_isMetadataSearchActive && _connectionsList.SelectedItem is ConnectionProfile selectedProfile &&
+            if (_isMetadataSearchActive && SelectedConnection is { } selectedProfile &&
                 _sessionManager.GetActiveSessions().Any(session => session.ProfileId == selectedProfile.Id))
             {
                 _isMetadataSearchActive = false;
@@ -1191,7 +1274,7 @@ public sealed partial class MainWindow : Window
 
         if (searchTerm.Length < 2)
         {
-            if (_isMetadataSearchActive && _connectionsList.SelectedItem is ConnectionProfile shortSearchProfile &&
+            if (_isMetadataSearchActive && SelectedConnection is { } shortSearchProfile &&
                 _sessionManager.GetActiveSessions().Any(session => session.ProfileId == shortSearchProfile.Id))
             {
                 _isMetadataSearchActive = false;
@@ -1201,7 +1284,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
             _statusText.Text = "Connect to a database before searching its objects.";
@@ -1218,7 +1301,7 @@ public sealed partial class MainWindow : Window
                 () => _sessionManager.SearchMetadataAsync(profile.Id, searchTerm, cancellation.Token, kindFilter),
                 cancellation.Token);
             if (cancellation.IsCancellationRequested ||
-                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id ||
+                SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id ||
                 !string.Equals(_metadataSearchBox.Text?.Trim(), searchTerm, StringComparison.Ordinal) ||
                 !string.Equals(GetSelectedMetadataKindFilter(), kindFilter, StringComparison.Ordinal))
                 return;
@@ -1229,7 +1312,7 @@ public sealed partial class MainWindow : Window
             for (var index = 0; index < results.Count; index += searchUiBatchSize)
             {
                 cancellation.Token.ThrowIfCancellationRequested();
-                if (_connectionsList.SelectedItem is not ConnectionProfile activeProfile ||
+                if (SelectedConnection is not { } activeProfile ||
                     activeProfile.Id != profile.Id)
                     return;
 
@@ -1376,14 +1459,14 @@ public sealed partial class MainWindow : Window
 
     private async Task LoadMetadataObjectChildrenAsync(DatabaseMetadataObject item)
     {
-        if (item.Children is not null || _connectionsList.SelectedItem is not ConnectionProfile profile)
+        if (item.Children is not null || SelectedConnection is not { } profile)
             return;
 
         try
         {
             var details = await Task.Run(
                 () => _sessionManager.GetMetadataObjectDetailsAsync(profile.Id, item.Kind, item.Name));
-            if (_connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+            if (SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
             var description = item.Details;
             if (item.Kind == "Procedures" && details.Count == 0)
@@ -1424,7 +1507,7 @@ public sealed partial class MainWindow : Window
         if (!cancellationToken.CanBeCanceled && _metadataLoadingCancellation is not null)
             cancellationToken = _metadataLoadingCancellation.Token;
         var generation = loadGeneration ?? _metadataLoadGeneration;
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             string.IsNullOrWhiteSpace(categoryName) || !_loadingMetadataCategories.Add(categoryName))
             return;
 
@@ -1457,7 +1540,7 @@ public sealed partial class MainWindow : Window
                 pageToken);
             pageToken.ThrowIfCancellationRequested();
             if (generation != _metadataLoadGeneration ||
-                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+                SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
             categoryIndex = _metadataObjects.ToList().FindIndex(item =>
                 item.Kind == "Category" && string.Equals(item.Name, categoryName, StringComparison.OrdinalIgnoreCase));
@@ -1493,7 +1576,7 @@ public sealed partial class MainWindow : Window
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
                 pageToken.ThrowIfCancellationRequested();
                 if (generation != _metadataLoadGeneration ||
-                    _connectionsList.SelectedItem is not ConnectionProfile activeProfile || activeProfile.Id != profile.Id)
+                    SelectedConnection is not { } activeProfile || activeProfile.Id != profile.Id)
                     return;
             }
 
@@ -1730,7 +1813,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ExecuteSelectedSqlAsync()
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
             ReportError("SQL execution", "No active database connection. Select a saved connection profile and connect before executing SQL.");
@@ -1979,41 +2062,10 @@ public sealed partial class MainWindow : Window
             0, new FirebirdSqlSyntaxColorizer(() => _preferences.Theme == "Dark"));
     }
 
-    private static IDataTemplate CreateConnectionTemplate(bool showDetails) =>
-        new FuncDataTemplate<ConnectionProfile>((profile, _) =>
-        {
-            if (profile is null)
-                return new TextBlock();
-
-            var content = new StackPanel { Spacing = 2, Margin = new Thickness(2, 4) };
-            content.Children.Add(new TextBlock
-            {
-                Text = profile.Name ?? string.Empty,
-                FontWeight = FontWeight.SemiBold
-            });
-
-            if (showDetails)
-            {
-                content.Children.Add(new TextBlock
-                {
-                    Text = profile.Host ?? string.Empty,
-                    Classes = { "secondary" }
-                });
-                content.Children.Add(new TextBlock
-                {
-                    Text = profile.Database ?? string.Empty,
-                    Classes = { "secondary" },
-                    TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis
-                });
-            }
-
-            return content;
-        });
-
     private void ApplyConnectionDisplayMode()
     {
         var showDetails = _preferences.ConnectionDisplayMode == "Detailed";
-        _connectionsList.ItemTemplate = CreateConnectionTemplate(showDetails);
+        _connectionsList.Classes.Set("detailed", showDetails);
         this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!.IsChecked = showDetails;
         this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!.IsChecked = !showDetails;
         var toggleButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
@@ -2092,7 +2144,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowSqlCompletionAsync()
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
             _statusText.Text = "Connect to a database before requesting SQL suggestions.";
@@ -2125,7 +2177,7 @@ public sealed partial class MainWindow : Window
                 completionSchema = schema.Concat(domains).ToArray();
             }
 
-            if (_connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+            if (SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
 
             var suggestions = SqlCompletionCatalog.Build(documentText, caretOffset, completionSchema);
@@ -2504,7 +2556,7 @@ public sealed partial class MainWindow : Window
 
     private async Task OpenSqlIdentifierAsync(AvaloniaEdit.TextEditor editor, int offset)
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
             ShowFooterNotification("Connect to a database to navigate database objects.", "information");
@@ -2700,7 +2752,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowMetadataObjectDetailsAsync(DatabaseMetadataObject item)
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
             return;
 
@@ -2830,7 +2882,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowTableDetailsAsync(DatabaseMetadataObject table)
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
+        if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
             return;
 
@@ -2861,7 +2913,7 @@ public sealed partial class MainWindow : Window
         {
             var details = await _sessionManager.GetMetadataObjectDetailsAsync(profile.Id, table.Kind, table.Name);
             if (!string.Equals(_currentTableDetailsName, table.Name, StringComparison.Ordinal) ||
-                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+                SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
 
             UpdateMetadataObjectNode(table, table with { Children = details });
@@ -2893,7 +2945,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ChangeTableDataPageAsync(int direction)
     {
-        if (_connectionsList.SelectedItem is not ConnectionProfile profile || string.IsNullOrWhiteSpace(_currentTableDetailsName))
+        if (SelectedConnection is not { } profile || string.IsNullOrWhiteSpace(_currentTableDetailsName))
             return;
         var nextOffset = direction < 0 ? Math.Max(0, _currentTableDataOffset - TableDataPageSize) :
             checked(_currentTableDataOffset + TableDataPageSize);
@@ -2921,7 +2973,7 @@ public sealed partial class MainWindow : Window
             var page = await _sessionManager.GetTableDataPageAsync(
                 profile.Id, tableName, offset, TableDataPageSize, cursorValues, previous);
             if (!string.Equals(_currentTableDetailsName, tableName, StringComparison.Ordinal) ||
-                _connectionsList.SelectedItem is not ConnectionProfile currentProfile || currentProfile.Id != profile.Id)
+                SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
 
             PopulateResultGrid(_tableDataGrid, page.Columns, page.Rows);
@@ -3153,16 +3205,10 @@ public sealed partial class MainWindow : Window
 
     private void UpdateConnectionState()
     {
-        var sessions = _sessionManager.GetActiveSessions();
-        _connectionStateText.Text = sessions.Count switch
-        {
-            0 => "Not connected",
-            1 => $"Connected: {sessions[0].ProfileName} · {sessions[0].ServerVersion}",
-            _ => $"{sessions.Count} active database sessions"
-        };
-        _connectionStateText.Classes.Set("error", sessions.Count == 0);
-        _connectionStateText.Classes.Set("success", sessions.Count > 0);
-        _connectionStateText.FontWeight = FontWeight.Bold;
+        var connectedProfileIds = _sessionManager.GetActiveSessions().Select(session => session.ProfileId).ToHashSet();
+        foreach (var row in _connectionItems)
+            row.UpdateConnectionState(connectedProfileIds.Contains(row.Profile.Id));
+
         UpdateActionAvailability();
     }
 
