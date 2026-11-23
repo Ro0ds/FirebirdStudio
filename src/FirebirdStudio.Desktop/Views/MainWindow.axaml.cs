@@ -366,20 +366,20 @@ public sealed partial class MainWindow : Window
         if (!acquired)
         {
             if (manual)
-                ShowFooterNotification("An update check is already running", "#9A7100");
+                ShowFooterNotification("An update check is already running", "information");
             return;
         }
 
         try
         {
             if (manual)
-                ShowFooterNotification("Checking for updates…", "#9A7100");
+                ShowFooterNotification("Checking for updates…", "information");
 
             var latestRelease = await _releaseChecker.GetLatestStableReleaseAsync(cancellationToken);
             if (latestRelease is null)
             {
                 if (manual)
-                    ShowFooterNotification("No stable release has been published yet", "#9A7100");
+                    ShowFooterNotification("No stable release has been published yet", "information");
                 return;
             }
 
@@ -388,7 +388,7 @@ public sealed partial class MainWindow : Window
             if (latestRelease.Version <= currentVersion)
             {
                 if (manual)
-                    ShowFooterNotification("Firebird Studio is up to date", "#397B45");
+                    ShowFooterNotification("Firebird Studio is up to date", "success");
                 return;
             }
 
@@ -928,7 +928,7 @@ public sealed partial class MainWindow : Window
             {
                 _statusText.Text = result.Message;
                 AddMessage("Success", $"Connection to '{profile.Name}'", result.Message);
-                ShowFooterNotification("Database connection established", "#397B45");
+                ShowFooterNotification("Database connection established", "success");
             }
             else
                 ReportError($"Connection to '{profile.Name}'", result.Diagnostics ?? result.Message);
@@ -1653,7 +1653,7 @@ public sealed partial class MainWindow : Window
     {
         if (_isQueryExecuting)
         {
-            ShowFooterNotification("Wait for the running query to finish before clearing query history.", "#9A7100");
+            ShowFooterNotification("Wait for the running query to finish before clearing query history.", "information");
             return;
         }
 
@@ -1664,7 +1664,7 @@ public sealed partial class MainWindow : Window
             _queryHistoryList.SelectedItem = null;
             _queryHistoryTabList.SelectedItem = null;
             _statusText.Text = "Query history cleared.";
-            ShowFooterNotification("Query history cleared", "#397B45");
+            ShowFooterNotification("Query history cleared", "success");
         }
         catch (Exception exception)
         {
@@ -1676,14 +1676,14 @@ public sealed partial class MainWindow : Window
     {
         if (_isQueryExecuting)
         {
-            ShowFooterNotification("Wait for the running query to finish before clearing results.", "#9A7100");
+            ShowFooterNotification("Wait for the running query to finish before clearing results.", "information");
             return;
         }
 
         _queryResultsGrid.ItemsSource = null;
         _queryResultsGrid.Columns.Clear();
         _statusText.Text = "Query results cleared.";
-        ShowFooterNotification("Query results cleared", "#397B45");
+        ShowFooterNotification("Query results cleared", "success");
     }
 
     private void FormatActiveSql()
@@ -1723,7 +1723,7 @@ public sealed partial class MainWindow : Window
         _statusText.Text = hasSelection
             ? "Selected SQL formatted."
             : "SQL editor content formatted.";
-        ShowFooterNotification("SQL formatted", "#397B45");
+        ShowFooterNotification("SQL formatted", "success");
     }
 
     private async void OnExecuteClick(object? sender, RoutedEventArgs e) => await ExecuteSelectedSqlAsync();
@@ -1796,7 +1796,7 @@ public sealed partial class MainWindow : Window
             AddMessage("Success", "SQL execution", outcome);
             if (ReferenceEquals(_resultsMessagesTabs.SelectedItem, _messagesTab))
                 _resultsMessagesTabs.SelectedItem = _resultsTab;
-            ShowFooterNotification("Query executed successfully", "#397B45");
+            ShowFooterNotification("Query executed successfully", "success");
         }
         catch (OperationCanceledException)
         {
@@ -1997,14 +1997,12 @@ public sealed partial class MainWindow : Window
                 content.Children.Add(new TextBlock
                 {
                     Text = profile.Host ?? string.Empty,
-                    FontSize = 10,
-                    Opacity = 0.7
+                    Classes = { "secondary" }
                 });
                 content.Children.Add(new TextBlock
                 {
                     Text = profile.Database ?? string.Empty,
-                    FontSize = 10,
-                    Opacity = 0.7,
+                    Classes = { "secondary" },
                     TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis
                 });
             }
@@ -2347,8 +2345,6 @@ public sealed partial class MainWindow : Window
         var editor = new AvaloniaEdit.TextEditor
         {
             ShowLineNumbers = true,
-            FontFamily = new FontFamily("Cascadia Code, Consolas, monospace"),
-            FontSize = 13,
             WordWrap = false,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
@@ -2365,8 +2361,8 @@ public sealed partial class MainWindow : Window
             Child = new TextBlock
             {
                 Text = "F5 executes the selected SQL, or the only statement in this editor. Select a statement when multiple statements are present.",
-                FontSize = 10,
-                Opacity = 0.65
+                Classes = { "secondary" },
+                TextWrapping = TextWrapping.Wrap
             }
         };
         content.Children.Add(hint);
@@ -2511,7 +2507,7 @@ public sealed partial class MainWindow : Window
         if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
-            ShowFooterNotification("Connect to a database to navigate database objects.", "#B7791F");
+            ShowFooterNotification("Connect to a database to navigate database objects.", "information");
             return;
         }
 
@@ -2693,8 +2689,6 @@ public sealed partial class MainWindow : Window
             IsReadOnly = true,
             ShowLineNumbers = true,
             WordWrap = false,
-            FontSize = 11,
-            FontFamily = new FontFamily("Cascadia Code, Consolas, monospace"),
             MinHeight = minHeight,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
@@ -2729,8 +2723,7 @@ public sealed partial class MainWindow : Window
             panel.Children.Add(new TextBlock
             {
                 Text = $"{GetMetadataDisplayKind(item.Kind)}: {item.Name}",
-                FontSize = 15,
-                FontWeight = FontWeight.SemiBold
+                Classes = { "section-title" }
             });
             if (!string.IsNullOrWhiteSpace(item.Details))
                 panel.Children.Add(new TextBlock { Text = item.Details, Opacity = 0.75, TextWrapping = Avalonia.Media.TextWrapping.Wrap });
@@ -3040,7 +3033,7 @@ public sealed partial class MainWindow : Window
             Math.Max(0, activeIndex));
         await _sqlEditorRecoveryStore.SaveAsync(snapshot, cancellationToken);
         if (!string.IsNullOrWhiteSpace(confirmation))
-            ShowFooterNotification(confirmation, "#397B45");
+            ShowFooterNotification(confirmation, "success");
     }
 
     private async Task RestoreSqlEditorRecoveryAsync()
@@ -3105,7 +3098,7 @@ public sealed partial class MainWindow : Window
         _statusText.Text = $"{context} failed. See the red diagnostic entry below.";
         _resultsMessagesTabs.SelectedItem = _messagesTab;
         _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
-        ShowFooterNotification($"Error: {context}", "#B83B35");
+        ShowFooterNotification($"Error: {context}", "error");
     }
 
     private void ReportInformation(string context, string details)
@@ -3114,7 +3107,7 @@ public sealed partial class MainWindow : Window
         _statusText.Text = details;
         _resultsMessagesTabs.SelectedItem = _messagesTab;
         _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
-        ShowFooterNotification(details, "#9A7100");
+        ShowFooterNotification(details, "information");
     }
 
     private void AddMessage(string severity, string context, string details)
@@ -3127,13 +3120,14 @@ public sealed partial class MainWindow : Window
             _messages.RemoveAt(_messages.Count - 1);
     }
 
-    private void ShowFooterNotification(string message, string color)
+    private void ShowFooterNotification(string message, string severity)
     {
         _footerNotificationCancellation?.Cancel();
         var cancellation = new CancellationTokenSource();
         _footerNotificationCancellation = cancellation;
         _footerNotificationText.Text = message;
-        _footerNotificationText.Foreground = new SolidColorBrush(Color.Parse(color));
+        _footerNotificationText.Classes.Clear();
+        _footerNotificationText.Classes.Add(severity);
         _footerNotificationText.IsVisible = true;
         _ = HideFooterNotificationAfterDelayAsync(cancellation);
     }
@@ -3166,8 +3160,8 @@ public sealed partial class MainWindow : Window
             1 => $"Connected: {sessions[0].ProfileName} · {sessions[0].ServerVersion}",
             _ => $"{sessions.Count} active database sessions"
         };
-        _connectionStateText.Foreground = new SolidColorBrush(
-            Color.Parse(sessions.Count == 0 ? "#D96C6C" : "#55A978"));
+        _connectionStateText.Classes.Set("error", sessions.Count == 0);
+        _connectionStateText.Classes.Set("success", sessions.Count > 0);
         _connectionStateText.FontWeight = FontWeight.Bold;
         UpdateActionAvailability();
     }

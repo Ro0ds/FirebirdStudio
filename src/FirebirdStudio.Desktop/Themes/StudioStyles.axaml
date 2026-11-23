@@ -1,0 +1,59 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:edit="using:AvaloniaEdit"
+        xmlns:editing="using:AvaloniaEdit.Editing">
+  <Style Selector=":is(Window)">
+    <Setter Property="Background" Value="{DynamicResource StudioWorkspaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource StudioTextBrush}" />
+  </Style>
+  <Style Selector=":is(TextBlock)">
+    <Setter Property="FontSize" Value="{StaticResource StudioBodyFontSize}" />
+  </Style>
+  <Style Selector="Button, MenuItem, TabItem, TextBox, ComboBox, NumericUpDown, CheckBox, TableView">
+    <Setter Property="FontSize" Value="{StaticResource StudioBodyFontSize}" />
+  </Style>
+  <Style Selector="TextBlock.secondary">
+    <Setter Property="FontSize" Value="{StaticResource StudioSecondaryFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource StudioSecondaryTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.panel-title">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.section-title">
+    <Setter Property="FontSize" Value="{StaticResource StudioTitleFontSize}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.brand">
+    <Setter Property="Foreground" Value="{DynamicResource StudioAccentBrush}" />
+  </Style>
+  <Style Selector="TextBlock.success">
+    <Setter Property="Foreground" Value="{DynamicResource StudioSuccessBrush}" />
+  </Style>
+  <Style Selector="TextBlock.information">
+    <Setter Property="Foreground" Value="{DynamicResource StudioInformationBrush}" />
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource StudioErrorBrush}" />
+  </Style>
+  <Style Selector="GridSplitter">
+    <Setter Property="Background" Value="{DynamicResource StudioSplitterBrush}" />
+  </Style>
+  <Style Selector="edit|TextEditor">
+    <Setter Property="FontFamily" Value="{StaticResource StudioMonospaceFont}" />
+    <Setter Property="FontSize" Value="{StaticResource StudioEditorFontSize}" />
+    <Setter Property="Background" Value="{DynamicResource StudioSurfaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource StudioTextBrush}" />
+  </Style>
+  <Style Selector="editing|TextArea">
+    <Setter Property="SelectionBrush" Value="{DynamicResource SqlSelectionBackground}" />
+    <Setter Property="SelectionForeground" Value="{DynamicResource SqlSelectionForeground}" />
+    <Setter Property="SelectionBorder" Value="{DynamicResource SqlSelectionBorder}" />
+  </Style>
+  <Style Selector="Button, TextBox, ComboBox, NumericUpDown, CheckBox, TabItem, ListBoxItem, TreeViewItem, GridSplitter, TableView, editing|TextArea">
+    <Setter Property="FocusAdorner">
+      <Template>
+        <Border BorderBrush="{DynamicResource StudioFocusBrush}" BorderThickness="2"
+                CornerRadius="3" IsHitTestVisible="False" />
+      </Template>
+    </Setter>
+  </Style>
+</Styles>
