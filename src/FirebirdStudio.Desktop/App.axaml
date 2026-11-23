@@ -1,32 +1,23 @@
 <Application
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:editing="using:AvaloniaEdit.Editing"
     x:Class="FirebirdStudio.Desktop.App"
     RequestedThemeVariant="Default">
   <Application.Resources>
     <ResourceDictionary>
-      <ResourceDictionary.ThemeDictionaries>
-        <ResourceDictionary x:Key="Default">
-          <SolidColorBrush x:Key="SqlSelectionBackground" Color="#FCE2D1" />
-          <SolidColorBrush x:Key="SqlSelectionForeground" Color="#2D1B14" />
-          <Pen x:Key="SqlSelectionBorder" Brush="#A43E1B" Thickness="1" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="SqlSelectionBackground" Color="#573426" />
-          <SolidColorBrush x:Key="SqlSelectionForeground" Color="#FFF1E8" />
-          <Pen x:Key="SqlSelectionBorder" Brush="#FF9D72" Thickness="1" />
-        </ResourceDictionary>
-      </ResourceDictionary.ThemeDictionaries>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="/Themes/StudioResources.axaml" />
+      </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
   <Application.Styles>
-    <FluentTheme />
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light" BaseHigh="#182230" RegionColor="#F7F8FA" />
+        <ColorPaletteResources x:Key="Dark" BaseHigh="#EBEEF2" RegionColor="#141920" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-    <Style Selector="editing|TextArea">
-      <Setter Property="SelectionBrush" Value="{DynamicResource SqlSelectionBackground}" />
-      <Setter Property="SelectionForeground" Value="{DynamicResource SqlSelectionForeground}" />
-      <Setter Property="SelectionBorder" Value="{DynamicResource SqlSelectionBorder}" />
-    </Style>
+    <StyleInclude Source="/Themes/StudioStyles.axaml" />
   </Application.Styles>
 </Application>

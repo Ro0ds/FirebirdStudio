@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Default">
+      <SolidColorBrush x:Key="StudioSurfaceBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="StudioSecondaryTextBrush" Color="#526173" />
+      <SolidColorBrush x:Key="StudioDividerBrush" Color="#CFD7E0" />
+      <SolidColorBrush x:Key="StudioSplitterBrush" Color="#7A8999" />
+      <SolidColorBrush x:Key="StudioFocusBrush" Color="#245AA7" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="StudioFocusBrush" />
+      <SolidColorBrush x:Key="StudioAccentBrush" Color="#A43E1B" />
+      <SolidColorBrush x:Key="StudioSuccessBrush" Color="#245B2A" />
+      <SolidColorBrush x:Key="StudioInformationBrush" Color="#765500" />
+      <SolidColorBrush x:Key="StudioErrorBrush" Color="#8A2924" />
+      <SolidColorBrush x:Key="SqlSelectionBackground" Color="#FCE2D1" />
+      <SolidColorBrush x:Key="SqlSelectionForeground" Color="#2D1B14" />
+      <Pen x:Key="SqlSelectionBorder" Brush="{StaticResource StudioAccentBrush}" Thickness="1" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="StudioSurfaceBrush" Color="#1C232D" />
+      <SolidColorBrush x:Key="StudioSecondaryTextBrush" Color="#AAB7C6" />
+      <SolidColorBrush x:Key="StudioDividerBrush" Color="#394553" />
+      <SolidColorBrush x:Key="StudioSplitterBrush" Color="#748396" />
+      <SolidColorBrush x:Key="StudioFocusBrush" Color="#83B5FF" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="StudioFocusBrush" />
+      <SolidColorBrush x:Key="StudioAccentBrush" Color="#FF9D72" />
+      <SolidColorBrush x:Key="StudioSuccessBrush" Color="#A3D9AD" />
+      <SolidColorBrush x:Key="StudioInformationBrush" Color="#FFD480" />
+      <SolidColorBrush x:Key="StudioErrorBrush" Color="#FFABA5" />
+      <SolidColorBrush x:Key="SqlSelectionBackground" Color="#573426" />
+      <SolidColorBrush x:Key="SqlSelectionForeground" Color="#FFF1E8" />
+      <Pen x:Key="SqlSelectionBorder" Brush="{StaticResource StudioAccentBrush}" Thickness="1" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <SolidColorBrush x:Key="StudioWorkspaceBrush" Color="{DynamicResource SystemRegionColor}" />
+  <SolidColorBrush x:Key="StudioTextBrush" Color="{DynamicResource SystemBaseHighColor}" />
+  <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+  <x:Double x:Key="StudioSecondaryFontSize">12</x:Double>
+  <x:Double x:Key="StudioBodyFontSize">13</x:Double>
+  <x:Double x:Key="StudioEditorFontSize">14</x:Double>
+  <x:Double x:Key="StudioTitleFontSize">16</x:Double>
+  <FontFamily x:Key="StudioMonospaceFont">Cascadia Code, Consolas, monospace</FontFamily>
+</ResourceDictionary>
