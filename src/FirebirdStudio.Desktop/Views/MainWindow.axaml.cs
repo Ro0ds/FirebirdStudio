@@ -76,8 +76,13 @@ public sealed partial class MainWindow : Window
     private readonly ListBox _connectionsList;
     private readonly TreeView _metadataTree;
     private readonly TextBox _metadataSearchBox;
+    private readonly ComboBox _metadataSearchKindFilter;
+    private readonly Button _clearMetadataSearchButton;
+    private readonly TextBlock _metadataConnectionText;
+    private readonly TextBlock _metadataEmptyText;
     private readonly Button _refreshMetadataButton;
     private readonly MenuItem _refreshMetadataMenuItem;
+    private readonly MenuItem _organizeMetadataMenuItem;
     private readonly MenuItem _moveCategoryUpMenuItem;
     private readonly MenuItem _moveCategoryDownMenuItem;
     private readonly MenuItem _executeButton;
@@ -157,8 +162,13 @@ public sealed partial class MainWindow : Window
         };
         _metadataTree = this.FindControl<TreeView>("MetadataTree")!;
         _metadataSearchBox = this.FindControl<TextBox>("MetadataSearchBox")!;
+        _metadataSearchKindFilter = this.FindControl<ComboBox>("MetadataSearchKindFilter")!;
+        _clearMetadataSearchButton = this.FindControl<Button>("ClearMetadataSearchButton")!;
+        _metadataConnectionText = this.FindControl<TextBlock>("MetadataConnectionText")!;
+        _metadataEmptyText = this.FindControl<TextBlock>("MetadataEmptyText")!;
         _refreshMetadataButton = this.FindControl<Button>("RefreshMetadataButton")!;
         _refreshMetadataMenuItem = this.FindControl<MenuItem>("RefreshMetadataMenuItem")!;
+        _organizeMetadataMenuItem = this.FindControl<MenuItem>("OrganizeMetadataMenuItem")!;
         _moveCategoryUpMenuItem = this.FindControl<MenuItem>("MoveCategoryUpMenuItem")!;
         _moveCategoryDownMenuItem = this.FindControl<MenuItem>("MoveCategoryDownMenuItem")!;
         _executeButton = this.FindControl<MenuItem>("ExecuteMenuItem")!;
@@ -256,7 +266,12 @@ public sealed partial class MainWindow : Window
         _connectionContextDisconnectItem.Click += OnDisconnectClick;
         _connectionContextDeleteItem.Click += OnRemoveConnectionClick;
         _metadataSearchBox.TextChanged += OnMetadataSearchChanged;
-        this.FindControl<ComboBox>("MetadataSearchKindFilter")!.SelectionChanged += OnMetadataSearchChanged;
+        _metadataSearchKindFilter.SelectionChanged += OnMetadataSearchChanged;
+        _clearMetadataSearchButton.Click += (_, _) =>
+        {
+            _metadataSearchBox.Focus();
+            _metadataSearchBox.Clear();
+        };
         _metadataTree.SelectionChanged += OnMetadataSelectionChanged;
         _metadataTree.DoubleTapped += OnMetadataDoubleTapped;
         _metadataTree.AttachedToVisualTree += (_, _) =>
@@ -991,9 +1006,14 @@ public sealed partial class MainWindow : Window
         try
         {
             await _sessionManager.DisconnectAsync(profile.Id);
-            _metadataObjects.Clear();
-            _currentTableDetailsName = null;
-            _tableDetailsTab.IsVisible = false;
+            if (_connectionsList.SelectedItem is ConnectionProfile selected && selected.Id == profile.Id)
+            {
+                CancelMetadataLoading();
+                ResetMetadataSearch();
+                _metadataObjects.Clear();
+                _currentTableDetailsName = null;
+                _tableDetailsTab.IsVisible = false;
+            }
             _statusText.Text = $"Disconnected from '{profile.Name}'.";
             ReportInformation("Database connection", _statusText.Text);
         }
@@ -1011,9 +1031,7 @@ public sealed partial class MainWindow : Window
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         CancelMetadataLoading();
-        _metadataSearchCancellation?.Cancel();
-        _metadataSearchBox.Text = string.Empty;
-        _isMetadataSearchActive = false;
+        ResetMetadataSearch();
         _metadataObjects.Clear();
         _completionWindow?.Close();
         _currentTableDetailsName = null;
@@ -1036,8 +1054,14 @@ public sealed partial class MainWindow : Window
         _removeButton.IsEnabled = selected is not null && !isConnected;
         _connectButton.IsEnabled = selected is not null && !isConnected;
         _disconnectButton.IsEnabled = selected is not null && isConnected;
-        _refreshMetadataButton.IsEnabled = selected is not null && isConnected;
-        _refreshMetadataMenuItem.IsEnabled = selected is not null && isConnected;
+        _refreshMetadataButton.IsEnabled = isConnected && !_isMetadataRefreshRunning;
+        _refreshMetadataMenuItem.IsEnabled = _refreshMetadataButton.IsEnabled;
+        _metadataSearchBox.IsEnabled = isConnected;
+        _metadataSearchKindFilter.IsEnabled = isConnected;
+        _clearMetadataSearchButton.IsEnabled = isConnected && !string.IsNullOrEmpty(_metadataSearchBox.Text);
+        _metadataConnectionText.Text = isConnected ? selected?.Name : null;
+        if (!isConnected)
+            _metadataEmptyText.Text = "Connect to browse database objects.";
         _executeButton.IsEnabled = selected is not null && isConnected && !_isQueryExecuting;
         _sqlAutocompleteMenuItem.IsEnabled = selected is not null && isConnected;
         _cancelQueryButton.IsEnabled = _isQueryExecuting;
@@ -1047,7 +1071,13 @@ public sealed partial class MainWindow : Window
 
     private async void OnRefreshMetadataClick(object? sender, RoutedEventArgs e)
     {
-        if (_connectionsList.SelectedItem is ConnectionProfile profile)
+        if (_connectionsList.SelectedItem is not ConnectionProfile profile)
+            return;
+
+        var searchTerm = _metadataSearchBox.Text?.Trim() ?? string.Empty;
+        if (searchTerm.Length >= 2)
+            await SearchMetadataAsync(profile, searchTerm, debounce: false);
+        else
             await RefreshMetadataAsync(profile);
     }
 
@@ -1057,8 +1087,9 @@ public sealed partial class MainWindow : Window
         var metadataCancellation = new CancellationTokenSource();
         _metadataLoadingCancellation = metadataCancellation;
         var loadGeneration = _metadataLoadGeneration;
-        _refreshMetadataButton.IsEnabled = false;
         _isMetadataRefreshRunning = true;
+        UpdateActionAvailability();
+        _metadataEmptyText.Text = "Loading database objects…";
         _statusText.Text = $"Preparing database object categories for '{profile.Name}'...";
         try
         {
@@ -1083,7 +1114,7 @@ public sealed partial class MainWindow : Window
                 // keeping the category node and its current selection stable.
                 _metadataObjects.Add(category with
                 {
-                    Details = "Objects load in batches of 200",
+                    Details = $"Objects load in batches of {MetadataPageSize}",
                     Children = new BatchObservableCollection<DatabaseMetadataObject>()
                 });
             }
@@ -1108,6 +1139,7 @@ public sealed partial class MainWindow : Window
             _statusText.Text = failedCategories.Count == 0
                 ? $"Loaded up to the first {MetadataPageSize} objects per category for '{profile.Name}'. Scroll within an expanded category to load additional batches automatically."
                 : $"Metadata loading completed with errors in: {string.Join(", ", failedCategories)}. You can retry with Refresh.";
+            _metadataEmptyText.Text = "No database objects to display.";
             AddMessage(failedCategories.Count == 0 ? "Success" : "Warning", "Database metadata",
                 failedCategories.Count == 0
                     ? $"Initial metadata loading completed for {orderedCategories.Length} categories. Additional objects load automatically in batches of {MetadataPageSize}."
@@ -1122,7 +1154,10 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             if (loadGeneration == _metadataLoadGeneration)
+            {
+                _metadataEmptyText.Text = "Could not load objects. Use Refresh to retry.";
                 ReportError($"Preparing database metadata for '{profile.Name}'", exception);
+            }
         }
         finally
         {
@@ -1163,56 +1198,39 @@ public sealed partial class MainWindow : Window
 
     private async void OnMetadataSearchChanged(object? sender, EventArgs e)
     {
-        _metadataSearchCancellation?.Cancel();
-        _metadataSearchCancellation = null;
-
+        _clearMetadataSearchButton.IsEnabled = _metadataSearchBox.IsEnabled && !string.IsNullOrEmpty(_metadataSearchBox.Text);
         var searchTerm = _metadataSearchBox.Text?.Trim() ?? string.Empty;
-        var kindFilter = (this.FindControl<ComboBox>("MetadataSearchKindFilter")?.SelectedIndex ?? 0) switch
-        {
-            1 => "Tables",
-            2 => "Views",
-            3 => "Column",
-            4 => "Procedures",
-            5 => "Triggers",
-            6 => "Indexes",
-            7 => "Domains",
-            _ => null
-        };
-        if (searchTerm.Length == 0)
-        {
-            if (_isMetadataSearchActive && _connectionsList.SelectedItem is ConnectionProfile selectedProfile &&
-                _sessionManager.GetActiveSessions().Any(session => session.ProfileId == selectedProfile.Id))
-            {
-                _isMetadataSearchActive = false;
-                await RefreshMetadataAsync(selectedProfile);
-            }
-            return;
-        }
-
-        if (searchTerm.Length < 2)
-        {
-            if (_isMetadataSearchActive && _connectionsList.SelectedItem is ConnectionProfile shortSearchProfile &&
-                _sessionManager.GetActiveSessions().Any(session => session.ProfileId == shortSearchProfile.Id))
-            {
-                _isMetadataSearchActive = false;
-                await RefreshMetadataAsync(shortSearchProfile);
-            }
-            _statusText.Text = "Enter at least 2 characters to search database objects and columns.";
-            return;
-        }
-
         if (_connectionsList.SelectedItem is not ConnectionProfile profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
+            return;
+
+        if (searchTerm.Length >= 2)
         {
-            _statusText.Text = "Connect to a database before searching its objects.";
+            await SearchMetadataAsync(profile, searchTerm, debounce: true);
             return;
         }
 
+        _metadataSearchCancellation?.Cancel();
+        if (_isMetadataSearchActive)
+        {
+            _isMetadataSearchActive = false;
+            await RefreshMetadataAsync(profile);
+        }
+        if (searchTerm.Length == 1 && string.Equals(_metadataSearchBox.Text?.Trim(), searchTerm, StringComparison.Ordinal))
+            _statusText.Text = "Enter at least 2 characters to search database objects and columns.";
+    }
+
+    private async Task SearchMetadataAsync(ConnectionProfile profile, string searchTerm, bool debounce)
+    {
+        _metadataSearchCancellation?.Cancel();
         var cancellation = new CancellationTokenSource();
         _metadataSearchCancellation = cancellation;
+        var kindFilter = GetSelectedMetadataKindFilter();
         try
         {
-            await Task.Delay(300, cancellation.Token);
+            if (debounce)
+                await Task.Delay(300, cancellation.Token);
+            _metadataEmptyText.Text = "Searching database objects…";
             _statusText.Text = $"Searching database objects for '{searchTerm}'...";
             var results = await Task.Run(
                 () => _sessionManager.SearchMetadataAsync(profile.Id, searchTerm, cancellation.Token, kindFilter),
@@ -1223,8 +1241,11 @@ public sealed partial class MainWindow : Window
                 !string.Equals(GetSelectedMetadataKindFilter(), kindFilter, StringComparison.Ordinal))
                 return;
 
+            CancelMetadataLoading();
             _isMetadataSearchActive = true;
+            _metadataEmptyText.Text = "No objects match your search.";
             _metadataObjects.Clear();
+            UpdateActionAvailability();
             const int searchUiBatchSize = 50;
             for (var index = 0; index < results.Count; index += searchUiBatchSize)
             {
@@ -1236,6 +1257,7 @@ public sealed partial class MainWindow : Window
                 _metadataObjects.AddRange(results.Skip(index).Take(searchUiBatchSize).ToArray());
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
             }
+            cancellation.Token.ThrowIfCancellationRequested();
 
             var filterDescription = kindFilter is null ? "database objects and columns" : kindFilter == "Column" ? "columns" : kindFilter.ToLowerInvariant();
             _statusText.Text = results.Count == 0
@@ -1249,7 +1271,10 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             if (!cancellation.IsCancellationRequested)
+            {
+                _metadataEmptyText.Text = "Could not search objects. Use Refresh to retry.";
                 ReportError($"Searching database objects for '{searchTerm}'", exception);
+            }
         }
         finally
         {
@@ -1259,12 +1284,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void ResetMetadataSearch()
+    {
+        _metadataSearchCancellation?.Cancel();
+        _isMetadataSearchActive = false;
+        _metadataSearchBox.Clear();
+    }
+
     private string? GetSelectedMetadataKindFilter() =>
-        (this.FindControl<ComboBox>("MetadataSearchKindFilter")?.SelectedIndex ?? 0) switch
-        {
-            1 => "Tables", 2 => "Views", 3 => "Column", 4 => "Procedures",
-            5 => "Triggers", 6 => "Indexes", 7 => "Domains", _ => null
-        };
+        (_metadataSearchKindFilter.SelectedItem as ComboBoxItem)?.Tag as string;
 
     private async void OnMetadataSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -1607,6 +1635,7 @@ public sealed partial class MainWindow : Window
     {
         if (_metadataTree.SelectedItem is not DatabaseMetadataObject { Kind: "Category" } selected)
         {
+            _organizeMetadataMenuItem.IsEnabled = false;
             _moveCategoryUpMenuItem.IsEnabled = false;
             _moveCategoryDownMenuItem.IsEnabled = false;
             return;
@@ -1615,6 +1644,7 @@ public sealed partial class MainWindow : Window
         var index = _metadataObjects.IndexOf(selected);
         _moveCategoryUpMenuItem.IsEnabled = index > 0;
         _moveCategoryDownMenuItem.IsEnabled = index >= 0 && index < _metadataObjects.Count - 1;
+        _organizeMetadataMenuItem.IsEnabled = _moveCategoryUpMenuItem.IsEnabled || _moveCategoryDownMenuItem.IsEnabled;
     }
 
     private async void OnMoveCategoryUpClick(object? sender, RoutedEventArgs e) =>

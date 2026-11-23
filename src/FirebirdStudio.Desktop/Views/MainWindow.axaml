@@ -2,6 +2,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:edit="using:AvaloniaEdit"
+    xmlns:views="using:FirebirdStudio.Desktop.Views"
     xmlns:connections="using:FirebirdStudio.Core.Connections"
     xmlns:database="using:FirebirdStudio.Core.Database"
     xmlns:services="using:FirebirdStudio.Desktop.Services"
@@ -12,6 +13,9 @@
     MinWidth="1100"
     MinHeight="700"
     Title="Firebird Studio">
+  <Window.Resources>
+    <views:MetadataObjectIconConverter x:Key="MetadataObjectIcon" />
+  </Window.Resources>
   <Window.Styles>
     <Style Selector="Button">
       <Setter Property="Padding" Value="9,5" />
@@ -21,6 +25,12 @@
     <Style Selector="TreeViewItem">
       <!-- Virtualized containers are recycled; persist expansion on the data item. -->
       <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="Padding" Value="2,2" />
+      <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Name}" />
+      <Setter Property="AutomationProperties.ItemType" Value="{ReflectionBinding Kind}" />
+      <Setter Property="AutomationProperties.HelpText" Value="{ReflectionBinding Details}" />
       <Setter Property="ItemsPanel">
         <ItemsPanelTemplate>
           <VirtualizingStackPanel />
@@ -115,51 +125,81 @@
 
         </ListBox>
         <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
-        <Grid Grid.Row="3" RowDefinitions="Auto,Auto,*" MinHeight="0">
-          <Grid Grid.Row="0" Margin="0,10,0,7" ColumnDefinitions="*,Auto,Auto">
-            <TextBlock Grid.Column="0" Text="Database objects" Classes="panel-title"
-                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-            <Menu Grid.Column="1" VerticalAlignment="Center" Margin="3,0">
-              <MenuItem Header="Organize">
-                <MenuItem Header="Move selected category up" x:Name="MoveCategoryUpMenuItem" IsEnabled="False" />
-                <MenuItem Header="Move selected category down" x:Name="MoveCategoryDownMenuItem" IsEnabled="False" />
-              </MenuItem>
-            </Menu>
-            <Button Grid.Column="2" x:Name="RefreshMetadataButton" Classes="action icon-only" IsEnabled="False"
-                    AutomationProperties.Name="Refresh database objects" ToolTip.Tip="Refresh database objects">
-              <PathIcon Classes="action-icon" Data="{StaticResource ActionRefreshIcon}" />
-            </Button>
+        <Grid Grid.Row="3" RowDefinitions="Auto,*" MinHeight="0">
+          <StackPanel Spacing="6" Margin="0,10,0,8">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <TextBlock Text="Database objects" Classes="panel-title" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" x:Name="MetadataConnectionText" Classes="secondary"
+                         VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"
+                         ToolTip.Tip="{Binding #MetadataConnectionText.Text}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+              <TextBox x:Name="MetadataSearchBox" PlaceholderText="Search objects…" IsEnabled="False"
+                       PlaceholderForeground="{DynamicResource StudioSecondaryTextBrush}"
+                       AutomationProperties.Name="Search database objects" />
+              <Button Grid.Column="1" x:Name="ClearMetadataSearchButton" Classes="action icon-only" IsEnabled="False"
+                      AutomationProperties.Name="Clear object search" ToolTip.Tip="Clear object search">
+                <PathIcon Classes="action-icon" Data="M4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13L3 12L7 8L3 4Z" />
+              </Button>
+              <Button Grid.Column="2" x:Name="RefreshMetadataButton" Classes="action icon-only" IsEnabled="False"
+                      AutomationProperties.Name="Refresh database objects" ToolTip.Tip="Refresh database objects">
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionRefreshIcon}" />
+              </Button>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+              <ComboBox x:Name="MetadataSearchKindFilter" SelectedIndex="0" IsEnabled="False"
+                        HorizontalAlignment="Stretch" AutomationProperties.Name="Object search type"
+                        ToolTip.Tip="Filter search results by type">
+                <ComboBoxItem Content="All object types" />
+                <ComboBoxItem Content="Tables" Tag="Tables" />
+                <ComboBoxItem Content="Views" Tag="Views" />
+                <ComboBoxItem Content="Columns" Tag="Column" />
+                <ComboBoxItem Content="Procedures" Tag="Procedures" />
+                <ComboBoxItem Content="Triggers" Tag="Triggers" />
+                <ComboBoxItem Content="Indexes" Tag="Indexes" />
+                <ComboBoxItem Content="Domains" Tag="Domains" />
+              </ComboBox>
+              <Menu Grid.Column="1" VerticalAlignment="Center">
+                <MenuItem Header="Organize" x:Name="OrganizeMetadataMenuItem" IsEnabled="False">
+                  <MenuItem Header="Move selected category up" x:Name="MoveCategoryUpMenuItem" IsEnabled="False" />
+                  <MenuItem Header="Move selected category down" x:Name="MoveCategoryDownMenuItem" IsEnabled="False" />
+                </MenuItem>
+              </Menu>
+            </Grid>
+          </StackPanel>
+          <Grid Grid.Row="1">
+            <TreeView x:Name="MetadataTree" SelectionMode="Single" MinHeight="0"
+                      AutomationProperties.Name="Database object tree" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+              <TreeView.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </TreeView.ItemsPanel>
+              <TreeView.DataTemplates>
+                <TreeDataTemplate x:DataType="database:DatabaseMetadataObject" ItemsSource="{Binding Children}">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <ToolTip.Tip>
+                      <MultiBinding StringFormat="{}{0}&#10;{1}">
+                        <Binding Path="Name" />
+                        <Binding Path="Details" />
+                      </MultiBinding>
+                    </ToolTip.Tip>
+                    <PathIcon Classes="action-icon" Margin="0,0,6,0"
+                              Foreground="{DynamicResource StudioSecondaryTextBrush}"
+                              Data="{Binding Converter={StaticResource MetadataObjectIcon}}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding ParentName}" Classes="secondary" Margin="6,0,0,0"
+                               IsVisible="{Binding !!ParentName}" VerticalAlignment="Center" MaxWidth="90"
+                               TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </TreeDataTemplate>
+              </TreeView.DataTemplates>
+            </TreeView>
+            <TextBlock x:Name="MetadataEmptyText" Classes="secondary" Text="Connect to browse database objects."
+                       IsVisible="{Binding !#MetadataTree.ItemCount}" IsHitTestVisible="False"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" TextWrapping="Wrap" />
           </Grid>
-          <Grid Grid.Row="1" ColumnDefinitions="*,150" ColumnSpacing="6" Margin="0,0,0,6">
-            <TextBox Grid.Column="0" x:Name="MetadataSearchBox" PlaceholderText="Search database objects…" />
-            <ComboBox Grid.Column="1" x:Name="MetadataSearchKindFilter" SelectedIndex="0">
-              <ComboBoxItem Content="All object types" />
-              <ComboBoxItem Content="Tables" />
-              <ComboBoxItem Content="Views" />
-              <ComboBoxItem Content="Columns" />
-              <ComboBoxItem Content="Procedures" />
-              <ComboBoxItem Content="Triggers" />
-              <ComboBoxItem Content="Indexes" />
-              <ComboBoxItem Content="Domains" />
-            </ComboBox>
-          </Grid>
-          <TreeView Grid.Row="2" x:Name="MetadataTree" SelectionMode="Single" MinHeight="0">
-            <TreeView.ItemsPanel>
-              <ItemsPanelTemplate>
-                <VirtualizingStackPanel />
-              </ItemsPanelTemplate>
-            </TreeView.ItemsPanel>
-            <TreeView.DataTemplates>
-              <TreeDataTemplate x:DataType="database:DatabaseMetadataObject" ItemsSource="{Binding Children}">
-                <StackPanel Spacing="1" Margin="2,2">
-                  <TextBlock Text="{Binding Name}" Classes="panel-title" />
-                  <TextBlock Text="{Binding Kind}" Classes="secondary" />
-                  <TextBlock Text="{Binding Details}" Classes="secondary" TextWrapping="NoWrap"
-                             TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-              </TreeDataTemplate>
-            </TreeView.DataTemplates>
-          </TreeView>
         </Grid>
       </Grid>
       <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch"
