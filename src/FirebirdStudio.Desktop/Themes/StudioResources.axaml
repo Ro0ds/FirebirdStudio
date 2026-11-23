@@ -10,6 +10,12 @@
       <SolidColorBrush x:Key="StudioConnectionSelectionBrush" Color="#E8F0FB" />
       <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="StudioFocusBrush" />
       <SolidColorBrush x:Key="StudioAccentBrush" Color="#A43E1B" />
+      <StaticResource x:Key="AccentButtonBackground" ResourceKey="StudioAccentBrush" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#8C3315" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#74280F" />
+      <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
+      <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="AccentButtonForeground" />
+      <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="AccentButtonForeground" />
       <SolidColorBrush x:Key="StudioSuccessBrush" Color="#245B2A" />
       <SolidColorBrush x:Key="StudioInformationBrush" Color="#765500" />
       <SolidColorBrush x:Key="StudioErrorBrush" Color="#8A2924" />
@@ -26,6 +32,12 @@
       <SolidColorBrush x:Key="StudioConnectionSelectionBrush" Color="#293C56" />
       <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="StudioFocusBrush" />
       <SolidColorBrush x:Key="StudioAccentBrush" Color="#FF9D72" />
+      <StaticResource x:Key="AccentButtonBackground" ResourceKey="StudioAccentBrush" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFB18F" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#F68860" />
+      <SolidColorBrush x:Key="AccentButtonForeground" Color="#2D1B14" />
+      <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="AccentButtonForeground" />
+      <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="AccentButtonForeground" />
       <SolidColorBrush x:Key="StudioSuccessBrush" Color="#A3D9AD" />
       <SolidColorBrush x:Key="StudioInformationBrush" Color="#FFD480" />
       <SolidColorBrush x:Key="StudioErrorBrush" Color="#FFABA5" />
