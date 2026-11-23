@@ -35,7 +35,14 @@
     <Setter Property="Foreground" Value="{DynamicResource StudioErrorBrush}" />
   </Style>
   <Style Selector="GridSplitter">
-    <Setter Property="Background" Value="{DynamicResource StudioSplitterBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StudioSplitterBrush}" />
+  </Style>
+  <Style Selector="GridSplitter[ResizeDirection=Rows]">
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="GridSplitter[ResizeDirection=Columns]">
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
   </Style>
   <Style Selector="edit|TextEditor">
     <Setter Property="FontFamily" Value="{StaticResource StudioMonospaceFont}" />
@@ -48,10 +55,10 @@
     <Setter Property="SelectionForeground" Value="{DynamicResource SqlSelectionForeground}" />
     <Setter Property="SelectionBorder" Value="{DynamicResource SqlSelectionBorder}" />
   </Style>
-  <Style Selector="Button, TextBox, ComboBox, NumericUpDown, CheckBox, TabItem, ListBoxItem, TreeViewItem, GridSplitter, TableView, editing|TextArea">
+  <Style Selector="Button, ComboBox, NumericUpDown, CheckBox, TabItem, ListBoxItem, TreeViewItem, GridSplitter, TableView, editing|TextArea">
     <Setter Property="FocusAdorner">
       <Template>
-        <Border BorderBrush="{DynamicResource StudioFocusBrush}" BorderThickness="2"
+        <Border BorderBrush="{DynamicResource StudioFocusBrush}" BorderThickness="1"
                 CornerRadius="3" IsHitTestVisible="False" />
       </Template>
     </Setter>

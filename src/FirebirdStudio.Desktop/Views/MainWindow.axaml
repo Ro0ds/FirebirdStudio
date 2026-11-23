@@ -287,8 +287,8 @@
           </TabControl>
         </Grid>
         <GridSplitter Grid.Column="1" ResizeDirection="Columns" x:Name="HistorySplitter" />
-        <Border Grid.Column="2" x:Name="QueryHistoryPanel" Padding="8" Background="{DynamicResource StudioSurfaceBrush}" MinWidth="220"
-                BorderThickness="1,0,0,0" BorderBrush="{DynamicResource StudioDividerBrush}">
+        <Border Grid.Column="2" x:Name="QueryHistoryPanel" Padding="8"
+                Background="{DynamicResource StudioSurfaceBrush}" MinWidth="220">
           <Grid RowDefinitions="Auto,*">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,2,2,8">
               <TextBlock Grid.Column="0" Text="Query history" Classes="panel-title"
