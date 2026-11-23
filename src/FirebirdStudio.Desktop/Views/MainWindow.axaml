@@ -34,7 +34,11 @@
       <DockPanel LastChildFill="False">
         <Menu DockPanel.Dock="Left" Background="Transparent">
           <MenuItem Header="_File">
-            <MenuItem Header="New connection…" x:Name="AddConnectionMenuItem" />
+            <MenuItem Header="New connection…" x:Name="AddConnectionMenuItem">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionAddIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
             <Separator />
             <MenuItem Header="Exit" x:Name="ExitMenuItem" />
           </MenuItem>
@@ -42,15 +46,35 @@
             <MenuItem Header="Edit connection…" x:Name="EditConnectionMenuItem" IsEnabled="False" />
             <MenuItem Header="Remove connection" x:Name="RemoveConnectionMenuItem" IsEnabled="False" />
             <Separator />
-            <MenuItem Header="Connect" x:Name="ConnectMenuItem" IsEnabled="False" />
+            <MenuItem Header="Connect" x:Name="ConnectMenuItem" IsEnabled="False">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionConnectIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="Disconnect" x:Name="DisconnectMenuItem" IsEnabled="False" />
-            <MenuItem Header="Refresh database objects" x:Name="RefreshMetadataMenuItem" IsEnabled="False" />
+            <MenuItem Header="Refresh database objects" x:Name="RefreshMetadataMenuItem" IsEnabled="False">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionRefreshIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
           </MenuItem>
           <MenuItem Header="_Query">
-            <MenuItem Header="Execute (F5)" x:Name="ExecuteMenuItem" IsEnabled="False" InputGesture="F5" />
+            <MenuItem Header="Execute" x:Name="ExecuteMenuItem" IsEnabled="False" InputGesture="F5">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionExecuteIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="SQL autocomplete (Ctrl+Space)" x:Name="SqlAutocompleteMenuItem" IsEnabled="False" />
-            <MenuItem Header="Format SQL" x:Name="FormatSqlMenuItem" InputGesture="Ctrl+Shift+F" />
-            <MenuItem Header="Cancel execution" x:Name="CancelQueryMenuItem" IsEnabled="False" />
+            <MenuItem Header="Format SQL" x:Name="FormatSqlMenuItem" InputGesture="Ctrl+Shift+F">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionFormatIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Cancel execution" x:Name="CancelQueryMenuItem" IsEnabled="False">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionStopIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
           </MenuItem>
           <MenuItem Header="_View">
             <MenuItem Header="Query history">
@@ -84,8 +108,8 @@
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
           <TextBlock Grid.Column="0" Text="Database connections" Classes="panel-title"
                      VerticalAlignment="Center" />
-          <Button Grid.Column="1" x:Name="ToggleConnectionDisplayButton" Content="Minimal"
-                  Padding="6,3" ToolTip.Tip="Switch connection list display mode" />
+          <Button Grid.Column="1" x:Name="ToggleConnectionDisplayButton" Classes="action compact" Content="Minimal"
+                  ToolTip.Tip="Switch connection list display mode" />
         </Grid>
         <ListBox Grid.Row="1" x:Name="ConnectionsList" SelectionMode="Single">
 
@@ -101,7 +125,10 @@
                 <MenuItem Header="Move selected category down" x:Name="MoveCategoryDownMenuItem" IsEnabled="False" />
               </MenuItem>
             </Menu>
-            <Button Grid.Column="2" Content="Refresh" x:Name="RefreshMetadataButton" IsEnabled="False" />
+            <Button Grid.Column="2" x:Name="RefreshMetadataButton" Classes="action icon-only" IsEnabled="False"
+                    AutomationProperties.Name="Refresh database objects" ToolTip.Tip="Refresh database objects">
+              <PathIcon Classes="action-icon" Data="{StaticResource ActionRefreshIcon}" />
+            </Button>
           </Grid>
           <Grid Grid.Row="1" ColumnDefinitions="*,150" ColumnSpacing="6" Margin="0,0,0,6">
             <TextBox Grid.Column="0" x:Name="MetadataSearchBox" PlaceholderText="Search database objects…" />
@@ -158,10 +185,12 @@
                      Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
               <TabItem.Header>
                 <Grid Width="36" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center">
-                  <Button x:Name="AddSqlEditorButton" Content="+" Width="26" Height="26" Padding="0"
+                  <Button x:Name="AddSqlEditorButton" Classes="action icon-only" Width="26" Height="26"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                          ToolTip.Tip="New SQL Editor" />
+                          AutomationProperties.Name="New SQL Editor" ToolTip.Tip="New SQL Editor">
+                    <PathIcon Classes="action-icon" Data="{StaticResource ActionAddIcon}" />
+                  </Button>
                 </Grid>
               </TabItem.Header>
             </TabItem>
@@ -188,8 +217,8 @@
                       <Border Grid.Row="0" Padding="6" BorderThickness="0,0,0,1"
                               BorderBrush="{DynamicResource StudioDividerBrush}">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                          <Button Content="Previous" x:Name="PreviousTableDataPageButton" IsEnabled="False" />
-                          <Button Content="Next" x:Name="NextTableDataPageButton" IsEnabled="False" />
+                          <Button Classes="action compact" Content="Previous" x:Name="PreviousTableDataPageButton" IsEnabled="False" />
+                          <Button Classes="action compact" Content="Next" x:Name="NextTableDataPageButton" IsEnabled="False" />
                           <TextBlock x:Name="TableDataPageStatus" Text="No rows loaded" VerticalAlignment="Center" />
                         </StackPanel>
                       </Border>
@@ -220,8 +249,13 @@
               <TabItem.Header>
                 <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                   <TextBlock Text="Query History" VerticalAlignment="Center" />
-                  <Button x:Name="ClearHistoryTabButton" Content="Clear" Padding="5,2"
-                          ToolTip.Tip="Clear query history" />
+                  <Button x:Name="ClearHistoryTabButton" Classes="action compact"
+                          AutomationProperties.Name="Clear query history" ToolTip.Tip="Clear query history">
+                    <StackPanel Classes="action-label">
+                      <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
+                      <TextBlock Text="Clear" />
+                    </StackPanel>
+                  </Button>
                 </StackPanel>
               </TabItem.Header>
               <ListBox x:Name="QueryHistoryTabList" SelectionMode="Single">
@@ -244,8 +278,13 @@
               <TabItem.Header>
                 <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                   <TextBlock Text="Results" VerticalAlignment="Center" />
-                  <Button x:Name="ClearResultsButton" Content="Clear" Padding="5,2"
-                          ToolTip.Tip="Clear the current query results" />
+                  <Button x:Name="ClearResultsButton" Classes="action compact"
+                          AutomationProperties.Name="Clear the current query results" ToolTip.Tip="Clear the current query results">
+                    <StackPanel Classes="action-label">
+                      <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
+                      <TextBlock Text="Clear" />
+                    </StackPanel>
+                  </Button>
                 </StackPanel>
               </TabItem.Header>
               <TableView x:CompileBindings="False" x:Name="QueryResultsGrid" CanUserResizeColumns="True" />
@@ -254,8 +293,13 @@
               <TabItem.Header>
                 <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                   <TextBlock Text="Messages" VerticalAlignment="Center" />
-                  <Button x:Name="ClearMessagesButton" Content="Clear" Padding="5,2"
-                          ToolTip.Tip="Clear the message log" />
+                  <Button x:Name="ClearMessagesButton" Classes="action compact"
+                          AutomationProperties.Name="Clear the message log" ToolTip.Tip="Clear the message log">
+                    <StackPanel Classes="action-label">
+                      <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
+                      <TextBlock Text="Clear" />
+                    </StackPanel>
+                  </Button>
                 </StackPanel>
               </TabItem.Header>
               <ScrollViewer x:Name="MessagesScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
@@ -293,9 +337,13 @@
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,2,2,8">
               <TextBlock Grid.Column="0" Text="Query history" Classes="panel-title"
                          VerticalAlignment="Center" />
-              <Button Grid.Column="1" x:Name="ClearHistoryDockButton" Content="Clear"
-                      Padding="5,2"
-                      ToolTip.Tip="Clear query history" />
+              <Button Grid.Column="1" x:Name="ClearHistoryDockButton" Classes="action compact"
+                      AutomationProperties.Name="Clear query history" ToolTip.Tip="Clear query history">
+                <StackPanel Classes="action-label">
+                  <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
+                  <TextBlock Text="Clear" />
+                </StackPanel>
+              </Button>
             </Grid>
             <ListBox Grid.Row="1" x:Name="QueryHistoryList" SelectionMode="Single">
               <ListBox.ItemTemplate>
