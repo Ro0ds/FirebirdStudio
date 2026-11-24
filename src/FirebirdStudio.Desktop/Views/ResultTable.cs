@@ -3,14 +3,19 @@ using Avalonia.Data;
 
 namespace FirebirdStudio.Desktop.Views;
 
-internal sealed record ResultTableRow(string[] Values);
+internal sealed record ResultTableRow(string[] Values, IReadOnlyList<IComparable?>? SortValues)
+{
+    public IComparable? GetSortValue(int columnIndex) =>
+        SortValues is { } values ? values[columnIndex] : Values[columnIndex];
+}
 
 internal static class ResultTable
 {
-    public static void Populate(
+    public static ResultTableRow[] Populate(
         TableView grid,
         IReadOnlyList<string> columns,
-        IReadOnlyList<IReadOnlyList<string>> rows)
+        IReadOnlyList<IReadOnlyList<string>> rows,
+        IReadOnlyList<IReadOnlyList<IComparable?>>? sortValues = null)
     {
         grid.Columns.Clear();
         for (var index = 0; index < columns.Count; index++)
@@ -23,6 +28,8 @@ internal static class ResultTable
             });
         }
 
-        grid.ItemsSource = rows.Select(row => new ResultTableRow(row.ToArray())).ToArray();
+        var items = rows.Select((row, index) => new ResultTableRow(row.ToArray(), sortValues?[index])).ToArray();
+        grid.ItemsSource = items;
+        return items;
     }
 }

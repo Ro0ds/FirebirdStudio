@@ -29,6 +29,15 @@
       <TableView x:Name="QueryResultsGrid" x:CompileBindings="False" SelectionMode="Single" CanUserResizeColumns="True"
                  AutomationProperties.Name="Query results" IsVisible="False">
         <TableView.Styles>
+          <Style Selector="Button.result-column-sort">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Padding" Value="0,1" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+          </Style>
           <Style Selector="TableViewRow">
             <Setter Property="Padding" Value="0,3" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />

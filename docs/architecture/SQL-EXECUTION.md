@@ -28,7 +28,7 @@ Multi-statement scripts, multiple result sets, structured/editable result grids,
 
 ## Result presentation and table inspection
 
-The Results tab shows the execution state and, when available, the row count and elapsed time. It marks the preview as partial when the result exceeds the row or aggregate data limit. The read-only grid uses columns generated from the provider result metadata. Resize columns to inspect long values, or select a row and use **Copy row** to copy the preview values as tab-separated text. An empty result set still displays its column headers.
+The Results tab shows the execution state and, when available, the row count and elapsed time. It marks the preview as partial when the result exceeds the row or aggregate data limit. The read-only grid uses columns generated from the provider result metadata. Click a column header to sort the loaded rows in ascending order. Click it again for descending order. Use `ORDER BY` in the SQL statement to order the full result on the server. Resize columns to inspect long values. Use **Copy row** in the toolbar or a row's context menu to copy the preview values as tab-separated text. An empty result set still displays its column headers.
 
 Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
 
