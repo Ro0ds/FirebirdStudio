@@ -90,11 +90,12 @@ public sealed partial class MainWindow : Window
     private readonly MenuItem _executeButton;
     private readonly MenuItem _sqlAutocompleteMenuItem;
     private readonly MenuItem _cancelQueryButton;
-    private readonly ListBox _queryHistoryList;
-    private readonly ListBox _queryHistoryTabList;
+    private readonly QueryHistoryView _dockedQueryHistory;
+    private readonly QueryHistoryView _tabbedQueryHistory;
     private readonly TableView _queryResultsGrid;
     private readonly TabControl _editorTabs;
     private readonly List<(TabItem Tab, AvaloniaEdit.TextEditor Editor)> _sqlEditors = [];
+    private TabItem? _lastActiveSqlTab;
     private readonly List<AvaloniaEdit.TextEditor> _readOnlySqlEditors = [];
     private readonly TabItem _addSqlEditorTab;
     private readonly TabItem _tableDetailsTab;
@@ -109,6 +110,9 @@ public sealed partial class MainWindow : Window
     private readonly Grid _workspaceGrid;
     private readonly GridSplitter _historySplitter;
     private readonly Border _queryHistoryPanel;
+    private readonly Button _expandHistoryDockButton;
+    private GridLength _expandedHistoryDockWidth = new(300);
+    private bool _isHistoryDockCollapsed;
     private readonly TabItem _queryHistoryTab;
     private readonly MenuItem _historyDockRightMenuItem;
     private readonly MenuItem _historyDockTabMenuItem;
@@ -138,6 +142,7 @@ public sealed partial class MainWindow : Window
         var sqlEditor = this.FindControl<AvaloniaEdit.TextEditor>("SqlEditor")!;
         var sqlEditorTab = this.FindControl<TabItem>("SqlEditorTab")!;
         ConfigureSqlEditorTab(sqlEditorTab, sqlEditor);
+        _lastActiveSqlTab = sqlEditorTab;
         ApplySqlSyntaxHighlighting(sqlEditor);
 
         var repository = new JsonConnectionProfileRepository();
@@ -185,13 +190,17 @@ public sealed partial class MainWindow : Window
         _sqlAutocompleteMenuItem.Click += async (_, _) => await ShowSqlCompletionAsync();
         this.FindControl<MenuItem>("FormatSqlMenuItem")!.Click += (_, _) => FormatActiveSql();
         _cancelQueryButton = this.FindControl<MenuItem>("CancelQueryMenuItem")!;
-        _queryHistoryList = this.FindControl<ListBox>("QueryHistoryList")!;
-        _queryHistoryTabList = this.FindControl<ListBox>("QueryHistoryTabList")!;
+        _dockedQueryHistory = this.FindControl<QueryHistoryView>("DockedQueryHistory")!;
+        _tabbedQueryHistory = this.FindControl<QueryHistoryView>("TabbedQueryHistory")!;
         _queryResultsGrid = this.FindControl<TableView>("QueryResultsGrid")!;
         _editorTabs = this.FindControl<TabControl>("EditorTabs")!;
         _addSqlEditorTab = this.FindControl<TabItem>("AddSqlEditorTab")!;
-        _editorTabs.SelectionChanged += (_, _) =>
+        _editorTabs.SelectionChanged += (_, e) =>
         {
+            if (ReferenceEquals(e.Source, _editorTabs) && _editorTabs.SelectedItem is TabItem selected &&
+                _sqlEditors.Any(item => ReferenceEquals(item.Tab, selected)))
+                _lastActiveSqlTab = selected;
+
             if (!_isRestoringEditors && !ReferenceEquals(_editorTabs.SelectedItem, _addSqlEditorTab))
                 ScheduleSqlEditorRecoverySave(showNotification: false);
         };
@@ -217,6 +226,7 @@ public sealed partial class MainWindow : Window
         _workspaceGrid = this.FindControl<Grid>("WorkspaceGrid")!;
         _historySplitter = this.FindControl<GridSplitter>("HistorySplitter")!;
         _queryHistoryPanel = this.FindControl<Border>("QueryHistoryPanel")!;
+        _expandHistoryDockButton = this.FindControl<Button>("ExpandHistoryDockButton")!;
         _queryHistoryTab = this.FindControl<TabItem>("QueryHistoryTab")!;
         _historyDockRightMenuItem = this.FindControl<MenuItem>("HistoryDockRightMenuItem")!;
         _historyDockTabMenuItem = this.FindControl<MenuItem>("HistoryDockTabMenuItem")!;
@@ -234,8 +244,6 @@ public sealed partial class MainWindow : Window
         _resultsTab = this.FindControl<TabItem>("ResultsTab")!;
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
         this.FindControl<Button>("ClearMessagesButton")!.Click += (_, _) => ClearMessages();
-        this.FindControl<Button>("ClearHistoryDockButton")!.Click += async (_, _) => await ClearQueryHistoryAsync();
-        this.FindControl<Button>("ClearHistoryTabButton")!.Click += async (_, _) => await ClearQueryHistoryAsync();
         this.FindControl<Button>("ClearResultsButton")!.Click += (_, _) => ClearResults();
         var toggleConnectionDisplayButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
         toggleConnectionDisplayButton.Click += async (_, _) =>
@@ -254,8 +262,15 @@ public sealed partial class MainWindow : Window
         detailedConnectionsMenuItem.Click += async (_, _) => await SetConnectionDisplayModeAsync("Detailed");
         minimalConnectionsMenuItem.Click += async (_, _) => await SetConnectionDisplayModeAsync("Minimal");
         _metadataTree.ItemsSource = _metadataObjects;
-        _queryHistoryList.ItemsSource = _queryHistory;
-        _queryHistoryTabList.ItemsSource = _queryHistory;
+        foreach (var history in new[] { _dockedQueryHistory, _tabbedQueryHistory })
+        {
+            history.BindEntries(_queryHistory);
+            history.RestoreRequested += RestoreQueryFromHistory;
+            history.ClearRequested += async (_, _) => await ClearQueryHistoryAsync();
+        }
+        _dockedQueryHistory.ShowDockControls();
+        _dockedQueryHistory.CollapseRequested += (_, _) => SetHistoryDockCollapsed(true);
+        _expandHistoryDockButton.Click += (_, _) => SetHistoryDockCollapsed(false);
         _refreshMetadataButton.Click += OnRefreshMetadataClick;
         _previousTableDataPageButton.Click += async (_, _) => await ChangeTableDataPageAsync(-1);
         _nextTableDataPageButton.Click += async (_, _) => await ChangeTableDataPageAsync(1);
@@ -263,8 +278,6 @@ public sealed partial class MainWindow : Window
         _moveCategoryDownMenuItem.Click += OnMoveCategoryDownClick;
         _executeButton.Click += OnExecuteClick;
         _cancelQueryButton.Click += OnCancelQueryClick;
-        _queryHistoryList.DoubleTapped += OnQueryHistoryDoubleTapped;
-        _queryHistoryTabList.DoubleTapped += OnQueryHistoryDoubleTapped;
         _connectionsList.SelectionChanged += OnSelectionChanged;
         _connectionsList.DoubleTapped += OnConnectionsDoubleTapped;
         _connectionsList.AddHandler(InputElement.KeyDownEvent, OnConnectionsKeyDown, RoutingStrategies.Tunnel);
@@ -1774,8 +1787,6 @@ public sealed partial class MainWindow : Window
         {
             await _queryHistoryStore.SaveAsync(Array.Empty<QueryHistoryEntry>());
             _queryHistory.Clear();
-            _queryHistoryList.SelectedItem = null;
-            _queryHistoryTabList.SelectedItem = null;
             _statusText.Text = "Query history cleared.";
             ShowFooterNotification("Query history cleared", "success");
         }
@@ -2050,15 +2061,20 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnQueryHistoryDoubleTapped(object? sender, TappedEventArgs e)
+    private void RestoreQueryFromHistory(QueryHistoryEntry entry)
     {
-        if (sender is not ListBox historyList || historyList.SelectedItem is not QueryHistoryEntry entry)
-            return;
-
-        var editorTab = GetActiveSqlEditorTab();
-        editorTab.Editor.Text = entry.Sql;
-        _editorTabs.SelectedItem = editorTab.Tab;
+        var (tab, editor) = GetHistoryEditorTab();
+        editor.Document.Replace(0, editor.Document.TextLength, entry.Sql);
+        _editorTabs.SelectedItem = tab;
+        editor.CaretOffset = 0;
+        Dispatcher.UIThread.Post(() => editor.TextArea.Focus(), DispatcherPriority.Input);
         _statusText.Text = $"Restored query from {entry.ExecutedAt.ToLocalTime():g} ({entry.ProfileName}).";
+    }
+
+    private (TabItem Tab, AvaloniaEdit.TextEditor Editor) GetHistoryEditorTab()
+    {
+        var lastActive = _sqlEditors.FirstOrDefault(item => ReferenceEquals(item.Tab, _lastActiveSqlTab));
+        return lastActive.Editor is not null ? lastActive : GetActiveSqlEditorTab();
     }
 
     private async Task SetThemeAsync(string theme)
@@ -2133,13 +2149,48 @@ public sealed partial class MainWindow : Window
     {
         _historyDockRightMenuItem.IsChecked = dockRight;
         _historyDockTabMenuItem.IsChecked = !dockRight;
+        if (_queryHistoryPanel.IsVisible != dockRight)
+        {
+            if (dockRight)
+            {
+                _dockedQueryHistory.SelectedEntry = _tabbedQueryHistory.SelectedEntry;
+                if (ReferenceEquals(_editorTabs.SelectedItem, _queryHistoryTab))
+                    _editorTabs.SelectedItem = GetHistoryEditorTab().Tab;
+            }
+            else
+            {
+                _tabbedQueryHistory.SelectedEntry = _dockedQueryHistory.SelectedEntry;
+                if (!_isHistoryDockCollapsed)
+                    _expandedHistoryDockWidth = _workspaceGrid.ColumnDefinitions[2].Width;
+            }
+        }
+        ApplyHistoryDockLayout(dockRight);
+    }
+
+    private void SetHistoryDockCollapsed(bool collapse)
+    {
+        if (collapse)
+            _expandedHistoryDockWidth = _workspaceGrid.ColumnDefinitions[2].Width;
+        _isHistoryDockCollapsed = collapse;
+        ApplyHistoryDockLayout(true);
+        if (collapse)
+            _expandHistoryDockButton.Focus();
+        else
+            _dockedQueryHistory.FocusCollapseAction();
+    }
+
+    private void ApplyHistoryDockLayout(bool dockRight)
+    {
+        var dockExpanded = dockRight && !_isHistoryDockCollapsed;
         _queryHistoryPanel.IsVisible = dockRight;
-        _historySplitter.IsVisible = dockRight;
+        _dockedQueryHistory.IsVisible = dockExpanded;
+        _expandHistoryDockButton.IsVisible = dockRight && _isHistoryDockCollapsed;
+        _historySplitter.IsVisible = dockExpanded;
         _queryHistoryTab.IsVisible = !dockRight;
-        _workspaceGrid.ColumnDefinitions[1].Width = dockRight ? new GridLength(5) : new GridLength(0);
-        _workspaceGrid.ColumnDefinitions[2].Width = dockRight
-            ? new GridLength(300)
-            : new GridLength(0);
+        _workspaceGrid.ColumnDefinitions[1].Width = new GridLength(dockExpanded ? 5 : 0);
+        var historyColumn = _workspaceGrid.ColumnDefinitions[2];
+        historyColumn.MinWidth = dockExpanded ? 220 : 0;
+        historyColumn.Width = dockExpanded ? _expandedHistoryDockWidth : new GridLength(dockRight ? 36 : 0);
     }
 
     private async void OnWindowKeyDown(object? sender, KeyEventArgs e)
