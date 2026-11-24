@@ -125,8 +125,7 @@ public sealed partial class MainWindow : Window
     private readonly MenuItem _connectButton;
     private readonly MenuItem _disconnectButton;
     private readonly TextBlock _statusText;
-    private readonly ItemsControl _messageLogItems;
-    private readonly ScrollViewer _messagesScrollViewer;
+    private readonly MessagesView _messagesView;
     private readonly TabControl _resultsMessagesTabs;
     private readonly TabItem _resultsTab;
     private readonly TabItem _messagesTab;
@@ -238,16 +237,18 @@ public sealed partial class MainWindow : Window
         _removeButton = this.FindControl<MenuItem>("RemoveConnectionMenuItem")!;
         _connectButton = this.FindControl<MenuItem>("ConnectMenuItem")!;
         _disconnectButton = this.FindControl<MenuItem>("DisconnectMenuItem")!;
-        _statusText = this.FindControl<TextBlock>("StatusText")!;
-        _messageLogItems = this.FindControl<ItemsControl>("MessageLogItems")!;
-        _messageLogItems.ItemsSource = _messages;
-        _messagesScrollViewer = this.FindControl<ScrollViewer>("MessagesScrollViewer")!;
+        _messagesView = this.FindControl<MessagesView>("Messages")!;
+        _statusText = _messagesView.CurrentStatus;
+        _messagesView.BindEntries(_messages);
         _resultsMessagesTabs = this.FindControl<TabControl>("ResultsMessagesTabs")!;
         _resultsTab = this.FindControl<TabItem>("ResultsTab")!;
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
-        this.FindControl<Button>("ClearMessagesButton")!.Click += (_, _) => ClearMessages();
+        _messagesView.ClearRequested += (_, _) => ClearMessages();
+        _messagesView.CopyDetailsRequested += async details =>
+            await CopyToClipboardAsync(details, "Copying message details", "Message details copied");
         _queryResults.ClearRequested += (_, _) => ClearResults();
-        _queryResults.CopyRowRequested += async row => await CopyResultRowAsync(row);
+        _queryResults.CopyRowRequested += async row =>
+            await CopyToClipboardAsync(row, "Copying result row", "Result row copied");
         var toggleConnectionDisplayButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
         toggleConnectionDisplayButton.Click += async (_, _) =>
             await SetConnectionDisplayModeAsync(_preferences.ConnectionDisplayMode == "Detailed" ? "Minimal" : "Detailed");
@@ -1778,7 +1779,7 @@ public sealed partial class MainWindow : Window
     {
         _messages.Clear();
         _statusText.Text = "Message log cleared.";
-        _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
+        _messagesView.ShowLatest();
     }
 
     private async Task ClearQueryHistoryAsync()
@@ -1815,22 +1816,22 @@ public sealed partial class MainWindow : Window
         ShowFooterNotification("Query results cleared", "success");
     }
 
-    private async Task CopyResultRowAsync(string row)
+    private async Task CopyToClipboardAsync(string text, string errorContext, string successMessage)
     {
         if (Clipboard is not { } clipboard)
         {
-            ReportError("Copying result row", "Clipboard is unavailable.");
+            ReportError(errorContext, "Clipboard is unavailable.");
             return;
         }
 
         try
         {
-            await clipboard.SetTextAsync(row);
-            ShowFooterNotification("Result row copied", "success");
+            await clipboard.SetTextAsync(text);
+            ShowFooterNotification(successMessage, "success");
         }
         catch (Exception exception)
         {
-            ReportError("Copying result row", exception);
+            ReportError(errorContext, exception);
         }
     }
 
@@ -3255,9 +3256,9 @@ public sealed partial class MainWindow : Window
     private void ReportError(string context, string details)
     {
         AddMessage("Error", context, details);
-        _statusText.Text = $"{context} failed. See the red diagnostic entry below.";
+        _statusText.Text = $"{context} failed.";
         _resultsMessagesTabs.SelectedItem = _messagesTab;
-        _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
+        _messagesView.ShowLatest();
         ShowFooterNotification($"Error: {context}", "error");
     }
 
@@ -3266,7 +3267,7 @@ public sealed partial class MainWindow : Window
         AddMessage("Information", context, details);
         _statusText.Text = details;
         _resultsMessagesTabs.SelectedItem = _messagesTab;
-        _messagesScrollViewer.Offset = new Avalonia.Vector(0, 0);
+        _messagesView.ShowLatest();
         ShowFooterNotification(details, "information");
     }
 

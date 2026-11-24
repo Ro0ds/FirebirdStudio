@@ -16,7 +16,7 @@ This roadmap records the agreed direction for Firebird Studio: a focused, cross-
 The current release focuses on:
 
 - Better error reporting, including immediate on-screen error feedback, automatic navigation to Messages, and detailed exception information.
-- A timestamped Messages history, newest first, with distinct soft green success, yellow information, and red error entries.
+- A timestamped Messages history, newest first, with severity labels and icons, short summaries, and copyable details.
 - Persistent SQL editor workspace saves after typing pauses and on `Ctrl+S`, with footer confirmations. The workspace is retained on normal exit and restored on the next launch.
 - All open editor tabs, titles, contents and active-tab selection are restored. Unexpected shutdowns are covered by the same durable workspace file.
 - Editor tabs can be renamed or closed from their context menu; closing a tab removes its contents from the saved workspace. At least one blank editor remains available.
@@ -54,6 +54,8 @@ Firebird-version compatibility testing and large-database performance testing ar
 ## Desktop identity and usability
 
 The [desktop redesign plan](design/DESKTOP-REDESIGN.md) defines the proposed themes, workspace layout, accessibility checks, and incremental PR milestones. The [development and release workflow](releasing/DEVELOPMENT.md) describes how changes move from `development` to `main`.
+
+The localization milestone uses English by default and Brazilian Portuguese as the translation fallback. Users will be able to choose their interface language in Settings.
 
 ## Product direction
 

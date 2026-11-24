@@ -262,8 +262,8 @@ for token in ["sql-editor-recovery.json", "File.Move(temporaryPath, _filePath, o
 for token in [
     "RestoreSqlEditorRecoveryAsync", "ScheduleSqlEditorRecoverySave", "SaveSqlEditorRecoveryNowAsync",
     "Editor autosaved", "Editor saved", "Key.S", "CloseSqlEditorTabAsync", "Close tab",
-    "RenameSqlEditorTabAsync", "Saving SQL editor workspace before closing", "ReportError", "MessageLogItems",
-    "AddMessage(\"Success\"", "ReportInformation", "MessagesScrollViewer",
+    "RenameSqlEditorTabAsync", "Saving SQL editor workspace before closing", "ReportError", "_messagesView.ShowLatest()",
+    "AddMessage(\"Success\"", "ReportInformation",
     "Review the restored queries before executing them.",
     "No active database connection. Select a saved connection profile",
     "ReferenceEquals(_resultsMessagesTabs.SelectedItem, _messagesTab)",
@@ -274,9 +274,10 @@ for token in [
 if "_sqlEditorRecoveryStore.DeleteAsync()" in main_window_source:
     print("SQL editor workspace must persist after a normal application exit.")
     sys.exit(1)
-for token in ["StudioMessageEntry", "#E7F4E8", "#FFF5D9", "#FBE9E7"]:
-    if token not in (root / "src/FirebirdStudio.Desktop/Services/StudioMessageEntry.cs").read_text(encoding="utf-8"):
-        print(f"Message history severity styling is missing: {token}")
+messages_view = (root / "src/FirebirdStudio.Desktop/Views/MessagesView.axaml").read_text(encoding="utf-8")
+for token in ["MessageLogItems", "MessageDetailsText", "CopyMessageDetailsButton", "MessageWarningIcon", "StudioErrorBrush"]:
+    if token not in messages_view:
+        print(f"Message log, severity styling, or diagnostic details are missing: {token}")
         sys.exit(1)
 for token in ["[DNS resolution]", "[TCP reachability]", "[Firebird provider handshake and authentication]", "ServerVersion", "SanitizeMessage(exception.ToString(), password)"]:
     if token not in connection_tester_source:
