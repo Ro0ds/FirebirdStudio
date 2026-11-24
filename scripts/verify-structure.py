@@ -226,9 +226,14 @@ for token in ["query-history.json", "MaximumEntries = 250", "File.Move(temporary
     if token not in query_history_source:
         print(f"Persistent query history is missing: {token}")
         sys.exit(1)
-for token in ["OnExecuteClick", "OnQueryHistoryDoubleTapped", "GetMetadataPageAsync", "ExecuteSqlAsync", "MoveCategoryUpMenuItem", "MoveCategoryDownMenuItem"]:
+for token in ["OnExecuteClick", "RestoreQueryFromHistory", "GetMetadataPageAsync", "ExecuteSqlAsync", "MoveCategoryUpMenuItem", "MoveCategoryDownMenuItem"]:
     if token not in main_window_source and token not in metadata_ui_source:
         print(f"Desktop query/history or metadata UI is missing: {token}")
+        sys.exit(1)
+query_history_view = (root / "src/FirebirdStudio.Desktop/Views/QueryHistoryView.axaml.cs").read_text(encoding="utf-8")
+for token in ["DoubleTapped", "Key.Enter", "RestoreRequested"]:
+    if token not in query_history_view:
+        print(f"Query history restore interaction is missing: {token}")
         sys.exit(1)
 print("Read-only expandable metadata catalog and UI source checks passed.")
 print("Persistent category ordering and theme source checks passed.")

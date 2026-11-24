@@ -12,18 +12,26 @@ internal sealed record QueryHistoryEntry(
     string Outcome)
 {
     [JsonIgnore]
-    public string Status => Outcome == "Execution cancelled." ? "Cancelled" : Succeeded ? "Success" : "Failed";
+    public bool IsCancelled => Outcome == "Execution cancelled.";
 
     [JsonIgnore]
-    public string Summary =>
-        $"{ExecutedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}  ·  {ProfileName}  ·  {Status}";
+    public bool HasFailed => !Succeeded && !IsCancelled;
+
+    [JsonIgnore]
+    public string Status => IsCancelled ? "Cancelled" : Succeeded ? "Success" : "Failed";
+
+    [JsonIgnore]
+    public string ExecutionContext => $"{ExecutedAt.ToLocalTime():g} · {ProfileName}";
+
+    [JsonIgnore]
+    public string AccessibleDetails => $"{ExecutionContext} · {Status}";
 
     [JsonIgnore]
     public string Preview
     {
         get
         {
-            var preview = Sql.Replace('\r', ' ').Replace('\n', ' ').Trim();
+            var preview = Sql.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ').Trim();
             return preview.Length > 240 ? preview[..240] + "…" : preview;
         }
     }

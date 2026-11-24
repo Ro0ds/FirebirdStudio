@@ -25,7 +25,7 @@
       <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding AccessibleName}" />
     </Style>
     <Style Selector="ListBox#ConnectionsList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StudioConnectionSelectionBrush}" />
+      <Setter Property="Background" Value="{DynamicResource StudioListSelectionBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StudioFocusBrush}" />
       <Setter Property="BorderThickness" Value="1,0,0,0" />
     </Style>
@@ -253,7 +253,12 @@
       </Grid>
       <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch"
                     ResizeDirection="Columns" />
-      <Grid Grid.Column="2" x:Name="WorkspaceGrid" ColumnDefinitions="*,5,300" MinWidth="0">
+      <Grid Grid.Column="2" x:Name="WorkspaceGrid" MinWidth="0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="5" />
+          <ColumnDefinition Width="300" MinWidth="220" />
+        </Grid.ColumnDefinitions>
         <Grid Grid.Column="0" RowDefinitions="*,3,190" MinWidth="0">
           <Grid Grid.Row="0">
             <TabControl x:Name="EditorTabs">
@@ -334,29 +339,8 @@
                 </TabControl>
               </Grid>
             </TabItem>
-            <TabItem IsVisible="False" x:Name="QueryHistoryTab">
-              <TabItem.Header>
-                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                  <TextBlock Text="Query History" VerticalAlignment="Center" />
-                  <Button x:Name="ClearHistoryTabButton" Classes="action compact"
-                          AutomationProperties.Name="Clear query history" ToolTip.Tip="Clear query history">
-                    <StackPanel Classes="action-label">
-                      <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
-                      <TextBlock Text="Clear" />
-                    </StackPanel>
-                  </Button>
-                </StackPanel>
-              </TabItem.Header>
-              <ListBox x:Name="QueryHistoryTabList" SelectionMode="Single">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="services:QueryHistoryEntry">
-                    <StackPanel Spacing="2" Margin="4,5">
-                      <TextBlock Text="{Binding Summary}" Classes="panel-title" />
-                      <TextBlock Text="{Binding Preview}" Classes="secondary" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
+            <TabItem IsVisible="False" x:Name="QueryHistoryTab" Header="Query History">
+              <views:QueryHistoryView x:Name="TabbedQueryHistory" Margin="8" />
             </TabItem>
             </TabControl>
           </Grid>
@@ -420,31 +404,14 @@
           </TabControl>
         </Grid>
         <GridSplitter Grid.Column="1" ResizeDirection="Columns" x:Name="HistorySplitter" />
-        <Border Grid.Column="2" x:Name="QueryHistoryPanel" Padding="8"
-                Background="{DynamicResource StudioSurfaceBrush}" MinWidth="220">
-          <Grid RowDefinitions="Auto,*">
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,2,2,8">
-              <TextBlock Grid.Column="0" Text="Query history" Classes="panel-title"
-                         VerticalAlignment="Center" />
-              <Button Grid.Column="1" x:Name="ClearHistoryDockButton" Classes="action compact"
-                      AutomationProperties.Name="Clear query history" ToolTip.Tip="Clear query history">
-                <StackPanel Classes="action-label">
-                  <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
-                  <TextBlock Text="Clear" />
-                </StackPanel>
-              </Button>
-            </Grid>
-            <ListBox Grid.Row="1" x:Name="QueryHistoryList" SelectionMode="Single">
-              <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="services:QueryHistoryEntry">
-                  <StackPanel Spacing="3" Margin="3,5">
-                    <TextBlock Text="{Binding Summary}" Classes="panel-title" />
-                    <TextBlock Text="{Binding Preview}" Classes="secondary"
-                               TextWrapping="Wrap" MaxLines="4" />
-                  </StackPanel>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
+        <Border Grid.Column="2" x:Name="QueryHistoryPanel" Background="{DynamicResource StudioSurfaceBrush}">
+          <Grid>
+            <views:QueryHistoryView x:Name="DockedQueryHistory" Margin="8" />
+            <Button x:Name="ExpandHistoryDockButton" Classes="action icon-only" IsVisible="False" Margin="4,8,4,0"
+                    HorizontalAlignment="Center" VerticalAlignment="Top"
+                    AutomationProperties.Name="Expand query history" ToolTip.Tip="Expand query history">
+              <PathIcon Classes="action-icon" Data="{StaticResource ActionExpandLeftIcon}" />
+            </Button>
           </Grid>
         </Border>
       </Grid>
