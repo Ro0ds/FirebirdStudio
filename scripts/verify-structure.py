@@ -239,10 +239,15 @@ for token in ["DoubleTapped", "Key.Enter", "RestoreRequested"]:
         sys.exit(1)
 print("Read-only expandable metadata catalog and UI source checks passed.")
 print("Persistent category ordering and theme source checks passed.")
-for token in ["QueryResultsGrid", "ApplyExecuteSqlShortcut", "ShowTableDetailsAsync", "TableFieldsGrid", "TableDataGrid", "TableDdlText", "SetHistoryDockMode", "TableViewColumn"]:
+for token in ["ApplyExecuteSqlShortcut", "ShowTableDetailsAsync", "TableFieldsGrid", "TableDataGrid", "TableDdlText", "SetHistoryDockMode"]:
     if token not in main_window_source:
-        print(f"Desktop query grid, table details, execution shortcut, or history docking is missing: {token}")
+        print(f"Desktop table details, execution shortcut, or history docking is missing: {token}")
         sys.exit(1)
+results_view = (root / "src/FirebirdStudio.Desktop/Views/QueryResultsView.axaml").read_text(encoding="utf-8")
+result_table = (root / "src/FirebirdStudio.Desktop/Views/ResultTable.cs").read_text(encoding="utf-8")
+if "QueryResultsGrid" not in results_view or "TableViewColumn" not in result_table:
+    print("Desktop query result grid or generated columns are missing.")
+    sys.exit(1)
 print("Lazy metadata loading, SQL autocomplete, paged table data, SQL execution, persistent query history, result grids, configurable execution shortcut, and history docking source checks passed.")
 
 
