@@ -30,7 +30,7 @@ Multi-statement scripts, multiple result sets, structured/editable result grids,
 
 Query results are rendered in a read-only TableView with columns generated from the provider result metadata. The current preview remains capped at 500 rows and approximately 2 million characters. Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
 
-F5 executes the selected SQL text; without a selection, it executes the entire editor document when it contains one statement. If multiple statements are present, the user must select one. Query history can be docked to the right or moved into a tab alongside the SQL editor.
+F9 executes the selected SQL text by default. With no selection, it executes the editor document when it contains one statement. If multiple statements are present, select one to execute. To choose a different key, open **File → Settings**, select a key under **Execute SQL**, and save. **Restore default** selects F9 again. The selected shortcut appears in **Query → Execute** and in the editor. Query history can be docked to the right or moved into a tab alongside the SQL editor.
 
 
 ## SQL autocomplete and table data browsing

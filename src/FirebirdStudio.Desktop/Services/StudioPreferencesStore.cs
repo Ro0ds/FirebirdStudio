@@ -1,14 +1,20 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Avalonia.Input;
 
 namespace FirebirdStudio.Desktop.Services;
 
 internal sealed record StudioPreferences(
     string Theme,
     IReadOnlyList<string> MetadataCategoryOrder,
-    string ConnectionDisplayMode = "Detailed")
+    string ConnectionDisplayMode = "Detailed",
+    string? ExecuteSqlShortcut = null)
 {
     public static StudioPreferences Default { get; } =
-        new("Light", Array.Empty<string>(), "Detailed");
+        new("Light", Array.Empty<string>(), ExecuteSqlShortcut: SqlExecutionShortcuts.Default.ToString());
+
+    [JsonIgnore]
+    public Key ExecuteSqlKey => SqlExecutionShortcuts.Resolve(ExecuteSqlShortcut);
 }
 
 internal sealed class StudioPreferencesStore
@@ -63,7 +69,13 @@ internal sealed class StudioPreferencesStore
             var connectionDisplayMode = preferences.ConnectionDisplayMode is "Detailed" or "Minimal"
                 ? preferences.ConnectionDisplayMode
                 : "Detailed";
-            return new StudioPreferences(theme, order, connectionDisplayMode);
+            return preferences with
+            {
+                Theme = theme,
+                MetadataCategoryOrder = order,
+                ConnectionDisplayMode = connectionDisplayMode,
+                ExecuteSqlShortcut = preferences.ExecuteSqlKey.ToString()
+            };
         }
         finally
         {

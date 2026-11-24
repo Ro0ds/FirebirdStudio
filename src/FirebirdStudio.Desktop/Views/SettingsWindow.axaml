@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="FirebirdStudio.Desktop.Views.SettingsWindow"
+        Width="420"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Title="Settings">
+  <Grid Margin="18" RowDefinitions="Auto,Auto,Auto" RowSpacing="14">
+    <TextBlock Text="Keyboard shortcuts" Classes="section-title" />
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <TextBlock Text="Execute SQL" VerticalAlignment="Center" />
+      <ComboBox Grid.Column="1" x:Name="ExecuteSqlShortcutBox" MinWidth="100"
+                AutomationProperties.Name="Execute SQL shortcut" />
+    </Grid>
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,6,0,0">
+      <Button x:Name="ResetShortcutButton" Content="Restore default" Classes="action" />
+      <Button Grid.Column="1" x:Name="CancelSettingsButton" Content="Cancel" Classes="action" IsCancel="True" />
+      <Button Grid.Column="2" x:Name="SaveSettingsButton" Classes="action accent" IsDefault="True"
+              AutomationProperties.Name="Save settings">
+        <StackPanel Classes="action-label">
+          <PathIcon Classes="action-icon" Data="{StaticResource ActionConfirmIcon}" />
+          <TextBlock Text="Save" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </Grid>
+</Window>

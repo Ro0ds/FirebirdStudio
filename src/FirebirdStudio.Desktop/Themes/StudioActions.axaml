@@ -13,6 +13,7 @@
       <StreamGeometry x:Key="ActionCollapseRightIcon">M5 3L10 8L5 13L4 12L8 8L4 4Z M12 2H13.5V14H12Z</StreamGeometry>
       <StreamGeometry x:Key="ActionExpandLeftIcon">M9 3L4 8L9 13L10 12L6 8L10 4Z M12 2H13.5V14H12Z</StreamGeometry>
       <StreamGeometry x:Key="ActionRestoreIcon">M6 2L1 7L6 12L7.1 10.9L4 7.8H10A3 3 0 0 1 10 13.8H8V15.3H10A4.5 4.5 0 0 0 10 6.3H4L7.1 3.1Z</StreamGeometry>
+      <StreamGeometry x:Key="ActionSettingsIcon">F0 M6.5 1H9.5L10 3.2L11.4 3.8L13.4 2.7L15 5.3L13.4 6.8V9.2L15 10.7L13.4 13.3L11.4 12.2L10 12.8L9.5 15H6.5L6 12.8L4.6 12.2L2.6 13.3L1 10.7L2.6 9.2V6.8L1 5.3L2.6 2.7L4.6 3.8L6 3.2Z M5.5 8A2.5 2.5 0 1 0 10.5 8A2.5 2.5 0 1 0 5.5 8Z</StreamGeometry>
     </ResourceDictionary>
   </Styles.Resources>
 

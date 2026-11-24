@@ -94,7 +94,9 @@ public sealed partial class MainWindow : Window
     private readonly QueryHistoryView _tabbedQueryHistory;
     private readonly TableView _queryResultsGrid;
     private readonly TabControl _editorTabs;
-    private readonly List<(TabItem Tab, AvaloniaEdit.TextEditor Editor)> _sqlEditors = [];
+    private sealed record SqlEditorState(TabItem Tab, AvaloniaEdit.TextEditor Editor, TextBlock ExecutionHint);
+
+    private readonly List<SqlEditorState> _sqlEditors = [];
     private TabItem? _lastActiveSqlTab;
     private readonly List<AvaloniaEdit.TextEditor> _readOnlySqlEditors = [];
     private readonly TabItem _addSqlEditorTab;
@@ -141,7 +143,7 @@ public sealed partial class MainWindow : Window
 
         var sqlEditor = this.FindControl<AvaloniaEdit.TextEditor>("SqlEditor")!;
         var sqlEditorTab = this.FindControl<TabItem>("SqlEditorTab")!;
-        ConfigureSqlEditorTab(sqlEditorTab, sqlEditor);
+        ConfigureSqlEditorTab(sqlEditorTab, sqlEditor, this.FindControl<TextBlock>("SqlExecutionHint")!);
         _lastActiveSqlTab = sqlEditorTab;
         ApplySqlSyntaxHighlighting(sqlEditor);
 
@@ -305,12 +307,14 @@ public sealed partial class MainWindow : Window
         _connectButton.Click += OnConnectClick;
         _disconnectButton.Click += OnDisconnectClick;
         _refreshMetadataMenuItem.Click += OnRefreshMetadataClick;
+        this.FindControl<MenuItem>("SettingsMenuItem")!.Click += OnSettingsClick;
         _toggleThemeMenuItem.Click += async (_, _) =>
             await SetThemeAsync(_preferences.Theme == "Dark" ? "Light" : "Dark");
         _checkForUpdatesMenuItem.Click += async (_, _) =>
             await CheckForUpdatesAsync(manual: true, cancellationToken: _updateCheckLifetime.Token);
         _historyDockRightMenuItem.Click += (_, _) => SetHistoryDockMode(true);
         _historyDockTabMenuItem.Click += (_, _) => SetHistoryDockMode(false);
+        ApplyExecuteSqlShortcut();
         KeyDown += OnWindowKeyDown;
         Opened += OnWindowOpened;
         Closed += OnWindowClosed;
@@ -325,6 +329,7 @@ public sealed partial class MainWindow : Window
                 _preferences = _preferences with { Theme = "Light" };
             ApplyTheme();
             ApplyConnectionDisplayMode();
+            ApplyExecuteSqlShortcut();
             SetHistoryDockMode(true);
         }
         catch (Exception exception)
@@ -2063,19 +2068,42 @@ public sealed partial class MainWindow : Window
 
     private void RestoreQueryFromHistory(QueryHistoryEntry entry)
     {
-        var (tab, editor) = GetHistoryEditorTab();
-        editor.Document.Replace(0, editor.Document.TextLength, entry.Sql);
-        _editorTabs.SelectedItem = tab;
-        editor.CaretOffset = 0;
-        Dispatcher.UIThread.Post(() => editor.TextArea.Focus(), DispatcherPriority.Input);
+        var editorTab = GetHistoryEditorTab();
+        editorTab.Editor.Document.Replace(0, editorTab.Editor.Document.TextLength, entry.Sql);
+        _editorTabs.SelectedItem = editorTab.Tab;
+        editorTab.Editor.CaretOffset = 0;
+        Dispatcher.UIThread.Post(() => editorTab.Editor.TextArea.Focus(), DispatcherPriority.Input);
         _statusText.Text = $"Restored query from {entry.ExecutedAt.ToLocalTime():g} ({entry.ProfileName}).";
     }
 
-    private (TabItem Tab, AvaloniaEdit.TextEditor Editor) GetHistoryEditorTab()
+    private SqlEditorState GetHistoryEditorTab() =>
+        _sqlEditors.FirstOrDefault(item => ReferenceEquals(item.Tab, _lastActiveSqlTab)) ?? GetActiveSqlEditorTab();
+
+    private async void OnSettingsClick(object? sender, RoutedEventArgs e)
     {
-        var lastActive = _sqlEditors.FirstOrDefault(item => ReferenceEquals(item.Tab, _lastActiveSqlTab));
-        return lastActive.Editor is not null ? lastActive : GetActiveSqlEditorTab();
+        var dialog = new SettingsWindow(_preferences.ExecuteSqlKey);
+        var selectedShortcut = await dialog.ShowDialog<Key?>(this);
+        if (selectedShortcut is not { } shortcut || shortcut == _preferences.ExecuteSqlKey)
+            return;
+
+        _preferences = _preferences with { ExecuteSqlShortcut = shortcut.ToString() };
+        ApplyExecuteSqlShortcut();
+        await SavePreferencesAsync($"Execute SQL shortcut set to {shortcut}.");
     }
+
+    private void ApplyExecuteSqlShortcut()
+    {
+        var shortcut = _preferences.ExecuteSqlKey;
+        _executeButton.InputGesture = new KeyGesture(shortcut);
+        var hint = GetSqlExecutionHint(shortcut);
+        foreach (var editor in _sqlEditors)
+            editor.ExecutionHint.Text = hint;
+    }
+
+    private static string GetSqlExecutionHint(Key shortcut) =>
+        $"{shortcut} executes the selected SQL or the only statement in this editor. " +
+        "If the editor contains multiple statements, select the one to execute. Separate statements with semicolons. " +
+        "Ctrl+Space opens Firebird SQL and database-object suggestions.";
 
     private async Task SetThemeAsync(string theme)
     {
@@ -2095,8 +2123,8 @@ public sealed partial class MainWindow : Window
             _ => ThemeVariant.Dark
         };
 
-        foreach (var (_, editor) in _sqlEditors)
-            editor.TextArea.TextView.Redraw();
+        foreach (var editor in _sqlEditors)
+            editor.Editor.TextArea.TextView.Redraw();
         foreach (var editor in _readOnlySqlEditors)
             editor.TextArea.TextView.Redraw();
     }
@@ -2216,7 +2244,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        if (e.Key != Key.F5 || e.KeyModifiers != KeyModifiers.None || _isQueryExecuting)
+        if (e.Key != _executeButton.InputGesture?.Key || e.KeyModifiers != KeyModifiers.None || _isQueryExecuting)
             return;
 
         e.Handled = true;
@@ -2430,22 +2458,23 @@ public sealed partial class MainWindow : Window
             statements.Add(candidate);
     }
 
-    private (TabItem Tab, AvaloniaEdit.TextEditor Editor) GetActiveSqlEditorTab()
+    private SqlEditorState GetActiveSqlEditorTab()
     {
         if (_editorTabs.SelectedItem is TabItem selected)
         {
             var active = _sqlEditors.FirstOrDefault(item => ReferenceEquals(item.Tab, selected));
-            if (active.Editor is not null)
+            if (active is not null)
                 return active;
         }
 
         return _sqlEditors[0];
     }
 
-    private void ConfigureSqlEditorTab(TabItem tab, AvaloniaEdit.TextEditor editor)
+    private void ConfigureSqlEditorTab(TabItem tab, AvaloniaEdit.TextEditor editor, TextBlock executionHint)
     {
         tab.Tag = editor;
-        _sqlEditors.Add((tab, editor));
+        executionHint.Text = GetSqlExecutionHint(_preferences.ExecuteSqlKey);
+        _sqlEditors.Add(new SqlEditorState(tab, editor, executionHint));
         editor.Document.TextChanged += (_, _) =>
         {
             if (!_isRestoringEditors)
@@ -2487,16 +2516,16 @@ public sealed partial class MainWindow : Window
         var content = new Grid();
         content.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         content.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+        var executionHint = new TextBlock
+        {
+            Classes = { "secondary" },
+            TextWrapping = TextWrapping.Wrap
+        };
         var hint = new Border
         {
             Padding = new Avalonia.Thickness(7),
             BorderThickness = new Avalonia.Thickness(0, 0, 0, 1),
-            Child = new TextBlock
-            {
-                Text = "F5 executes the selected SQL, or the only statement in this editor. Select a statement when multiple statements are present.",
-                Classes = { "secondary" },
-                TextWrapping = TextWrapping.Wrap
-            }
+            Child = executionHint
         };
         content.Children.Add(hint);
         var editorHost = new Grid();
@@ -2505,7 +2534,7 @@ public sealed partial class MainWindow : Window
         content.Children.Add(editorHost);
 
         var tab = new TabItem { Header = $"SQL Editor {number}", Content = content };
-        ConfigureSqlEditorTab(tab, editor);
+        ConfigureSqlEditorTab(tab, editor, executionHint);
         var insertIndex = _sqlEditors.Count - 1;
         _editorTabs.Items.Insert(insertIndex, tab);
         _editorTabs.SelectedItem = tab;
@@ -3187,7 +3216,7 @@ public sealed partial class MainWindow : Window
         {
             for (var index = 0; index < snapshot.Queries.Length; index++)
             {
-                (TabItem Tab, AvaloniaEdit.TextEditor Editor) editorTab;
+                SqlEditorState editorTab;
                 if (index == 0)
                 {
                     editorTab = _sqlEditors[0];
