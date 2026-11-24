@@ -25,6 +25,8 @@ public sealed partial class QueryResultsView : UserControl
     {
         InitializeComponent();
         ClearResultsButton.Click += (_, _) => ClearRequested?.Invoke(this, EventArgs.Empty);
+        FirstResultRowButton.Click += (_, _) => NavigateToRow(0);
+        LastResultRowButton.Click += (_, _) => NavigateToRow(QueryResultsGrid.ItemCount - 1);
         CopyResultRowButton.Click += (_, _) => CopySelectedRow();
         QueryResultsGrid.SelectionChanged += (_, _) =>
             CopyResultRowButton.IsEnabled = QueryResultsGrid.SelectedItem is ResultTableRow;
@@ -83,7 +85,19 @@ public sealed partial class QueryResultsView : UserControl
         PartialResults.IsVisible = isPartial;
         ResultsHint.IsVisible = status == Status.Ready;
         ResultsProgress.IsVisible = status == Status.Running;
+        var hasRows = showGrid && QueryResultsGrid.ItemCount > 0;
+        FirstResultRowButton.IsEnabled = hasRows;
+        LastResultRowButton.IsEnabled = hasRows;
         ClearResultsButton.IsEnabled = status is Status.Completed or Status.Cancelled or Status.Failed;
+    }
+
+    private void NavigateToRow(int index)
+    {
+        if (index < 0 || index >= QueryResultsGrid.ItemCount)
+            return;
+
+        QueryResultsGrid.SelectedIndex = index;
+        QueryResultsGrid.ScrollIntoView(index);
     }
 
     private void ConfigureSortHeaders(IReadOnlyList<string> titles)
