@@ -2,7 +2,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:edit="using:AvaloniaEdit"
-    xmlns:connections="using:FirebirdStudio.Core.Connections"
+    xmlns:views="using:FirebirdStudio.Desktop.Views"
     xmlns:database="using:FirebirdStudio.Core.Database"
     xmlns:services="using:FirebirdStudio.Desktop.Services"
     x:Class="FirebirdStudio.Desktop.Views.MainWindow"
@@ -15,6 +15,22 @@
   <Window.Styles>
     <Style Selector="Button">
       <Setter Property="Padding" Value="9,5" />
+    </Style>
+    <Style Selector="ListBox#ConnectionsList ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding AccessibleName}" />
+    </Style>
+    <Style Selector="ListBox#ConnectionsList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StudioConnectionSelectionBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StudioFocusBrush}" />
+      <Setter Property="BorderThickness" Value="1,0,0,0" />
+    </Style>
+    <Style Selector="ListBox#ConnectionsList StackPanel.connection-details">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ListBox#ConnectionsList.detailed StackPanel.connection-details">
+      <Setter Property="IsVisible" Value="True" />
     </Style>
     <!-- TreeViewItem uses a StackPanel by default. Virtualize each expanded
          category so thousands of metadata rows do not create thousands of controls. -->
@@ -111,9 +127,43 @@
           <Button Grid.Column="1" x:Name="ToggleConnectionDisplayButton" Classes="action compact" Content="Minimal"
                   ToolTip.Tip="Switch connection list display mode" />
         </Grid>
-        <ListBox Grid.Row="1" x:Name="ConnectionsList" SelectionMode="Single">
-
-        </ListBox>
+        <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="8" MinHeight="0">
+          <Grid MinHeight="0">
+            <ListBox x:Name="ConnectionsList" Classes="detailed" SelectionMode="Single"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="views:ConnectionListItem">
+                  <StackPanel Spacing="3">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Profile.Name}" FontWeight="SemiBold"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Profile.Name}" />
+                      <TextBlock Grid.Column="1" Classes="secondary" Classes.success="{Binding IsConnected}"
+                                 Text="{Binding Status}" VerticalAlignment="Center" />
+                    </Grid>
+                    <StackPanel Classes="connection-details" Spacing="2">
+                      <TextBlock Classes="secondary" Text="{Binding Endpoint}"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Endpoint}" />
+                      <TextBlock Classes="secondary" Text="{Binding Profile.Database}"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Profile.Database}" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Classes="secondary" Text="No saved connections" IsVisible="{Binding !#ConnectionsList.ItemCount}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+          </Grid>
+          <DockPanel Grid.Row="1" LastChildFill="False" Margin="0,0,0,4">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="5">
+              <Button x:Name="NewConnectionButton" Content="New" AutomationProperties.Name="New connection"
+                      ToolTip.Tip="New connection" />
+              <Button x:Name="EditSelectedConnectionButton" Content="Edit" IsEnabled="False"
+                      AutomationProperties.Name="Edit selected connection" ToolTip.Tip="Edit selected connection" />
+            </StackPanel>
+            <Button DockPanel.Dock="Right" x:Name="ConnectionSessionButton" Content="Connect" IsEnabled="False"
+                    ToolTip.Tip="Connect to the selected database" />
+          </DockPanel>
+        </Grid>
         <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
         <Grid Grid.Row="3" RowDefinitions="Auto,Auto,*" MinHeight="0">
           <Grid Grid.Row="0" Margin="0,10,0,7" ColumnDefinitions="*,Auto,Auto">
@@ -365,7 +415,8 @@
             BorderBrush="{DynamicResource StudioDividerBrush}">
       <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="18">
         <TextBlock Grid.Column="0" x:Name="ConnectionStateText" Text="Not connected"
-                   Classes="secondary error" FontWeight="SemiBold" />
+                   Classes="secondary error" FontWeight="SemiBold" MaxWidth="280"
+                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
         <TextBlock Grid.Column="1" Text="Firebird provider 10.3.4" Classes="secondary"
                    VerticalAlignment="Center" />
         <TextBlock Grid.Column="2" x:Name="CurrentVersionText" Text="Firebird Studio 0.1.0" Classes="secondary"

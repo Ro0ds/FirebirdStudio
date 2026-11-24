@@ -7,6 +7,7 @@
       <SolidColorBrush x:Key="StudioDividerBrush" Color="#CFD7E0" />
       <SolidColorBrush x:Key="StudioSplitterBrush" Color="#7A8999" />
       <SolidColorBrush x:Key="StudioFocusBrush" Color="#245AA7" />
+      <SolidColorBrush x:Key="StudioConnectionSelectionBrush" Color="#E8F0FB" />
       <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="StudioFocusBrush" />
       <SolidColorBrush x:Key="StudioAccentBrush" Color="#A43E1B" />
       <StaticResource x:Key="AccentButtonBackground" ResourceKey="StudioAccentBrush" />
@@ -28,6 +29,7 @@
       <SolidColorBrush x:Key="StudioDividerBrush" Color="#394553" />
       <SolidColorBrush x:Key="StudioSplitterBrush" Color="#748396" />
       <SolidColorBrush x:Key="StudioFocusBrush" Color="#83B5FF" />
+      <SolidColorBrush x:Key="StudioConnectionSelectionBrush" Color="#293C56" />
       <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="StudioFocusBrush" />
       <SolidColorBrush x:Key="StudioAccentBrush" Color="#FF9D72" />
       <StaticResource x:Key="AccentButtonBackground" ResourceKey="StudioAccentBrush" />
