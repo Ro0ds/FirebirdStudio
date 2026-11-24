@@ -65,6 +65,11 @@
               </MenuItem.Icon>
             </MenuItem>
             <Separator />
+            <MenuItem Header="_Settings…" x:Name="SettingsMenuItem">
+              <MenuItem.Icon>
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionSettingsIcon}" />
+              </MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="Exit" x:Name="ExitMenuItem" />
           </MenuItem>
           <MenuItem Header="_Connection">
@@ -84,7 +89,7 @@
             </MenuItem>
           </MenuItem>
           <MenuItem Header="_Query">
-            <MenuItem Header="Execute" x:Name="ExecuteMenuItem" IsEnabled="False" InputGesture="F5">
+            <MenuItem Header="Execute" x:Name="ExecuteMenuItem" IsEnabled="False">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionExecuteIcon}" />
               </MenuItem.Icon>
@@ -266,7 +271,7 @@
               <Grid RowDefinitions="Auto,*">
                 <Border Padding="7" BorderThickness="0,0,0,1"
                         BorderBrush="{DynamicResource StudioDividerBrush}">
-                  <TextBlock Text="F5 executes the selected SQL. With no selection, F5 executes the entire editor content when it contains one statement; if it contains multiple statements, select the statement to execute. Separate statements with semicolons. Ctrl+Space opens Firebird SQL and database-object suggestions."
+                  <TextBlock x:Name="SqlExecutionHint"
                              Classes="secondary" TextWrapping="Wrap" />
                 </Border>
                 <edit:TextEditor Grid.Row="1" x:Name="SqlEditor" ShowLineNumbers="True"

@@ -30,6 +30,8 @@ required = [
     "src/FirebirdStudio.Desktop/Views/ConnectionPasswordWindow.axaml",
     "src/FirebirdStudio.Desktop/Views/ConnectionPasswordWindow.axaml.cs",
     "src/FirebirdStudio.Desktop/Services/StudioPreferencesStore.cs",
+    "src/FirebirdStudio.Desktop/Services/SqlExecutionShortcuts.cs",
+    "src/FirebirdStudio.Desktop/Views/SettingsWindow.axaml",
     "src/FirebirdStudio.Desktop/Services/QueryHistoryStore.cs",
     "docs/architecture/SQL-EXECUTION.md",
     "docs/architecture/CONNECTION-MANAGER.md",
@@ -237,11 +239,11 @@ for token in ["DoubleTapped", "Key.Enter", "RestoreRequested"]:
         sys.exit(1)
 print("Read-only expandable metadata catalog and UI source checks passed.")
 print("Persistent category ordering and theme source checks passed.")
-for token in ["QueryResultsGrid", "Key.F5", "ShowTableDetailsAsync", "TableFieldsGrid", "TableDataGrid", "TableDdlText", "SetHistoryDockMode", "TableViewColumn"]:
+for token in ["QueryResultsGrid", "ApplyExecuteSqlShortcut", "ShowTableDetailsAsync", "TableFieldsGrid", "TableDataGrid", "TableDdlText", "SetHistoryDockMode", "TableViewColumn"]:
     if token not in main_window_source:
-        print(f"Desktop query grid, table details, F5, or history docking is missing: {token}")
+        print(f"Desktop query grid, table details, execution shortcut, or history docking is missing: {token}")
         sys.exit(1)
-print("Lazy metadata loading, SQL autocomplete, paged table data, SQL execution, persistent query history, result grids, F5, and history docking source checks passed.")
+print("Lazy metadata loading, SQL autocomplete, paged table data, SQL execution, persistent query history, result grids, configurable execution shortcut, and history docking source checks passed.")
 
 
 # Phase 1 reliability release checks
