@@ -352,20 +352,8 @@
           <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch"
                         ResizeDirection="Rows" Margin="3,0,0,0" />
           <TabControl Grid.Row="2" x:Name="ResultsMessagesTabs">
-            <TabItem x:Name="ResultsTab">
-              <TabItem.Header>
-                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                  <TextBlock Text="Results" VerticalAlignment="Center" />
-                  <Button x:Name="ClearResultsButton" Classes="action compact"
-                          AutomationProperties.Name="Clear the current query results" ToolTip.Tip="Clear the current query results">
-                    <StackPanel Classes="action-label">
-                      <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
-                      <TextBlock Text="Clear" />
-                    </StackPanel>
-                  </Button>
-                </StackPanel>
-              </TabItem.Header>
-              <TableView x:CompileBindings="False" x:Name="QueryResultsGrid" CanUserResizeColumns="True" />
+            <TabItem x:Name="ResultsTab" Header="Results">
+              <views:QueryResultsView x:Name="QueryResults" />
             </TabItem>
             <TabItem x:Name="MessagesTab">
               <TabItem.Header>

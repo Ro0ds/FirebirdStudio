@@ -4,12 +4,12 @@ using System.Globalization;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Styling;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Threading;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Media;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
@@ -92,7 +92,7 @@ public sealed partial class MainWindow : Window
     private readonly MenuItem _cancelQueryButton;
     private readonly QueryHistoryView _dockedQueryHistory;
     private readonly QueryHistoryView _tabbedQueryHistory;
-    private readonly TableView _queryResultsGrid;
+    private readonly QueryResultsView _queryResults;
     private readonly TabControl _editorTabs;
     private sealed record SqlEditorState(TabItem Tab, AvaloniaEdit.TextEditor Editor, TextBlock ExecutionHint);
 
@@ -194,7 +194,7 @@ public sealed partial class MainWindow : Window
         _cancelQueryButton = this.FindControl<MenuItem>("CancelQueryMenuItem")!;
         _dockedQueryHistory = this.FindControl<QueryHistoryView>("DockedQueryHistory")!;
         _tabbedQueryHistory = this.FindControl<QueryHistoryView>("TabbedQueryHistory")!;
-        _queryResultsGrid = this.FindControl<TableView>("QueryResultsGrid")!;
+        _queryResults = this.FindControl<QueryResultsView>("QueryResults")!;
         _editorTabs = this.FindControl<TabControl>("EditorTabs")!;
         _addSqlEditorTab = this.FindControl<TabItem>("AddSqlEditorTab")!;
         _editorTabs.SelectionChanged += (_, e) =>
@@ -246,7 +246,8 @@ public sealed partial class MainWindow : Window
         _resultsTab = this.FindControl<TabItem>("ResultsTab")!;
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
         this.FindControl<Button>("ClearMessagesButton")!.Click += (_, _) => ClearMessages();
-        this.FindControl<Button>("ClearResultsButton")!.Click += (_, _) => ClearResults();
+        _queryResults.ClearRequested += (_, _) => ClearResults();
+        _queryResults.CopyRowRequested += async row => await CopyResultRowAsync(row);
         var toggleConnectionDisplayButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
         toggleConnectionDisplayButton.Click += async (_, _) =>
             await SetConnectionDisplayModeAsync(_preferences.ConnectionDisplayMode == "Detailed" ? "Minimal" : "Detailed");
@@ -1809,10 +1810,28 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        _queryResultsGrid.ItemsSource = null;
-        _queryResultsGrid.Columns.Clear();
+        _queryResults.Reset();
         _statusText.Text = "Query results cleared.";
         ShowFooterNotification("Query results cleared", "success");
+    }
+
+    private async Task CopyResultRowAsync(string row)
+    {
+        if (Clipboard is not { } clipboard)
+        {
+            ReportError("Copying result row", "Clipboard is unavailable.");
+            return;
+        }
+
+        try
+        {
+            await clipboard.SetTextAsync(row);
+            ShowFooterNotification("Result row copied", "success");
+        }
+        catch (Exception exception)
+        {
+            ReportError("Copying result row", exception);
+        }
     }
 
     private void FormatActiveSql()
@@ -1899,8 +1918,7 @@ public sealed partial class MainWindow : Window
         var cancellation = new CancellationTokenSource();
         _queryExecutionCancellation = cancellation;
         _isQueryExecuting = true;
-        _queryResultsGrid.ItemsSource = null;
-        _queryResultsGrid.Columns.Clear();
+        _queryResults.ShowRunning();
         _statusText.Text = $"Executing SQL on '{profile.Name}'...";
         UpdateActionAvailability();
         var succeeded = false;
@@ -1920,7 +1938,7 @@ public sealed partial class MainWindow : Window
                 : result.RowsAffected >= 0
                     ? $"{result.RowsAffected} row(s) affected in {result.Elapsed.TotalMilliseconds:N0} ms"
                     : $"Statement completed in {result.Elapsed.TotalMilliseconds:N0} ms";
-            PopulateResultGrid(_queryResultsGrid, result.Columns, result.Rows);
+            _queryResults.ShowResult(result);
             _statusText.Text = outcome;
             AddMessage("Success", "SQL execution", outcome);
             if (ReferenceEquals(_resultsMessagesTabs.SelectedItem, _messagesTab))
@@ -1930,16 +1948,14 @@ public sealed partial class MainWindow : Window
         catch (OperationCanceledException)
         {
             outcome = "Execution cancelled.";
-            _queryResultsGrid.ItemsSource = null;
-            _queryResultsGrid.Columns.Clear();
+            _queryResults.ShowCancelled();
             _statusText.Text = outcome;
             ReportInformation("SQL execution", outcome);
         }
         catch (Exception exception)
         {
             outcome = exception.Message;
-            _queryResultsGrid.ItemsSource = null;
-            _queryResultsGrid.Columns.Clear();
+            _queryResults.ShowFailed();
             ReportError("SQL execution (the statement transaction was rolled back when possible)", exception);
         }
         finally
@@ -2061,8 +2077,9 @@ public sealed partial class MainWindow : Window
     {
         if (_queryExecutionCancellation is { IsCancellationRequested: false } cancellation)
         {
-            cancellation.Cancel();
             _statusText.Text = "Cancellation requested...";
+            _queryResults.ShowCancelling();
+            cancellation.Cancel();
         }
     }
 
@@ -2645,25 +2662,6 @@ public sealed partial class MainWindow : Window
         }, RoutingStrategies.Tunnel, handledEventsToo: true);
     }
 
-    private static void PopulateResultGrid(
-        TableView grid,
-        IReadOnlyList<string> columns,
-        IReadOnlyList<IReadOnlyList<string>> rows)
-    {
-        grid.Columns.Clear();
-        for (var index = 0; index < columns.Count; index++)
-        {
-            grid.Columns.Add(new TableViewColumn
-            {
-                Header = columns[index],
-                Binding = new Binding($"Values[{index}]"),
-                Width = new GridLength(160)
-            });
-        }
-
-        grid.ItemsSource = rows.Select(row => new QueryResultRow(row.ToArray())).ToArray();
-    }
-
     private async Task OpenSqlIdentifierAsync(AvaloniaEdit.TextEditor editor, int offset)
     {
         if (SelectedConnection is not { } profile ||
@@ -3086,7 +3084,7 @@ public sealed partial class MainWindow : Window
                 SelectedConnection is not { } currentProfile || currentProfile.Id != profile.Id)
                 return;
 
-            PopulateResultGrid(_tableDataGrid, page.Columns, page.Rows);
+            ResultTable.Populate(_tableDataGrid, page.Columns, page.Rows);
             _currentTableDataOffset = offset;
             _currentTableDataPage = page;
             _previousTableDataPageButton.IsEnabled = page.HasPrevious;
@@ -3384,7 +3382,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private sealed record QueryResultRow(string[] Values);
     private sealed record TableFieldDisplay(string Name, string? Domain, string Type, string Nullable, string Position);
 
 

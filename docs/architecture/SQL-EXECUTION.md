@@ -28,7 +28,9 @@ Multi-statement scripts, multiple result sets, structured/editable result grids,
 
 ## Result presentation and table inspection
 
-Query results are rendered in a read-only TableView with columns generated from the provider result metadata. The current preview remains capped at 500 rows and approximately 2 million characters. Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
+The Results tab shows the execution state and, when available, the row count and elapsed time. It marks the preview as partial when the result exceeds the row or aggregate data limit. The read-only grid uses columns generated from the provider result metadata. Resize columns to inspect long values, or select a row and use **Copy row** to copy the preview values as tab-separated text. An empty result set still displays its column headers.
+
+Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
 
 F9 executes the selected SQL text by default. With no selection, it executes the editor document when it contains one statement. If multiple statements are present, select one to execute. To choose a different key, open **File → Settings**, select a key under **Execute SQL**, and save. **Restore default** selects F9 again. The selected shortcut appears in **Query → Execute** and in the editor. Query history can be docked to the right or moved into a tab alongside the SQL editor.
 
