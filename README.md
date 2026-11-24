@@ -28,7 +28,7 @@ The [v0.1.4 release](https://github.com/Ro0ds/FirebirdStudio/releases/tag/v0.1.4
 - Connect and disconnect long-lived Firebird sessions from the desktop connection list. Choose a detailed or minimal connection list and a light or dark theme. These preferences are saved locally.
 - Run SQL with typed named parameters. Format the selection or active document with `Ctrl+Shift+F`.
 - Automatically switch to Messages when an application/database error occurs, show an immediate footer notification, and retain detailed exception information, including stack traces and inner exceptions.
-- Maintain a timestamped Messages history, newest first, with soft green success, yellow information, and red error entries.
+- Maintain a timestamped Messages history, newest first, with severity labels and icons, short summaries, and copyable details.
 - Save open SQL tabs, titles, contents, and the active tab 700 ms after typing stops or immediately with `Ctrl+S`. The workspace is restored after normal exit or unexpected shutdown. Tabs can be renamed or closed from their context menu.
 - Switch from Messages to Results after successful SQL execution when Messages is currently selected.
 - Keep active provider connections owned by an application-level session manager, with duplicate-session prevention and deterministic asynchronous disposal.

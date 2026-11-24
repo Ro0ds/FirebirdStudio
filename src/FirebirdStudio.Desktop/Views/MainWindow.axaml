@@ -4,7 +4,6 @@
     xmlns:edit="using:AvaloniaEdit"
     xmlns:views="using:FirebirdStudio.Desktop.Views"
     xmlns:database="using:FirebirdStudio.Core.Database"
-    xmlns:services="using:FirebirdStudio.Desktop.Services"
     x:Class="FirebirdStudio.Desktop.Views.MainWindow"
     Width="1500"
     Height="940"
@@ -355,44 +354,8 @@
             <TabItem x:Name="ResultsTab" Header="Results">
               <views:QueryResultsView x:Name="QueryResults" />
             </TabItem>
-            <TabItem x:Name="MessagesTab">
-              <TabItem.Header>
-                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                  <TextBlock Text="Messages" VerticalAlignment="Center" />
-                  <Button x:Name="ClearMessagesButton" Classes="action compact"
-                          AutomationProperties.Name="Clear the message log" ToolTip.Tip="Clear the message log">
-                    <StackPanel Classes="action-label">
-                      <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
-                      <TextBlock Text="Clear" />
-                    </StackPanel>
-                  </Button>
-                </StackPanel>
-              </TabItem.Header>
-              <ScrollViewer x:Name="MessagesScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="9" Spacing="8">
-                  <TextBlock x:Name="StatusText" Text="Loading saved connection profiles..."
-                             TextWrapping="Wrap" />
-                  <Border Height="1" Background="{DynamicResource StudioDividerBrush}" />
-                  <ItemsControl x:Name="MessageLogItems">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="services:StudioMessageEntry">
-                        <Border Background="{Binding Background}" CornerRadius="4" Padding="9"
-                                BorderThickness="1" BorderBrush="{Binding Foreground}" Opacity="0.96">
-                          <StackPanel Spacing="4">
-                            <TextBlock Text="{Binding TimestampText}" FontSize="{StaticResource StudioSecondaryFontSize}"
-                                       Foreground="{Binding Foreground}" />
-                            <TextBlock Text="{Binding Header}" FontWeight="SemiBold"
-                                       Foreground="{Binding Foreground}" />
-                            <TextBlock Text="{Binding Details}" TextWrapping="Wrap"
-                                       FontFamily="{StaticResource StudioMonospaceFont}"
-                                       Foreground="{Binding Foreground}" />
-                          </StackPanel>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </ScrollViewer>
+            <TabItem x:Name="MessagesTab" Header="Messages">
+              <views:MessagesView x:Name="Messages" />
             </TabItem>
           </TabControl>
         </Grid>
