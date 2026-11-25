@@ -2106,14 +2106,24 @@ public sealed partial class MainWindow : Window
 
     private async void OnSettingsClick(object? sender, RoutedEventArgs e)
     {
-        var dialog = new SettingsWindow(_preferences.ExecuteSqlKey);
-        var selectedShortcut = await dialog.ShowDialog<Key?>(this);
-        if (selectedShortcut is not { } shortcut || shortcut == _preferences.ExecuteSqlKey)
+        var dialog = new SettingsWindow(_preferences, ((App)Avalonia.Application.Current!).Appearance);
+        var changes = await dialog.ShowDialog<SettingsChanges?>(this);
+        if (changes is null)
             return;
 
-        _preferences = _preferences with { ExecuteSqlShortcut = shortcut.ToString() };
+        var updatedPreferences = _preferences with
+        {
+            ExecuteSqlShortcut = changes.ExecuteShortcut.ToString(),
+            LightThemeColors = changes.Light,
+            DarkThemeColors = changes.Dark
+        };
+        if (updatedPreferences == _preferences)
+            return;
+
+        _preferences = updatedPreferences;
+        ApplyTheme();
         ApplyExecuteSqlShortcut();
-        await SavePreferencesAsync($"Execute SQL shortcut set to {shortcut}.");
+        await SavePreferencesAsync("Settings saved.");
     }
 
     private void ApplyExecuteSqlShortcut()
@@ -2141,7 +2151,10 @@ public sealed partial class MainWindow : Window
 
     private void ApplyTheme()
     {
-        Avalonia.Application.Current!.RequestedThemeVariant = _preferences.Theme switch
+        var app = (App)Avalonia.Application.Current!;
+        var overrides = _preferences.Theme == "Dark" ? _preferences.DarkThemeColors : _preferences.LightThemeColors;
+        app.Appearance.Apply(_preferences.Theme, overrides);
+        app.RequestedThemeVariant = _preferences.Theme switch
         {
             "Light" => ThemeVariant.Light,
             _ => ThemeVariant.Dark
