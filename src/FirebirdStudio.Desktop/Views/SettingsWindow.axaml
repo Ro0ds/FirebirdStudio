@@ -1,11 +1,20 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:colors="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.ColorPicker"
         x:Class="FirebirdStudio.Desktop.Views.SettingsWindow"
         Width="540"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         Title="Settings">
+  <Window.Styles>
+    <Style Selector="colors|ColorPicker.theme-color">
+      <Setter Property="IsAlphaEnabled" Value="False" />
+      <Setter Property="IsAlphaVisible" Value="False" />
+      <Setter Property="IsColorPaletteVisible" Value="True" />
+      <Setter Property="IsHexInputVisible" Value="False" />
+    </Style>
+  </Window.Styles>
   <Grid Margin="18" RowDefinitions="*,Auto,Auto" RowSpacing="12">
     <TabControl>
       <TabItem Header="Keyboard shortcuts">
@@ -26,22 +35,24 @@
               <ComboBox Grid.Column="1" x:Name="PaletteThemeBox" MinWidth="100"
                         AutomationProperties.Name="Theme to customize" />
             </Grid>
-            <Grid ColumnDefinitions="*,108,22" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="7">
+            <Grid ColumnDefinitions="*,108,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="7">
               <TextBlock Text="Accent" VerticalAlignment="Center" />
               <TextBox Grid.Column="1" x:Name="AccentColorBox" PlaceholderText="#RRGGBB"
                        AutomationProperties.Name="Accent color in hexadecimal" />
-              <Border Grid.Column="2" x:Name="AccentColorSwatch" Height="22" CornerRadius="3"
-                      BorderThickness="1" BorderBrush="{DynamicResource StudioDividerBrush}" />
+              <colors:ColorPicker Grid.Column="2" x:Name="AccentColorPicker" Classes="theme-color"
+                                  AutomationProperties.Name="Choose accent color" ToolTip.Tip="Choose accent color" />
               <TextBlock Grid.Row="1" Text="SQL selection background" VerticalAlignment="Center" />
               <TextBox Grid.Row="1" Grid.Column="1" x:Name="SelectionBackgroundBox" PlaceholderText="#RRGGBB"
                        AutomationProperties.Name="SQL selection background in hexadecimal" />
-              <Border Grid.Row="1" Grid.Column="2" x:Name="SelectionBackgroundSwatch" Height="22" CornerRadius="3"
-                      BorderThickness="1" BorderBrush="{DynamicResource StudioDividerBrush}" />
+              <colors:ColorPicker Grid.Row="1" Grid.Column="2" x:Name="SelectionBackgroundPicker" Classes="theme-color"
+                                  AutomationProperties.Name="Choose SQL selection background"
+                                  ToolTip.Tip="Choose SQL selection background" />
               <TextBlock Grid.Row="2" Text="SQL selection text" VerticalAlignment="Center" />
               <TextBox Grid.Row="2" Grid.Column="1" x:Name="SelectionForegroundBox" PlaceholderText="#RRGGBB"
                        AutomationProperties.Name="SQL selection text color in hexadecimal" />
-              <Border Grid.Row="2" Grid.Column="2" x:Name="SelectionForegroundSwatch" Height="22" CornerRadius="3"
-                      BorderThickness="1" BorderBrush="{DynamicResource StudioDividerBrush}" />
+              <colors:ColorPicker Grid.Row="2" Grid.Column="2" x:Name="SelectionForegroundPicker" Classes="theme-color"
+                                  AutomationProperties.Name="Choose SQL selection text color"
+                                  ToolTip.Tip="Choose SQL selection text color" />
             </Grid>
             <Border x:Name="PalettePreviewSurface" Padding="10" CornerRadius="4" BorderThickness="1"
                     BorderBrush="{DynamicResource StudioDividerBrush}">

@@ -17,6 +17,7 @@
         <ColorPaletteResources x:Key="Dark" BaseHigh="#EBEEF2" RegionColor="#141920" />
       </FluentTheme.Palettes>
     </FluentTheme>
+    <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
     <StyleInclude Source="/Themes/StudioStyles.axaml" />
     <StyleInclude Source="/Themes/StudioActions.axaml" />

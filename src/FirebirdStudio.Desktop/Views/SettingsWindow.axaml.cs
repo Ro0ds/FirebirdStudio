@@ -13,6 +13,7 @@ internal sealed partial class SettingsWindow : Window
     private ThemeColorOverrides _lightDraft;
     private ThemeColorOverrides _darkDraft;
     private string _editedTheme;
+    private bool _updatingColorPickers;
 
     public SettingsWindow(StudioPreferences preferences, StudioAppearance appearance)
     {
@@ -32,11 +33,22 @@ internal sealed partial class SettingsWindow : Window
         SaveSettingsButton.Click += (_, _) => Save();
         PaletteThemeBox.SelectionChanged += (_, _) => ChangeEditedTheme();
         ResetThemeColorsButton.Click += (_, _) => ShowThemeDraft(DisplayValues(_appearance.Defaults(_editedTheme)));
-        AccentColorBox.TextChanged += (_, _) => UpdatePalettePreview();
-        SelectionBackgroundBox.TextChanged += (_, _) => UpdatePalettePreview();
-        SelectionForegroundBox.TextChanged += (_, _) => UpdatePalettePreview();
+        ConnectColorField(AccentColorBox, AccentColorPicker);
+        ConnectColorField(SelectionBackgroundBox, SelectionBackgroundPicker);
+        ConnectColorField(SelectionForegroundBox, SelectionForegroundPicker);
 
         ShowThemeDraft(_editedTheme == "Dark" ? _darkDraft : _lightDraft);
+    }
+
+    private void ConnectColorField(TextBox field, ColorPicker picker)
+    {
+        picker.SelectedIndex = (int)ColorViewTab.Palette;
+        field.TextChanged += (_, _) => UpdatePalettePreview();
+        picker.ColorChanged += (_, args) =>
+        {
+            if (!_updatingColorPickers)
+                field.Text = StudioAppearance.ToHex(args.NewColor);
+        };
     }
 
     private void ChangeEditedTheme()
@@ -73,9 +85,18 @@ internal sealed partial class SettingsWindow : Window
         var (otherTheme, otherDraft) = _editedTheme == "Dark" ? ("Light", _lightDraft) : ("Dark", _darkDraft);
         var error = currentError ?? Evaluate(otherTheme, otherDraft).Error;
 
-        AccentColorSwatch.Background = new SolidColorBrush(palette.Accent);
-        SelectionBackgroundSwatch.Background = new SolidColorBrush(palette.SelectionBackground);
-        SelectionForegroundSwatch.Background = new SolidColorBrush(palette.SelectionForeground);
+        _updatingColorPickers = true;
+        try
+        {
+            AccentColorPicker.Color = palette.Accent;
+            SelectionBackgroundPicker.Color = palette.SelectionBackground;
+            SelectionForegroundPicker.Color = palette.SelectionForeground;
+        }
+        finally
+        {
+            _updatingColorPickers = false;
+        }
+
         PalettePreviewSurface.Background = new SolidColorBrush(palette.Surface);
         var previewText = new SolidColorBrush(_editedTheme == "Dark" ? Colors.White : Colors.Black);
         PalettePreviewTitle.Foreground = previewText;
