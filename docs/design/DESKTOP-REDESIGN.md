@@ -62,6 +62,8 @@ Status and feedback
 - Prototype a simple ember or flame with a database silhouette, legible at 16 and 24 pixels. Keep the source asset and verify the window, taskbar, and executable icons in the published Windows package. Derive other platform assets as their packaging is introduced.
 - Extract UI strings into localization resources. English is the default interface language. Use Brazilian Portuguese as the fallback for missing translations. Let users choose English or Brazilian Portuguese in **Settings** and restore that preference on startup. Format dates and times for the selected locale, allow for longer labels, and preserve SQL, identifiers, and provider diagnostics.
 
+The desktop language resources live in `Localization/Interface.resx` (Brazilian Portuguese fallback) and `Localization/Interface.en.resx` (English). Keep the format placeholders aligned when editing both files. The structural verifier checks that each referenced key has a fallback.
+
 ## Milestones and PRs
 
 | Milestone | PRs | Ready when |

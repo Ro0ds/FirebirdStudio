@@ -55,7 +55,7 @@ Firebird-version compatibility testing and large-database performance testing ar
 
 The [desktop redesign plan](design/DESKTOP-REDESIGN.md) defines the proposed themes, workspace layout, accessibility checks, and incremental PR milestones. The [development and release workflow](releasing/DEVELOPMENT.md) describes how changes move from `development` to `main`.
 
-The localization milestone uses English by default and Brazilian Portuguese as the translation fallback. Users will be able to choose their interface language in Settings.
+The desktop app defaults to English and uses Brazilian Portuguese for strings missing from the English resource file. Choose **English** or **Português (Brasil)** in **File → Settings → Language**, save, and restart Firebird Studio to apply the change.
 
 ## Product direction
 

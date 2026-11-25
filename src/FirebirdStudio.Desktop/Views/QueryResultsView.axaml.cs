@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using FirebirdStudio.Application.Connections;
+using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
@@ -35,30 +36,32 @@ public sealed partial class QueryResultsView : UserControl
         Reset();
     }
 
-    internal void Reset() => ShowStatus(Status.Ready, "Ready");
+    internal void Reset() => ShowStatus(Status.Ready, T("Ready"));
 
-    internal void ShowRunning() => ShowStatus(Status.Running, "Running query…");
+    internal void ShowRunning() => ShowStatus(Status.Running, T("RunningQuery"));
 
-    internal void ShowCancelling() => ShowStatus(Status.Running, "Cancelling query…");
+    internal void ShowCancelling() => ShowStatus(Status.Running, T("CancellingQuery"));
 
-    internal void ShowCancelled() => ShowStatus(Status.Cancelled, "Execution cancelled");
+    internal void ShowCancelled() => ShowStatus(Status.Cancelled, T("ExecutionCancelled"));
 
-    internal void ShowFailed() => ShowStatus(Status.Failed, "Execution failed");
+    internal void ShowFailed() => ShowStatus(Status.Failed, T("ExecutionFailed"));
 
     internal void ShowResult(SqlExecutionResult result)
     {
-        var summary = "Statement completed";
+        var summary = T("StatementCompleted");
         if (result.Columns.Count > 0)
         {
             _resultRows = ResultTable.Populate(QueryResultsGrid, result.Columns, result.Rows, result.SortValues);
             if (_resultRows.Length > 0)
                 ConfigureSortHeaders(result.Columns);
-            var verb = result.HasMoreRows ? "shown" : "returned";
-            summary = $"{FormatRowCount(result.Rows.Count)} {verb}";
+            var count = result.Rows.Count;
+            summary = result.HasMoreRows
+                ? T(count == 1 ? "OneRowShown" : "RowsShown", count)
+                : T(count == 1 ? "OneRowReturned" : "RowsReturned", count);
         }
         else if (result.RowsAffected >= 0)
         {
-            summary = $"{FormatRowCount(result.RowsAffected)} affected";
+            summary = T(result.RowsAffected == 1 ? "OneRowAffected" : "RowsAffected", result.RowsAffected);
         }
 
         ShowStatus(Status.Completed, summary, result.Elapsed, result.HasMoreRows);
@@ -80,7 +83,7 @@ public sealed partial class QueryResultsView : UserControl
         ResultsSummary.Classes.Set("error", status == Status.Failed);
         ResultsSummary.Classes.Set("information", status == Status.Cancelled);
         ResultsSummary.Classes.Set("success", status == Status.Completed);
-        ResultsElapsed.Text = elapsed is { } time ? $"{time.TotalMilliseconds:N0} ms" : null;
+        ResultsElapsed.Text = elapsed is { } time ? T("Ms", time.TotalMilliseconds) : null;
         ResultsElapsed.IsVisible = elapsed.HasValue;
         PartialResults.IsVisible = isPartial;
         ResultsHint.IsVisible = status == Status.Ready;
@@ -155,12 +158,12 @@ public sealed partial class QueryResultsView : UserControl
     {
         header.Indicator.Text = descending switch { true => "↓", false => "↑", _ => null };
         header.Indicator.IsVisible = descending.HasValue;
-        var sortAction = descending == false ? "Sort descending" : "Sort ascending";
+        var sortAction = descending == false ? T("SortDescending") : T("SortAscending");
         var description = descending switch
         {
-            true => $"{header.Title}, sorted descending. {sortAction}.",
-            false => $"{header.Title}, sorted ascending. {sortAction}.",
-            _ => $"{header.Title}. {sortAction}."
+            true => T("ColumnSortedDescending", header.Title, sortAction),
+            false => T("ColumnSortedAscending", header.Title, sortAction),
+            _ => T("ColumnSortAction", header.Title, sortAction)
         };
         AutomationProperties.SetName(header.Button, description);
         ToolTip.SetTip(header.Button, description);
@@ -184,7 +187,7 @@ public sealed partial class QueryResultsView : UserControl
         if (e.Container is not TableViewRow { ContextMenu: null } row)
             return;
 
-        var copy = new MenuItem { Header = "Copy row" };
+        var copy = new MenuItem { Header = T("CopyRow") };
         copy.Click += (_, _) =>
         {
             if (row.DataContext is ResultTableRow result)
@@ -224,5 +227,4 @@ public sealed partial class QueryResultsView : UserControl
         return $"\"{value.Replace("\"", "\"\"")}\"";
     }
 
-    private static string FormatRowCount(int count) => count == 1 ? "1 row" : $"{count:N0} rows";
 }

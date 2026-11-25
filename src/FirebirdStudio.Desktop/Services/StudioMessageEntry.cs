@@ -6,10 +6,12 @@ internal sealed record StudioMessageEntry(
     string Context,
     string Details)
 {
-    public string TimeText => Timestamp.ToLocalTime().ToString("T");
-    public string TimestampText => Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz");
+    public string TimeText => Timestamp.ToLocalTime().ToString("T", StudioText.Culture);
+    public string TimestampText => Timestamp.ToLocalTime().ToString("G", StudioText.Culture) +
+                                   Timestamp.ToLocalTime().ToString(" zzz", StudioText.Culture);
     public string Summary { get; } = Summarize(Details);
-    public string AccessibleDetails => $"{TimestampText} · {Severity} · {Summary}";
+    public string SeverityLabel => StudioText.T(Severity);
+    public string AccessibleDetails => $"{TimestampText} · {SeverityLabel} · {Summary}";
 
     public bool IsSuccess => Severity == "Success";
     public bool IsWarning => Severity == "Warning";

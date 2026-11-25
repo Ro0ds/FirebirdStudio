@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
@@ -24,8 +25,8 @@ public sealed partial class ConnectionPasswordWindow : Window
         passwordInput.Text = savedPassword ?? string.Empty;
         rememberPassword.IsChecked = savedPassword is not null;
         statusText.Text = credentialStoreNotice ?? (savedPassword is null
-            ? "Enter the database password. It will not be saved unless you select the option below."
-            : "A saved password was loaded from the operating system credential store. You can replace it here.");
+            ? T("EnterUnsavedPassword")
+            : T("SavedPasswordLoaded"));
 
         this.FindControl<Button>("ConnectButton")!.Click += OnConnectClick;
         this.FindControl<Button>("CancelButton")!.Click += (_, _) => ClosePrompt();

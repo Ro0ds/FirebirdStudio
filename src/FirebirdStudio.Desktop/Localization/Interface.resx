@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="AboutMenu" xml:space="preserve"><value>_Sobre o Firebird Studio…</value></data>
+  <data name="AboutWindow" xml:space="preserve"><value>Sobre o Firebird Studio</value></data>
+  <data name="Accent" xml:space="preserve"><value>Destaque</value></data>
+  <data name="AccentHex" xml:space="preserve"><value>Cor de destaque em hexadecimal</value></data>
+  <data name="AccessingCredentialStore" xml:space="preserve"><value>Acesso ao cofre de credenciais do sistema</value></data>
+  <data name="ActiveSessions" xml:space="preserve"><value>Sessões de banco ativas: {0}</value></data>
+  <data name="Advanced" xml:space="preserve"><value>Avançado</value></data>
+  <data name="AllObjectTypes" xml:space="preserve"><value>Todos os tipos</value></data>
+  <data name="AllObjectsLoaded" xml:space="preserve"><value>Todos os {0:N0} objetos de {1} foram carregados.</value></data>
+  <data name="AlreadyConnected" xml:space="preserve"><value>'{0}' já está conectado.</value></data>
+  <data name="AmbiguousProcedureMetadata" xml:space="preserve"><value>Sem detalhes disponíveis. O nome da procedure pode ser ambíguo devido aos metadados do pacote.</value></data>
+  <data name="AppUpToDate" xml:space="preserve"><value>O Firebird Studio está atualizado</value></data>
+  <data name="Appearance" xml:space="preserve"><value>Aparência</value></data>
+  <data name="AutocompleteShortcut" xml:space="preserve"><value>Autocompletar SQL (Ctrl+Espaço)</value></data>
+  <data name="AutomaticUpdateCheck" xml:space="preserve"><value>Verificação automática de atualizações</value></data>
+  <data name="Browse" xml:space="preserve"><value>Procurar…</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="CancelDownload" xml:space="preserve"><value>Cancelar download</value></data>
+  <data name="CancelExecution" xml:space="preserve"><value>Cancelar execução</value></data>
+  <data name="CancelSql" xml:space="preserve"><value>Cancelar execução SQL</value></data>
+  <data name="CancellationRequested" xml:space="preserve"><value>Cancelamento solicitado…</value></data>
+  <data name="Cancelled" xml:space="preserve"><value>Cancelada</value></data>
+  <data name="CancellingQuery" xml:space="preserve"><value>Cancelando consulta…</value></data>
+  <data name="CategoryOrderSaved" xml:space="preserve"><value>Ordem das categorias salva.</value></data>
+  <data name="CharacterSet" xml:space="preserve"><value>Conjunto de caracteres</value></data>
+  <data name="CheckUpdates" xml:space="preserve"><value>Verificar atualizações…</value></data>
+  <data name="CheckingUpdates" xml:space="preserve"><value>Verificação de atualizações</value></data>
+  <data name="CheckingUpdatesStatus" xml:space="preserve"><value>Verificando atualizações…</value></data>
+  <data name="ChooseAccent" xml:space="preserve"><value>Escolher cor de destaque</value></data>
+  <data name="ChooseSqlSelectionBackground" xml:space="preserve"><value>Escolher o fundo da seleção SQL</value></data>
+  <data name="ChooseSqlSelectionText" xml:space="preserve"><value>Escolher a cor do texto da seleção SQL</value></data>
+  <data name="Clear" xml:space="preserve"><value>Limpar</value></data>
+  <data name="ClearHistory" xml:space="preserve"><value>Limpar histórico de consultas</value></data>
+  <data name="ClearMessages" xml:space="preserve"><value>Limpar mensagens</value></data>
+  <data name="ClearObjectSearch" xml:space="preserve"><value>Limpar busca de objetos</value></data>
+  <data name="ClearResults" xml:space="preserve"><value>Limpar resultados da consulta</value></data>
+  <data name="ClearingHistory" xml:space="preserve"><value>Limpeza do histórico de consultas</value></data>
+  <data name="ClientLibraryExample" xml:space="preserve"><value>Caminho para fbclient.dll, libfbclient.so ou equivalente</value></data>
+  <data name="ClientLibraryPath" xml:space="preserve"><value>Caminho da biblioteca cliente (obrigatório no modo incorporado)</value></data>
+  <data name="ClipboardUnavailable" xml:space="preserve"><value>A área de transferência está indisponível.</value></data>
+  <data name="Close" xml:space="preserve"><value>Fechar</value></data>
+  <data name="CloseEditor" xml:space="preserve"><value>Fechar editor</value></data>
+  <data name="CloseMessageDetails" xml:space="preserve"><value>Fechar detalhes da mensagem</value></data>
+  <data name="CloseSqlEditor" xml:space="preserve"><value>Fechar editor SQL</value></data>
+  <data name="CloseTab" xml:space="preserve"><value>Fechar aba</value></data>
+  <data name="ClosingSessions" xml:space="preserve"><value>Encerramento das sessões de banco</value></data>
+  <data name="ClosingSessionsForUpdate" xml:space="preserve"><value>Encerramento das sessões de banco antes da atualização</value></data>
+  <data name="CollapseHistory" xml:space="preserve"><value>Recolher histórico de consultas</value></data>
+  <data name="ColumnSortAction" xml:space="preserve"><value>{0}. {1}.</value></data>
+  <data name="ColumnSortedAscending" xml:space="preserve"><value>{0}, em ordem crescente. {1}.</value></data>
+  <data name="ColumnSortedDescending" xml:space="preserve"><value>{0}, em ordem decrescente. {1}.</value></data>
+  <data name="Columns" xml:space="preserve"><value>Colunas</value></data>
+  <data name="ConfirmCloseEditor" xml:space="preserve"><value>'{0}' contém SQL. Fechar o editor e excluir o conteúdo salvo?</value></data>
+  <data name="ConfirmDeleteConnection" xml:space="preserve"><value>Excluir a conexão salva '{0}'? O banco e seus arquivos serão preservados.</value></data>
+  <data name="Connect" xml:space="preserve"><value>Conectar</value></data>
+  <data name="ConnectCancelled" xml:space="preserve"><value>Tentativa de conexão cancelada.</value></data>
+  <data name="ConnectForCompletion" xml:space="preserve"><value>Conecte-se a um banco para solicitar sugestões de SQL.</value></data>
+  <data name="ConnectSelected" xml:space="preserve"><value>Conectar ao banco selecionado</value></data>
+  <data name="ConnectTimeout" xml:space="preserve"><value>Tempo limite de conexão (s)</value></data>
+  <data name="ConnectToBrowse" xml:space="preserve"><value>Conecte-se para navegar pelos objetos do banco.</value></data>
+  <data name="ConnectToDatabase" xml:space="preserve"><value>Conectar ao banco de dados</value></data>
+  <data name="ConnectToNavigate" xml:space="preserve"><value>Conecte-se a um banco para navegar pelos objetos.</value></data>
+  <data name="ConnectWindowTitle" xml:space="preserve"><value>Conectar ao Firebird</value></data>
+  <data name="Connected" xml:space="preserve"><value>Conectado</value></data>
+  <data name="ConnectedLoadingObjects" xml:space="preserve"><value>Conectado. Carregando objetos do banco em segundo plano.</value></data>
+  <data name="ConnectedToServer" xml:space="preserve"><value>Conectado: {0} · {1}</value></data>
+  <data name="ConnectingToProfile" xml:space="preserve"><value>Conectando a '{0}'…</value></data>
+  <data name="ConnectionEstablished" xml:space="preserve"><value>Conexão com o banco estabelecida</value></data>
+  <data name="ConnectionLifetime" xml:space="preserve"><value>Tempo de vida da conexão (s)</value></data>
+  <data name="ConnectionMenu" xml:space="preserve"><value>_Conexão</value></data>
+  <data name="ConnectionName" xml:space="preserve"><value>Nome da conexão / apelido</value></data>
+  <data name="ConnectionRegistration" xml:space="preserve"><value>Cadastro de conexão</value></data>
+  <data name="ConnectionRegistrationHelp" xml:space="preserve"><value>O nome da conexão é o apelido exibido na lista de bancos. As senhas ficam fora do perfil.</value></data>
+  <data name="ConnectionRegistrationTitle" xml:space="preserve"><value>Cadastro de conexão Firebird</value></data>
+  <data name="ConnectionTestFailed" xml:space="preserve"><value>Falha ao concluir o teste de conexão:{0}{1}</value></data>
+  <data name="ConnectionToProfile" xml:space="preserve"><value>Conexão com '{0}'</value></data>
+  <data name="Constraints" xml:space="preserve"><value>Restrições</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="CopyMessageDetails" xml:space="preserve"><value>Copiar detalhes da mensagem</value></data>
+  <data name="CopyRow" xml:space="preserve"><value>Copiar linha</value></data>
+  <data name="CopySelectedRow" xml:space="preserve"><value>Copiar linha selecionada</value></data>
+  <data name="CopySelectedRowTip" xml:space="preserve"><value>Copiar a linha selecionada</value></data>
+  <data name="CopyingMessageDetails" xml:space="preserve"><value>Cópia dos detalhes da mensagem</value></data>
+  <data name="CopyingResultRow" xml:space="preserve"><value>Cópia da linha do resultado</value></data>
+  <data name="CreateConnectionDialog" xml:space="preserve"><value>Criar conexão…</value></data>
+  <data name="CredentialStoreUnavailable" xml:space="preserve"><value>O cofre de credenciais do sistema está indisponível. Digite a senha para se conectar. Detalhes: {0}</value></data>
+  <data name="Data" xml:space="preserve"><value>Dados</value></data>
+  <data name="DatabaseCachePages" xml:space="preserve"><value>Páginas de cache do banco</value></data>
+  <data name="DatabaseConnection" xml:space="preserve"><value>Conexão com o banco</value></data>
+  <data name="DatabaseConnections" xml:space="preserve"><value>Conexões de banco de dados</value></data>
+  <data name="DatabaseFileHelp" xml:space="preserve"><value>O seletor aceita arquivos .GDB e .FDB deste computador. Para conexões remotas, o servidor Firebird também deve ter acesso ao caminho escolhido. Você pode digitar um alias do servidor.</value></data>
+  <data name="DatabaseMetadata" xml:space="preserve"><value>Metadados do banco</value></data>
+  <data name="DatabaseObjects" xml:space="preserve"><value>Objetos do banco</value></data>
+  <data name="DatabasePath" xml:space="preserve"><value>Caminho do banco ou alias no servidor</value></data>
+  <data name="DatabaseSelected" xml:space="preserve"><value>Banco selecionado: {0}</value></data>
+  <data name="Delete" xml:space="preserve"><value>Excluir</value></data>
+  <data name="DeleteConnection" xml:space="preserve"><value>Excluir conexão</value></data>
+  <data name="Detailed" xml:space="preserve"><value>Detalhado</value></data>
+  <data name="DetailedConnectionMode" xml:space="preserve"><value>Detalhado (nome, host, caminho)</value></data>
+  <data name="DetailedModeEnabled" xml:space="preserve"><value>Exibição detalhada de conexões ativada.</value></data>
+  <data name="Details" xml:space="preserve"><value>Detalhes</value></data>
+  <data name="DetailsTruncated" xml:space="preserve"><value>[Detalhes da mensagem truncados.]</value></data>
+  <data name="DevelopmentUpdateNotice" xml:space="preserve"><value>A instalação automática está disponível em pacotes publicados. Versões de desenvolvimento podem ser extraídas manualmente.</value></data>
+  <data name="Dialect1" xml:space="preserve"><value>Dialeto 1</value></data>
+  <data name="Dialect2" xml:space="preserve"><value>Dialeto 2</value></data>
+  <data name="Dialect3" xml:space="preserve"><value>Dialeto 3</value></data>
+  <data name="DisableGarbageCollection" xml:space="preserve"><value>Desativar a coleta de lixo nesta conexão</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>Desconectar</value></data>
+  <data name="DisconnectBeforeRemoving" xml:space="preserve"><value>Desconecte este perfil antes de removê-lo.</value></data>
+  <data name="DisconnectFromDatabase" xml:space="preserve"><value>Desconectar do banco de dados</value></data>
+  <data name="DisconnectSelected" xml:space="preserve"><value>Desconectar do banco selecionado</value></data>
+  <data name="DisconnectedFromProfile" xml:space="preserve"><value>Desconectado de '{0}'.</value></data>
+  <data name="DisconnectingFromProfile" xml:space="preserve"><value>Desconexão de '{0}'</value></data>
+  <data name="DockRight" xml:space="preserve"><value>Fixar à direita</value></data>
+  <data name="DockTab" xml:space="preserve"><value>Aba ao lado do editor SQL</value></data>
+  <data name="Domain" xml:space="preserve"><value>Domínio</value></data>
+  <data name="DomainSearchTip" xml:space="preserve"><value> · digite um prefixo e pressione Ctrl+Espaço para buscar domínios do banco</value></data>
+  <data name="Domains" xml:space="preserve"><value>Domínios</value></data>
+  <data name="DotNetRuntime" xml:space="preserve"><value>Runtime do .NET</value></data>
+  <data name="DownloadAppVersion" xml:space="preserve"><value>Baixar Firebird Studio {0}</value></data>
+  <data name="DownloadBytes" xml:space="preserve"><value>Baixando… {0}</value></data>
+  <data name="DownloadCancelled" xml:space="preserve"><value>Download cancelado. Os arquivos incompletos foram removidos.</value></data>
+  <data name="DownloadFailed" xml:space="preserve"><value>Falha no download: {0}</value></data>
+  <data name="DownloadProgress" xml:space="preserve"><value>Baixando… {0:F0}% ({1} de {2})</value></data>
+  <data name="DownloadUpdate" xml:space="preserve"><value>Baixar atualização</value></data>
+  <data name="DownloadingAppVersion" xml:space="preserve"><value>Baixando Firebird Studio {0}</value></data>
+  <data name="DownloadingUpdate" xml:space="preserve"><value>Download ou verificação do pacote de atualização</value></data>
+  <data name="Edit" xml:space="preserve"><value>Editar</value></data>
+  <data name="EditConnectionDialog" xml:space="preserve"><value>Editar conexão…</value></data>
+  <data name="EditSelectedConnection" xml:space="preserve"><value>Editar a conexão selecionada</value></data>
+  <data name="EditorAutosaved" xml:space="preserve"><value>Editor salvo automaticamente</value></data>
+  <data name="EditorSaved" xml:space="preserve"><value>Editor salvo</value></data>
+  <data name="EditorSqlFormatted" xml:space="preserve"><value>Conteúdo do editor SQL formatado.</value></data>
+  <data name="EditorTitle" xml:space="preserve"><value>Título do editor</value></data>
+  <data name="EmbeddedDatabase" xml:space="preserve"><value>Banco de dados incorporado</value></data>
+  <data name="EmptyPasswordNotSaved" xml:space="preserve"><value>Conectado. A senha em branco será pedida novamente na próxima conexão.</value></data>
+  <data name="EnableCompression" xml:space="preserve"><value>Ativar compressão de rede (se o servidor e o provedor oferecerem suporte)</value></data>
+  <data name="EnablePooling" xml:space="preserve"><value>Ativar pool de conexões</value></data>
+  <data name="EndOfRows" xml:space="preserve"><value> · fim da página de dados</value></data>
+  <data name="EnterPassword" xml:space="preserve"><value>Digite a senha do banco.</value></data>
+  <data name="EnterUnsavedPassword" xml:space="preserve"><value>Digite a senha do banco. Marque a opção abaixo se quiser salvá-la.</value></data>
+  <data name="Error" xml:space="preserve"><value>Erro</value></data>
+  <data name="ExampleConnectionName" xml:space="preserve"><value>Banco de produção</value></data>
+  <data name="ExampleDatabasePath" xml:space="preserve"><value>C:\Databases\APP.FDB, /var/lib/firebird/data/APP.FDB ou um alias</value></data>
+  <data name="Execute" xml:space="preserve"><value>Executar</value></data>
+  <data name="ExecuteSql" xml:space="preserve"><value>Executar SQL</value></data>
+  <data name="ExecuteSqlHint" xml:space="preserve"><value>{0} executa o SQL selecionado ou a única instrução do editor. Quando houver várias instruções, selecione a que deseja executar. Separe as instruções com ponto e vírgula. Ctrl+Espaço abre sugestões de SQL e objetos do banco.</value></data>
+  <data name="ExecuteSqlShortcut" xml:space="preserve"><value>Atalho para executar SQL</value></data>
+  <data name="ExecutingOnProfile" xml:space="preserve"><value>Executando SQL em '{0}'…</value></data>
+  <data name="ExecutionCancelled" xml:space="preserve"><value>Execução cancelada</value></data>
+  <data name="ExecutionFailed" xml:space="preserve"><value>Falha na execução</value></data>
+  <data name="Exit" xml:space="preserve"><value>Sair</value></data>
+  <data name="ExpandHistory" xml:space="preserve"><value>Expandir histórico de consultas</value></data>
+  <data name="Failed" xml:space="preserve"><value>Falha</value></data>
+  <data name="FetchSize" xml:space="preserve"><value>Tamanho da busca (linhas)</value></data>
+  <data name="Field" xml:space="preserve"><value>Campo</value></data>
+  <data name="Fields" xml:space="preserve"><value>Campos</value></data>
+  <data name="FileMenu" xml:space="preserve"><value>_Arquivo</value></data>
+  <data name="FilePickerUnavailable" xml:space="preserve"><value>O seletor de arquivos está indisponível nesta plataforma.</value></data>
+  <data name="FilterSearchType" xml:space="preserve"><value>Filtrar resultados por tipo</value></data>
+  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Arquivos de banco Firebird</value></data>
+  <data name="FirebirdProvider" xml:space="preserve"><value>Provedor do Firebird</value></data>
+  <data name="FirstObjectsLoaded" xml:space="preserve"><value>Até {0} objetos foram carregados por categoria de '{1}'. Role uma categoria expandida para carregar mais lotes automaticamente.</value></data>
+  <data name="FirstRow" xml:space="preserve"><value>Primeira linha</value></data>
+  <data name="FormatSql" xml:space="preserve"><value>Formatar SQL</value></data>
+  <data name="FormatSqlShortcut" xml:space="preserve"><value>Formatar SQL (Ctrl+Shift+F)</value></data>
+  <data name="GarbageCollectionHelp" xml:space="preserve"><value>Essa opção altera a coleta de lixo do Firebird. Mantenha-a desmarcada se desconhecer o impacto operacional.</value></data>
+  <data name="General" xml:space="preserve"><value>Geral</value></data>
+  <data name="GoFirstRow" xml:space="preserve"><value>Ir para a primeira linha do resultado</value></data>
+  <data name="GoLastRow" xml:space="preserve"><value>Ir para a última linha do resultado</value></data>
+  <data name="HelpMenu" xml:space="preserve"><value>A_juda</value></data>
+  <data name="HistoryCleared" xml:space="preserve"><value>Histórico de consultas limpo</value></data>
+  <data name="HistoryClearedStatus" xml:space="preserve"><value>Histórico de consultas limpo.</value></data>
+  <data name="HistoryEntries" xml:space="preserve"><value>Entradas do histórico de consultas</value></data>
+  <data name="Index" xml:space="preserve"><value>Índice</value></data>
+  <data name="Indexes" xml:space="preserve"><value>Índices</value></data>
+  <data name="Information" xml:space="preserve"><value>Informação</value></data>
+  <data name="InitialMetadataFailed" xml:space="preserve"><value>Falha no carregamento inicial de metadados de: {0}.</value></data>
+  <data name="InitialMetadataLoaded" xml:space="preserve"><value>Carga inicial concluída para {0} categorias. Os demais objetos são carregados em lotes de {1}.</value></data>
+  <data name="InstallRestart" xml:space="preserve"><value>Instalar e reiniciar</value></data>
+  <data name="InterfaceLanguage" xml:space="preserve"><value>Idioma da interface</value></data>
+  <data name="InvalidDatabaseExtension" xml:space="preserve"><value>Selecione um arquivo de banco Firebird com extensão .GDB ou .FDB.</value></data>
+  <data name="InvalidEditorRecovery" xml:space="preserve"><value>O arquivo de recuperação tem uma versão incompatível ou dados inválidos. A restauração foi ignorada.</value></data>
+  <data name="InvalidParameter" xml:space="preserve"><value>Valor de parâmetro inválido: {0}</value></data>
+  <data name="KeyboardShortcuts" xml:space="preserve"><value>Atalhos de teclado</value></data>
+  <data name="Language" xml:space="preserve"><value>Idioma</value></data>
+  <data name="LanguageRestartHint" xml:space="preserve"><value>O idioma muda ao reiniciar o Firebird Studio.</value></data>
+  <data name="LastRow" xml:space="preserve"><value>Última linha</value></data>
+  <data name="Later" xml:space="preserve"><value>Mais tarde</value></data>
+  <data name="LoadFailed" xml:space="preserve"><value>Falha ao carregar</value></data>
+  <data name="Loading" xml:space="preserve"><value>Carregando…</value></data>
+  <data name="LoadingCategory" xml:space="preserve"><value>Carregando metadados de {0}…</value></data>
+  <data name="LoadingCategoryContext" xml:space="preserve"><value>Carregamento de metadados de {0}</value></data>
+  <data name="LoadingCategoryInBackground" xml:space="preserve"><value>Carregando objetos em segundo plano: {0} ({1}/{2}). Catálogos grandes podem demorar.</value></data>
+  <data name="LoadingCompletionDomains" xml:space="preserve"><value>Carregando domínios para completar tipos…</value></data>
+  <data name="LoadingCompletionMetadata" xml:space="preserve"><value>Carregando metadados para completar SQL…</value></data>
+  <data name="LoadingConnections" xml:space="preserve"><value>Carregando conexões salvas…</value></data>
+  <data name="LoadingFirstMetadata" xml:space="preserve"><value>Carregando os primeiros 200 objetos de cada categoria em segundo plano. A janela continua responsiva e as consultas podem aguardar brevemente a leitura dos metadados.</value></data>
+  <data name="LoadingHistory" xml:space="preserve"><value>Carregamento do histórico de consultas</value></data>
+  <data name="LoadingMetadataDetails" xml:space="preserve"><value>Carregamento dos detalhes de '{1}' ({0})</value></data>
+  <data name="LoadingMoreObjects" xml:space="preserve"><value>Carregando os próximos {0} objetos de {1}…</value></data>
+  <data name="LoadingObjectDetails" xml:space="preserve"><value>{0}  ·  Carregando detalhes do objeto…</value></data>
+  <data name="LoadingObjects" xml:space="preserve"><value>Carregando objetos do banco…</value></data>
+  <data name="LoadingProfiles" xml:space="preserve"><value>Carregamento dos perfis de conexão</value></data>
+  <data name="LoadingRows" xml:space="preserve"><value>Carregando linhas {0:N0}–{1:N0}…</value></data>
+  <data name="LoadingTableData" xml:space="preserve"><value>Carregamento de dados de '{0}'</value></data>
+  <data name="LoadingTableDetails" xml:space="preserve"><value>Carregamento de detalhes de '{0}'</value></data>
+  <data name="MaxPoolSize" xml:space="preserve"><value>Tamanho máximo do pool</value></data>
+  <data name="MessageDetailsCopied" xml:space="preserve"><value>Detalhes da mensagem copiados</value></data>
+  <data name="MessageLog" xml:space="preserve"><value>Registro de mensagens</value></data>
+  <data name="Messages" xml:space="preserve"><value>Mensagens</value></data>
+  <data name="MessagesCleared" xml:space="preserve"><value>Registro de mensagens limpo.</value></data>
+  <data name="MetadataDetailsLoaded" xml:space="preserve"><value>Detalhes carregados para {1} '{2}': {0:N0}.</value></data>
+  <data name="MetadataLoadPartial" xml:space="preserve"><value>Os metadados destas categorias tiveram erros: {0}. Use Atualizar para tentar novamente.</value></data>
+  <data name="MinPoolSize" xml:space="preserve"><value>Tamanho mínimo do pool</value></data>
+  <data name="Minimal" xml:space="preserve"><value>Compacto</value></data>
+  <data name="MinimalConnectionMode" xml:space="preserve"><value>Compacto (apenas nome)</value></data>
+  <data name="MinimalModeEnabled" xml:space="preserve"><value>Exibição compacta de conexões ativada.</value></data>
+  <data name="MoreObjectsLoaded" xml:space="preserve"><value>Mais {0:N0} objetos de {1} foram carregados. Role para baixo para carregar mais.</value></data>
+  <data name="MoreRowsAvailable" xml:space="preserve"><value> · mais linhas disponíveis</value></data>
+  <data name="MoveCategoryDown" xml:space="preserve"><value>Mover a categoria selecionada para baixo</value></data>
+  <data name="MoveCategoryUp" xml:space="preserve"><value>Mover a categoria selecionada para cima</value></data>
+  <data name="Ms" xml:space="preserve"><value>{0:N0} ms</value></data>
+  <data name="NavigatingToObject" xml:space="preserve"><value>Navegação até o objeto '{0}'</value></data>
+  <data name="NetworkOptions" xml:space="preserve"><value>Opções do provedor e da rede</value></data>
+  <data name="NetworkOptionsHelp" xml:space="preserve"><value>Essas opções são enviadas ao provedor .NET do Firebird. O teste sempre abre uma conexão nova fora do pool.</value></data>
+  <data name="New" xml:space="preserve"><value>Nova</value></data>
+  <data name="NewConnection" xml:space="preserve"><value>Nova conexão</value></data>
+  <data name="NewConnectionDialog" xml:space="preserve"><value>Nova conexão…</value></data>
+  <data name="NewSqlEditor" xml:space="preserve"><value>Novo editor SQL</value></data>
+  <data name="NewVersionAvailable" xml:space="preserve"><value>A versão {0} está disponível. Você está usando a versão {1}.</value></data>
+  <data name="Next" xml:space="preserve"><value>Próximo</value></data>
+  <data name="NoAdditionalMetadata" xml:space="preserve"><value>Sem metadados adicionais para este objeto.</value></data>
+  <data name="NoConnectionForSql" xml:space="preserve"><value>Sem conexão ativa. Selecione um perfil salvo e conecte-se antes de executar SQL.</value></data>
+  <data name="NoHistory" xml:space="preserve"><value>Nenhuma consulta no histórico</value></data>
+  <data name="NoMatchingObjects" xml:space="preserve"><value>Nenhum objeto corresponde à busca.</value></data>
+  <data name="NoMessages" xml:space="preserve"><value>Nenhuma mensagem</value></data>
+  <data name="NoObjects" xml:space="preserve"><value>Nenhum objeto do banco para exibir.</value></data>
+  <data name="NoObjectsMatchingTerm" xml:space="preserve"><value>Nenhum resultado para '{1}' na busca por {0}.</value></data>
+  <data name="NoReleaseNotes" xml:space="preserve"><value>A versão não tem notas de lançamento.</value></data>
+  <data name="NoRowsLoaded" xml:space="preserve"><value>Nenhuma linha carregada</value></data>
+  <data name="NoRowsOnPage" xml:space="preserve"><value>Nenhuma linha nesta página</value></data>
+  <data name="NoSavedConnections" xml:space="preserve"><value>Nenhuma conexão salva</value></data>
+  <data name="NoSqlSuggestions" xml:space="preserve"><value>Nenhuma sugestão de SQL para este contexto.</value></data>
+  <data name="NoSqlToExecute" xml:space="preserve"><value>Não há instrução SQL para executar. Selecione uma instrução ou digite SQL no editor.</value></data>
+  <data name="NoSqlToFormat" xml:space="preserve"><value>Não há SQL para formatar.</value></data>
+  <data name="NoStableRelease" xml:space="preserve"><value>Ainda não há uma versão estável publicada</value></data>
+  <data name="NotConnected" xml:space="preserve"><value>Sem conexão</value></data>
+  <data name="NotConnectedToProfile" xml:space="preserve"><value>Sem conexão: {0}</value></data>
+  <data name="Null" xml:space="preserve"><value>Nulo</value></data>
+  <data name="NumberedEditor" xml:space="preserve"><value>Editor SQL {0}</value></data>
+  <data name="ObjectSearchMinLength" xml:space="preserve"><value>Digite ao menos 2 caracteres para buscar objetos e colunas do banco.</value></data>
+  <data name="ObjectSearchType" xml:space="preserve"><value>Tipo de objeto para busca</value></data>
+  <data name="ObjectTree" xml:space="preserve"><value>Árvore de objetos do banco</value></data>
+  <data name="ObjectsAndColumns" xml:space="preserve"><value>objetos e colunas do banco</value></data>
+  <data name="ObjectsLoadFailed" xml:space="preserve"><value>Falha ao carregar objetos. Use Atualizar para tentar novamente.</value></data>
+  <data name="ObjectsLoadInBatches" xml:space="preserve"><value>Objetos carregados em lotes de {0}</value></data>
+  <data name="ObjectsMatchingTerm" xml:space="preserve"><value>Resultados para '{2}' na busca por {1}: {0:N0}.</value></data>
+  <data name="ObjectsSearchFailed" xml:space="preserve"><value>Falha na busca de objetos. Use Atualizar para tentar novamente.</value></data>
+  <data name="Offline" xml:space="preserve"><value>Desconectado</value></data>
+  <data name="OffsetPaging" xml:space="preserve"><value> · deslocamento (sem chave primária)</value></data>
+  <data name="OneRowAffected" xml:space="preserve"><value>1 linha afetada</value></data>
+  <data name="OneRowReturned" xml:space="preserve"><value>1 linha retornada</value></data>
+  <data name="OneRowShown" xml:space="preserve"><value>1 linha exibida</value></data>
+  <data name="OpenDownloadFolder" xml:space="preserve"><value>Abrir pasta de download</value></data>
+  <data name="OpenedFromColumn" xml:space="preserve"><value>Aberto da busca por coluna: {0}</value></data>
+  <data name="OpenedFromConstraint" xml:space="preserve"><value>Aberto da restrição: {0}</value></data>
+  <data name="OpenedFromField" xml:space="preserve"><value>Aberto a partir do campo SQL '{0}'</value></data>
+  <data name="OpenedFromIndex" xml:space="preserve"><value>Aberto do segmento de índice: {0}</value></data>
+  <data name="OpenedFromMetadata" xml:space="preserve"><value>Aberto a partir de {0}: {1}</value></data>
+  <data name="OpenedFromSqlEditor" xml:space="preserve"><value>Aberto a partir do editor SQL</value></data>
+  <data name="OpenedFromTrigger" xml:space="preserve"><value>Aberto a partir do código do trigger</value></data>
+  <data name="OpenedObjectFromEditor" xml:space="preserve"><value>Aberto do editor SQL: {0}</value></data>
+  <data name="OpeningDownloadFolder" xml:space="preserve"><value>Abertura da pasta de download da atualização</value></data>
+  <data name="OpeningObject" xml:space="preserve"><value>Abertura do objeto '{1}' ({0})</value></data>
+  <data name="OpeningReleasePage" xml:space="preserve"><value>Abertura da página da versão no GitHub</value></data>
+  <data name="OperationError" xml:space="preserve"><value>Erro: {0}</value></data>
+  <data name="OperationFailed" xml:space="preserve"><value>Falha: {0}.</value></data>
+  <data name="OptionalRole" xml:space="preserve"><value>Role (opcional)</value></data>
+  <data name="Organize" xml:space="preserve"><value>Organizar</value></data>
+  <data name="PacketSize" xml:space="preserve"><value>Tamanho do pacote (bytes)</value></data>
+  <data name="PageRows" xml:space="preserve"><value>Linhas {0:N0}–{1:N0} · tamanho da página {2}</value></data>
+  <data name="PaletteInvalidAccentContrast" xml:space="preserve"><value>A cor de destaque do tema {0} precisa ter contraste de pelo menos 4,5:1 com a superfície.</value></data>
+  <data name="PaletteInvalidHex" xml:space="preserve"><value>Use #RRGGBB para as três cores do tema {0}.</value></data>
+  <data name="PaletteInvalidSelectionContrast" xml:space="preserve"><value>O texto da seleção SQL do tema {0} precisa ter contraste de pelo menos 4,5:1 com o fundo.</value></data>
+  <data name="ParameterBoolean" xml:space="preserve"><value>Booleano</value></data>
+  <data name="ParameterDate" xml:space="preserve"><value>Data</value></data>
+  <data name="ParameterDecimal" xml:space="preserve"><value>Decimal</value></data>
+  <data name="ParameterInteger" xml:space="preserve"><value>Inteiro</value></data>
+  <data name="ParameterNULL" xml:space="preserve"><value>NULL</value></data>
+  <data name="ParameterPlaceholder" xml:space="preserve"><value>Valor de :{0}</value></data>
+  <data name="ParameterText" xml:space="preserve"><value>Texto</value></data>
+  <data name="ParameterTime" xml:space="preserve"><value>Hora</value></data>
+  <data name="ParameterTimestamp" xml:space="preserve"><value>Data e hora</value></data>
+  <data name="ParametersCancelled" xml:space="preserve"><value>Execução de SQL cancelada. Os valores dos parâmetros não foram enviados.</value></data>
+  <data name="PartialPreview" xml:space="preserve"><value>Prévia parcial</value></data>
+  <data name="PartialPreviewHelp" xml:space="preserve"><value>A consulta ultrapassou o limite de linhas ou dados desta prévia.</value></data>
+  <data name="PasswordRemoved" xml:space="preserve"><value>Conectado. A senha anterior foi removida do cofre de credenciais do sistema.</value></data>
+  <data name="PasswordSaved" xml:space="preserve"><value>Conectado. Senha salva no cofre de credenciais do sistema.</value></data>
+  <data name="PickFirebirdDatabase" xml:space="preserve"><value>Selecionar um banco Firebird</value></data>
+  <data name="Position" xml:space="preserve"><value>Posição</value></data>
+  <data name="PreparingCategories" xml:space="preserve"><value>Preparando as categorias de objetos de '{0}'…</value></data>
+  <data name="PreparingDownload" xml:space="preserve"><value>Preparando o download da versão…</value></data>
+  <data name="PreparingMetadata" xml:space="preserve"><value>Preparação dos metadados de '{0}'</value></data>
+  <data name="Preview" xml:space="preserve"><value>Prévia</value></data>
+  <data name="Previous" xml:space="preserve"><value>Anterior</value></data>
+  <data name="PrimaryKeySeek" xml:space="preserve"><value> · busca por chave primária</value></data>
+  <data name="Procedure" xml:space="preserve"><value>Procedure</value></data>
+  <data name="Procedures" xml:space="preserve"><value>Procedures</value></data>
+  <data name="ProductHeading" xml:space="preserve"><value>FIREBIRD STUDIO  ·  ÁREA DE TRABALHO</value></data>
+  <data name="ProfileRemoved" xml:space="preserve"><value>Perfil de conexão '{0}' removido. O banco de dados foi preservado.</value></data>
+  <data name="ProfileSaved" xml:space="preserve"><value>Perfil de conexão '{0}' salvo. Nenhuma senha foi gravada em disco.</value></data>
+  <data name="QueryCancelledStatus" xml:space="preserve"><value>Execução cancelada.</value></data>
+  <data name="QueryCouldNotStart" xml:space="preserve"><value>Falha ao iniciar execução de SQL</value></data>
+  <data name="QueryHistory" xml:space="preserve"><value>Histórico de consultas</value></data>
+  <data name="QueryHistoryTab" xml:space="preserve"><value>Histórico de consultas</value></data>
+  <data name="QueryMenu" xml:space="preserve"><value>Con_sulta</value></data>
+  <data name="QueryResults" xml:space="preserve"><value>Resultados da consulta</value></data>
+  <data name="QueryResultsHint" xml:space="preserve"><value>Execute SQL para ver os resultados aqui.</value></data>
+  <data name="QuerySucceeded" xml:space="preserve"><value>Consulta executada com sucesso</value></data>
+  <data name="Ready" xml:space="preserve"><value>Pronto</value></data>
+  <data name="RefreshObjects" xml:space="preserve"><value>Atualizar objetos do banco</value></data>
+  <data name="ReleaseNotes" xml:space="preserve"><value>Notas de lançamento</value></data>
+  <data name="ReleaseNotesTruncated" xml:space="preserve"><value>[Notas de lançamento truncadas.]</value></data>
+  <data name="RememberPassword" xml:space="preserve"><value>Lembrar a senha no cofre de credenciais do sistema</value></data>
+  <data name="RemoteServer" xml:space="preserve"><value>Servidor remoto (TCP/IP)</value></data>
+  <data name="RemoveConnection" xml:space="preserve"><value>Remover conexão</value></data>
+  <data name="RemovingCredential" xml:space="preserve"><value>Remoção da credencial salva do perfil '{0}'</value></data>
+  <data name="RemovingProfile" xml:space="preserve"><value>Remoção do perfil de conexão '{0}'</value></data>
+  <data name="RenameEditor" xml:space="preserve"><value>Renomear</value></data>
+  <data name="RenameEditorDialog" xml:space="preserve"><value>Renomear editor…</value></data>
+  <data name="RenameSqlEditor" xml:space="preserve"><value>Renomear editor SQL</value></data>
+  <data name="ResizeOutput" xml:space="preserve"><value>Redimensionar saída da consulta</value></data>
+  <data name="Restore" xml:space="preserve"><value>Restaurar</value></data>
+  <data name="RestoreDefault" xml:space="preserve"><value>Restaurar padrão</value></data>
+  <data name="RestoreSql" xml:space="preserve"><value>Restaurar SQL no editor</value></data>
+  <data name="RestoreSqlShortcut" xml:space="preserve"><value>Restaurar no editor (Enter no histórico)</value></data>
+  <data name="RestoreThemeDefaults" xml:space="preserve"><value>Restaurar cores padrão</value></data>
+  <data name="RestoredQuery" xml:space="preserve"><value>Consulta de {0:g} restaurada ({1}).</value></data>
+  <data name="ResultRowCopied" xml:space="preserve"><value>Linha do resultado copiada</value></data>
+  <data name="Results" xml:space="preserve"><value>Resultados</value></data>
+  <data name="ResultsCleared" xml:space="preserve"><value>Resultados da consulta limpos</value></data>
+  <data name="ResultsClearedStatus" xml:space="preserve"><value>Resultados da consulta limpos.</value></data>
+  <data name="RowsAffected" xml:space="preserve"><value>{0:N0} linhas afetadas</value></data>
+  <data name="RowsAffectedInTime" xml:space="preserve"><value>Linhas afetadas: {0} em {1:N0} ms</value></data>
+  <data name="RowsLoaded" xml:space="preserve"><value>Linhas carregadas de '{1}': {0:N0} (deslocamento {2:N0}).</value></data>
+  <data name="RowsReturned" xml:space="preserve"><value>{0:N0} linhas retornadas</value></data>
+  <data name="RowsReturnedInTime" xml:space="preserve"><value>Linhas retornadas: {0} em {1:N0} ms</value></data>
+  <data name="RowsShown" xml:space="preserve"><value>{0:N0} linhas exibidas</value></data>
+  <data name="RunDiagnostics" xml:space="preserve"><value>Testar conexão</value></data>
+  <data name="RunningQuery" xml:space="preserve"><value>Executando consulta…</value></data>
+  <data name="Save" xml:space="preserve"><value>Salvar</value></data>
+  <data name="SaveProfile" xml:space="preserve"><value>Salvar perfil</value></data>
+  <data name="SaveProfileFailed" xml:space="preserve"><value>Falha ao salvar o perfil:{0}{1}</value></data>
+  <data name="SaveSettings" xml:space="preserve"><value>Salvar configurações</value></data>
+  <data name="SavedPasswordLoaded" xml:space="preserve"><value>A senha salva foi carregada do cofre de credenciais do sistema. Você pode substituí-la aqui.</value></data>
+  <data name="SavedProfilesLoaded" xml:space="preserve"><value>Perfis de conexão carregados: {0}. As senhas ficam fora do arquivo de perfis.</value></data>
+  <data name="SavedSqlWorkspace" xml:space="preserve"><value>Área de trabalho SQL salva</value></data>
+  <data name="SavingConnectionMode" xml:space="preserve"><value>Gravação do modo da lista de conexões</value></data>
+  <data name="SavingEditorRecovery" xml:space="preserve"><value>Gravação dos dados de recuperação do editor SQL</value></data>
+  <data name="SavingHistory" xml:space="preserve"><value>Gravação do histórico de consultas</value></data>
+  <data name="SavingPreferences" xml:space="preserve"><value>Gravação das preferências (a configuração permanece ativa nesta sessão)</value></data>
+  <data name="SavingWorkspaceForExit" xml:space="preserve"><value>Gravação da área de trabalho SQL antes de fechar</value></data>
+  <data name="SavingWorkspaceForUpdate" xml:space="preserve"><value>Gravação da área de trabalho SQL antes da atualização</value></data>
+  <data name="SearchDatabaseObjects" xml:space="preserve"><value>Buscar objetos do banco</value></data>
+  <data name="SearchObjects" xml:space="preserve"><value>Buscar objetos…</value></data>
+  <data name="SearchingMetadata" xml:space="preserve"><value>Busca de objetos por '{0}'</value></data>
+  <data name="SearchingObjects" xml:space="preserve"><value>Buscando objetos do banco…</value></data>
+  <data name="SearchingObjectsFor" xml:space="preserve"><value>Buscando objetos do banco por '{0}'…</value></data>
+  <data name="SelectCompleteStatement" xml:space="preserve"><value>Este editor contém várias instruções SQL. Selecione toda a instrução que deseja executar. Separe as instruções com ponto e vírgula.</value></data>
+  <data name="SelectOneStatement" xml:space="preserve"><value>Selecione uma única instrução SQL. Execute cada instrução separadamente.</value></data>
+  <data name="SelectTable" xml:space="preserve"><value>Tabela (selecione uma tabela)</value></data>
+  <data name="SelectedMessageDetails" xml:space="preserve"><value>Detalhes da mensagem selecionada</value></data>
+  <data name="SelectedSqlFormatted" xml:space="preserve"><value>SQL selecionado formatado.</value></data>
+  <data name="SelectedSqlPreview" xml:space="preserve"><value>Prévia do SQL da consulta selecionada</value></data>
+  <data name="SelectionContrast" xml:space="preserve"><value>Contraste da seleção SQL {0:F2}:1</value></data>
+  <data name="SeparateStatements" xml:space="preserve"><value>Separe as instruções SQL com ponto e vírgula e selecione a que deseja executar.</value></data>
+  <data name="ServerHost" xml:space="preserve"><value>Servidor / host</value></data>
+  <data name="ServerType" xml:space="preserve"><value>Tipo de servidor</value></data>
+  <data name="ServerTypeHelp" xml:space="preserve"><value>Conexões remotas usam TCP/IP. O modo incorporado carrega a biblioteca cliente selecionada neste processo.</value></data>
+  <data name="Settings" xml:space="preserve"><value>Configurações</value></data>
+  <data name="SettingsLoadError" xml:space="preserve"><value>Carregamento das configurações. Os padrões serão usados</value></data>
+  <data name="SettingsMenu" xml:space="preserve"><value>_Configurações…</value></data>
+  <data name="SettingsSaved" xml:space="preserve"><value>Configurações salvas.</value></data>
+  <data name="SettingsSavedRestart" xml:space="preserve"><value>Configurações salvas. Reinicie o Firebird Studio para mudar o idioma da interface.</value></data>
+  <data name="SortAscending" xml:space="preserve"><value>Ordenar em ordem crescente</value></data>
+  <data name="SortDescending" xml:space="preserve"><value>Ordenar em ordem decrescente</value></data>
+  <data name="SqlAlreadyFormatted" xml:space="preserve"><value>O SQL já está formatado.</value></data>
+  <data name="SqlAutocomplete" xml:space="preserve"><value>Autocompletar SQL</value></data>
+  <data name="SqlDialect" xml:space="preserve"><value>Dialeto SQL</value></data>
+  <data name="SqlEditor" xml:space="preserve"><value>Editor SQL</value></data>
+  <data name="SqlEditorRecovery" xml:space="preserve"><value>Recuperação do editor SQL</value></data>
+  <data name="SqlExecution" xml:space="preserve"><value>Execução de SQL</value></data>
+  <data name="SqlExecutionRollback" xml:space="preserve"><value>Execução de SQL (a transação foi revertida quando possível)</value></data>
+  <data name="SqlFormatted" xml:space="preserve"><value>SQL formatado</value></data>
+  <data name="SqlFormatting" xml:space="preserve"><value>Formatação de SQL</value></data>
+  <data name="SqlParameters" xml:space="preserve"><value>Parâmetros SQL</value></data>
+  <data name="SqlParametersHelp" xml:space="preserve"><value>Informe o valor e o tipo de cada parâmetro SQL nomeado.</value></data>
+  <data name="SqlPreview" xml:space="preserve"><value>Prévia do SQL</value></data>
+  <data name="SqlSelectionBackground" xml:space="preserve"><value>Fundo da seleção SQL</value></data>
+  <data name="SqlSelectionBackgroundHex" xml:space="preserve"><value>Fundo da seleção SQL em hexadecimal</value></data>
+  <data name="SqlSelectionText" xml:space="preserve"><value>Texto da seleção SQL</value></data>
+  <data name="SqlSelectionTextHex" xml:space="preserve"><value>Cor do texto da seleção SQL em hexadecimal</value></data>
+  <data name="SqlSuggestionsCount" xml:space="preserve"><value>Sugestões SQL: {0:N0} · banco: {1}</value></data>
+  <data name="StartingUpdater" xml:space="preserve"><value>Inicialização do instalador externo</value></data>
+  <data name="StatementCompleted" xml:space="preserve"><value>Instrução concluída</value></data>
+  <data name="StatementTime" xml:space="preserve"><value>Instrução concluída em {0:N0} ms</value></data>
+  <data name="Success" xml:space="preserve"><value>Sucesso</value></data>
+  <data name="SuppressDatabaseTriggers" xml:space="preserve"><value>Suprimir triggers do banco nesta conexão</value></data>
+  <data name="SuppressDatabaseTriggersWarning" xml:space="preserve"><value>Atenção: suprimir triggers do banco pode contornar regras de negócio. O provedor impede o uso dessa opção com o pool de conexões.</value></data>
+  <data name="SwitchToCompact" xml:space="preserve"><value>Mostrar apenas nomes de conexões</value></data>
+  <data name="SwitchToDetailed" xml:space="preserve"><value>Mostrar detalhes da conexão</value></data>
+  <data name="Table" xml:space="preserve"><value>Tabela</value></data>
+  <data name="TableDetails" xml:space="preserve"><value>Detalhes da tabela</value></data>
+  <data name="TableDetailsSummary" xml:space="preserve"><value>{0}  ·  Colunas: {1} · Restrições: {2}</value></data>
+  <data name="Tables" xml:space="preserve"><value>Tabelas</value></data>
+  <data name="TcpPort" xml:space="preserve"><value>Porta TCP</value></data>
+  <data name="TestPassword" xml:space="preserve"><value>Senha (usada apenas no teste abaixo)</value></data>
+  <data name="TestPasswordHelp" xml:space="preserve"><value>A senha de teste é apagada após a tentativa e fica fora do perfil da conexão. As senhas lembradas para sessões futuras são gerenciadas pelo cofre de credenciais do sistema.</value></data>
+  <data name="TestingConnection" xml:space="preserve"><value>Testando conexão…</value></data>
+  <data name="ThemeChanged" xml:space="preserve"><value>Tema alterado para {0}.</value></data>
+  <data name="ThemeColors" xml:space="preserve"><value>Cores do tema</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Escuro</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Claro</value></data>
+  <data name="ThemeToCustomize" xml:space="preserve"><value>Tema a personalizar</value></data>
+  <data name="ToggleConnectionDisplay" xml:space="preserve"><value>Alterar a exibição da lista de conexões</value></data>
+  <data name="ToggleTheme" xml:space="preserve"><value>Alternar tema</value></data>
+  <data name="Trigger" xml:space="preserve"><value>Trigger</value></data>
+  <data name="Triggers" xml:space="preserve"><value>Triggers</value></data>
+  <data name="Type" xml:space="preserve"><value>Tipo</value></data>
+  <data name="UpdateAvailable" xml:space="preserve"><value>Atualização do Firebird Studio disponível</value></data>
+  <data name="UpdateCheckRunning" xml:space="preserve"><value>Já existe uma verificação de atualização em andamento</value></data>
+  <data name="UpdatingCredential" xml:space="preserve"><value>Atualização da credencial após a conexão</value></data>
+  <data name="UserName" xml:space="preserve"><value>Usuário</value></data>
+  <data name="VerifiedDownloadManual" xml:space="preserve"><value>Download concluído e SHA-256 verificado. O ZIP está pronto para extração manual. {0}
+
+{1}</value></data>
+  <data name="VerifiedDownloadReady" xml:space="preserve"><value>Download concluído e SHA-256 verificado.
+
+{0}
+
+Instale a atualização e reinicie o Firebird Studio para aplicá-la.</value></data>
+  <data name="View" xml:space="preserve"><value>View</value></data>
+  <data name="ViewMenu" xml:space="preserve"><value>_Exibir</value></data>
+  <data name="ViewRelease" xml:space="preserve"><value>Ver versão</value></data>
+  <data name="Views" xml:space="preserve"><value>Views</value></data>
+  <data name="WaitToClearHistory" xml:space="preserve"><value>Aguarde a consulta terminar antes de limpar o histórico.</value></data>
+  <data name="WaitToClearResults" xml:space="preserve"><value>Aguarde a consulta terminar antes de limpar os resultados.</value></data>
+  <data name="WaitToInstallUpdate" xml:space="preserve"><value>Aguarde a consulta SQL atual terminar antes de instalar uma atualização.</value></data>
+  <data name="Warning" xml:space="preserve"><value>Atenção</value></data>
+  <data name="WorkspaceRestored" xml:space="preserve"><value>Abas do editor SQL restauradas da sessão anterior: {0} (última gravação em {1:g}). Revise as consultas antes de executá-las.</value></data>
+  <data name="WorkspaceTabs" xml:space="preserve"><value>Abas da área de trabalho</value></data>
+  <data name="ServerVersion" xml:space="preserve"><value>Versão do servidor: {0}</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Diagnóstico:</value></data>
+  <data name="DuplicateProcedureDetails" xml:space="preserve"><value> · detalhes indisponíveis para procedures com nome duplicado</value></data>
+  <data name="IndexSegments" xml:space="preserve"><value> · segmentos: {0}</value></data>
+  <data name="DetailGroups" xml:space="preserve"><value> · grupos de detalhes: {0}</value></data>
+  <data name="SourceLoaded" xml:space="preserve"><value> · código-fonte carregado</value></data>
+</root>

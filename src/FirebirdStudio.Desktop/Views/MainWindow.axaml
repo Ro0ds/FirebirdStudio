@@ -1,6 +1,7 @@
 <Window
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
     xmlns:edit="using:AvaloniaEdit"
     xmlns:views="using:FirebirdStudio.Desktop.Views"
     xmlns:database="using:FirebirdStudio.Core.Database"
@@ -13,6 +14,7 @@
     Title="Firebird Studio">
   <Window.Resources>
     <views:MetadataObjectIconConverter x:Key="MetadataObjectIcon" />
+    <views:MetadataObjectLabelConverter x:Key="MetadataObjectLabel" />
     <DataTemplate x:Key="SqlEditorHeaderTemplate" x:DataType="x:String">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <PathIcon Classes="action-icon" Data="{StaticResource SqlEditorTabIcon}" />
@@ -30,7 +32,7 @@
     <ControlTemplate x:Key="WorkspaceTabsTemplate" TargetType="TabControl">
       <Grid RowDefinitions="Auto,*" Background="{TemplateBinding Background}">
         <ScrollViewer x:Name="WorkspaceTabStrip" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
-                      IsTabStop="False" AutomationProperties.Name="Workspace tabs">
+                      IsTabStop="False" AutomationProperties.Name="{loc:StudioText WorkspaceTabs}">
           <ItemsPresenter x:Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
         </ScrollViewer>
         <Panel Grid.Row="1" ClipToBounds="True">
@@ -78,7 +80,7 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="MinHeight" Value="24" />
       <Setter Property="Padding" Value="2,2" />
-      <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Name}" />
+      <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Converter={StaticResource MetadataObjectLabel}}" />
       <Setter Property="AutomationProperties.ItemType" Value="{ReflectionBinding Kind}" />
       <Setter Property="AutomationProperties.HelpText" Value="{ReflectionBinding Details}" />
       <Setter Property="ItemsPanel">
@@ -93,73 +95,73 @@
             BorderBrush="{DynamicResource StudioDividerBrush}">
       <DockPanel LastChildFill="False">
         <Menu DockPanel.Dock="Left" Background="Transparent">
-          <MenuItem Header="_File">
-            <MenuItem Header="New connection…" x:Name="AddConnectionMenuItem">
+          <MenuItem Header="{loc:StudioText FileMenu}">
+            <MenuItem Header="{loc:StudioText NewConnectionDialog}" x:Name="AddConnectionMenuItem">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionAddIcon}" />
               </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="_Settings…" x:Name="SettingsMenuItem">
+            <MenuItem Header="{loc:StudioText SettingsMenu}" x:Name="SettingsMenuItem">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionSettingsIcon}" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Exit" x:Name="ExitMenuItem" />
+            <MenuItem Header="{loc:StudioText Exit}" x:Name="ExitMenuItem" />
           </MenuItem>
-          <MenuItem Header="_Connection">
-            <MenuItem Header="Edit connection…" x:Name="EditConnectionMenuItem" IsEnabled="False" />
-            <MenuItem Header="Remove connection" x:Name="RemoveConnectionMenuItem" IsEnabled="False" />
+          <MenuItem Header="{loc:StudioText ConnectionMenu}">
+            <MenuItem Header="{loc:StudioText EditConnectionDialog}" x:Name="EditConnectionMenuItem" IsEnabled="False" />
+            <MenuItem Header="{loc:StudioText RemoveConnection}" x:Name="RemoveConnectionMenuItem" IsEnabled="False" />
             <Separator />
-            <MenuItem Header="Connect" x:Name="ConnectMenuItem" IsEnabled="False">
+            <MenuItem Header="{loc:StudioText Connect}" x:Name="ConnectMenuItem" IsEnabled="False">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionConnectIcon}" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Disconnect" x:Name="DisconnectMenuItem" IsEnabled="False" />
-            <MenuItem Header="Refresh database objects" x:Name="RefreshMetadataMenuItem" IsEnabled="False">
+            <MenuItem Header="{loc:StudioText Disconnect}" x:Name="DisconnectMenuItem" IsEnabled="False" />
+            <MenuItem Header="{loc:StudioText RefreshObjects}" x:Name="RefreshMetadataMenuItem" IsEnabled="False">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionRefreshIcon}" />
               </MenuItem.Icon>
             </MenuItem>
           </MenuItem>
-          <MenuItem Header="_Query">
-            <MenuItem Header="Execute" x:Name="ExecuteMenuItem" IsEnabled="False">
+          <MenuItem Header="{loc:StudioText QueryMenu}">
+            <MenuItem Header="{loc:StudioText Execute}" x:Name="ExecuteMenuItem" IsEnabled="False">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionExecuteIcon}" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="SQL autocomplete (Ctrl+Space)" x:Name="SqlAutocompleteMenuItem" IsEnabled="False" />
-            <MenuItem Header="Format SQL" x:Name="FormatSqlMenuItem" InputGesture="Ctrl+Shift+F">
+            <MenuItem Header="{loc:StudioText AutocompleteShortcut}" x:Name="SqlAutocompleteMenuItem" IsEnabled="False" />
+            <MenuItem Header="{loc:StudioText FormatSql}" x:Name="FormatSqlMenuItem" InputGesture="Ctrl+Shift+F">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionFormatIcon}" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Cancel execution" x:Name="CancelQueryMenuItem" IsEnabled="False">
+            <MenuItem Header="{loc:StudioText CancelExecution}" x:Name="CancelQueryMenuItem" IsEnabled="False">
               <MenuItem.Icon>
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionStopIcon}" />
               </MenuItem.Icon>
             </MenuItem>
           </MenuItem>
-          <MenuItem Header="_View">
-            <MenuItem Header="Query history">
-              <MenuItem Header="Dock on right" x:Name="HistoryDockRightMenuItem" IsChecked="True" ToggleType="Radio" GroupName="HistoryDock" />
-              <MenuItem Header="Tab beside SQL Editor" x:Name="HistoryDockTabMenuItem" ToggleType="Radio" GroupName="HistoryDock" />
+          <MenuItem Header="{loc:StudioText ViewMenu}">
+            <MenuItem Header="{loc:StudioText QueryHistory}">
+              <MenuItem Header="{loc:StudioText DockRight}" x:Name="HistoryDockRightMenuItem" IsChecked="True" ToggleType="Radio" GroupName="HistoryDock" />
+              <MenuItem Header="{loc:StudioText DockTab}" x:Name="HistoryDockTabMenuItem" ToggleType="Radio" GroupName="HistoryDock" />
             </MenuItem>
-            <MenuItem Header="Database connections">
-              <MenuItem Header="Detailed (name, host, path)" x:Name="ConnectionDisplayDetailedMenuItem" IsChecked="True" ToggleType="Radio" GroupName="ConnectionDisplay" />
-              <MenuItem Header="Minimal (name only)" x:Name="ConnectionDisplayMinimalMenuItem" ToggleType="Radio" GroupName="ConnectionDisplay" />
+            <MenuItem Header="{loc:StudioText DatabaseConnections}">
+              <MenuItem Header="{loc:StudioText DetailedConnectionMode}" x:Name="ConnectionDisplayDetailedMenuItem" IsChecked="True" ToggleType="Radio" GroupName="ConnectionDisplay" />
+              <MenuItem Header="{loc:StudioText MinimalConnectionMode}" x:Name="ConnectionDisplayMinimalMenuItem" ToggleType="Radio" GroupName="ConnectionDisplay" />
             </MenuItem>
           </MenuItem>
-          <MenuItem Header="_Help">
-            <MenuItem Header="Check for updates…" x:Name="CheckForUpdatesMenuItem" />
-            <MenuItem Header="_About Firebird Studio…" x:Name="AboutMenuItem" />
+          <MenuItem Header="{loc:StudioText HelpMenu}">
+            <MenuItem Header="{loc:StudioText CheckUpdates}" x:Name="CheckForUpdatesMenuItem" />
+            <MenuItem Header="{loc:StudioText AboutMenu}" x:Name="AboutMenuItem" />
           </MenuItem>
         </Menu>
-        <TextBlock DockPanel.Dock="Right" Text="FIREBIRD STUDIO  ·  DATABASE WORKSPACE"
+        <TextBlock DockPanel.Dock="Right" Text="{loc:StudioText ProductHeading}"
                    Classes="secondary brand" VerticalAlignment="Center" Margin="12,0" />
         <Menu DockPanel.Dock="Right" Background="Transparent">
-          <MenuItem Header="Toggle theme" x:Name="ToggleThemeMenuItem" />
+          <MenuItem Header="{loc:StudioText ToggleTheme}" x:Name="ToggleThemeMenuItem" />
         </Menu>
       </DockPanel>
     </Border>
@@ -172,10 +174,10 @@
       </Grid.ColumnDefinitions>
       <Grid Grid.Column="0" RowDefinitions="Auto,*,5,*" MinHeight="0" Margin="10">
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
-          <TextBlock Grid.Column="0" Text="Database connections" Classes="panel-title"
+          <TextBlock Grid.Column="0" Text="{loc:StudioText DatabaseConnections}" Classes="panel-title"
                      VerticalAlignment="Center" />
-          <Button Grid.Column="1" x:Name="ToggleConnectionDisplayButton" Classes="action compact" Content="Minimal"
-                  ToolTip.Tip="Switch connection list display mode" />
+          <Button Grid.Column="1" x:Name="ToggleConnectionDisplayButton" Classes="action compact" Content="{loc:StudioText Minimal}"
+                  ToolTip.Tip="{loc:StudioText ToggleConnectionDisplay}" />
         </Grid>
         <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="8" MinHeight="0">
           <Grid MinHeight="0">
@@ -200,66 +202,66 @@
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
-            <TextBlock Classes="secondary" Text="No saved connections" IsVisible="{Binding !#ConnectionsList.ItemCount}"
+            <TextBlock Classes="secondary" Text="{loc:StudioText NoSavedConnections}" IsVisible="{Binding !#ConnectionsList.ItemCount}"
                        HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
           </Grid>
           <DockPanel Grid.Row="1" LastChildFill="False" Margin="0,0,0,4">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="5">
-              <Button x:Name="NewConnectionButton" Content="New" AutomationProperties.Name="New connection"
-                      ToolTip.Tip="New connection" />
-              <Button x:Name="EditSelectedConnectionButton" Content="Edit" IsEnabled="False"
-                      AutomationProperties.Name="Edit selected connection" ToolTip.Tip="Edit selected connection" />
+              <Button x:Name="NewConnectionButton" Content="{loc:StudioText New}" AutomationProperties.Name="{loc:StudioText NewConnection}"
+                      ToolTip.Tip="{loc:StudioText NewConnection}" />
+              <Button x:Name="EditSelectedConnectionButton" Content="{loc:StudioText Edit}" IsEnabled="False"
+                      AutomationProperties.Name="{loc:StudioText EditSelectedConnection}" ToolTip.Tip="{loc:StudioText EditSelectedConnection}" />
             </StackPanel>
-            <Button DockPanel.Dock="Right" x:Name="ConnectionSessionButton" Content="Connect" IsEnabled="False"
-                    ToolTip.Tip="Connect to the selected database" />
+            <Button DockPanel.Dock="Right" x:Name="ConnectionSessionButton" Content="{loc:StudioText Connect}" IsEnabled="False"
+                    ToolTip.Tip="{loc:StudioText ConnectSelected}" />
           </DockPanel>
         </Grid>
         <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
         <Grid Grid.Row="3" RowDefinitions="Auto,*" MinHeight="0">
           <StackPanel Spacing="6" Margin="0,10,0,8">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <TextBlock Text="Database objects" Classes="panel-title" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:StudioText DatabaseObjects}" Classes="panel-title" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" x:Name="MetadataConnectionText" Classes="secondary"
                          VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"
                          ToolTip.Tip="{Binding #MetadataConnectionText.Text}" />
             </Grid>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
-              <TextBox x:Name="MetadataSearchBox" PlaceholderText="Search objects…" IsEnabled="False"
+              <TextBox x:Name="MetadataSearchBox" PlaceholderText="{loc:StudioText SearchObjects}" IsEnabled="False"
                        PlaceholderForeground="{DynamicResource StudioSecondaryTextBrush}"
-                       AutomationProperties.Name="Search database objects" />
+                       AutomationProperties.Name="{loc:StudioText SearchDatabaseObjects}" />
               <Button Grid.Column="1" x:Name="ClearMetadataSearchButton" Classes="action icon-only" IsEnabled="False"
-                      AutomationProperties.Name="Clear object search" ToolTip.Tip="Clear object search">
+                      AutomationProperties.Name="{loc:StudioText ClearObjectSearch}" ToolTip.Tip="{loc:StudioText ClearObjectSearch}">
                 <PathIcon Classes="action-icon" Data="M4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13L3 12L7 8L3 4Z" />
               </Button>
               <Button Grid.Column="2" x:Name="RefreshMetadataButton" Classes="action icon-only" IsEnabled="False"
-                      AutomationProperties.Name="Refresh database objects" ToolTip.Tip="Refresh database objects">
+                      AutomationProperties.Name="{loc:StudioText RefreshObjects}" ToolTip.Tip="{loc:StudioText RefreshObjects}">
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionRefreshIcon}" />
               </Button>
             </Grid>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
               <ComboBox x:Name="MetadataSearchKindFilter" SelectedIndex="0" IsEnabled="False"
-                        HorizontalAlignment="Stretch" AutomationProperties.Name="Object search type"
-                        ToolTip.Tip="Filter search results by type">
-                <ComboBoxItem Content="All object types" />
-                <ComboBoxItem Content="Tables" Tag="Tables" />
-                <ComboBoxItem Content="Views" Tag="Views" />
-                <ComboBoxItem Content="Columns" Tag="Column" />
-                <ComboBoxItem Content="Procedures" Tag="Procedures" />
-                <ComboBoxItem Content="Triggers" Tag="Triggers" />
-                <ComboBoxItem Content="Indexes" Tag="Indexes" />
-                <ComboBoxItem Content="Domains" Tag="Domains" />
+                        HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:StudioText ObjectSearchType}"
+                        ToolTip.Tip="{loc:StudioText FilterSearchType}">
+                <ComboBoxItem Content="{loc:StudioText AllObjectTypes}" />
+                <ComboBoxItem Content="{loc:StudioText Tables}" Tag="Tables" />
+                <ComboBoxItem Content="{loc:StudioText Views}" Tag="Views" />
+                <ComboBoxItem Content="{loc:StudioText Columns}" Tag="Column" />
+                <ComboBoxItem Content="{loc:StudioText Procedures}" Tag="Procedures" />
+                <ComboBoxItem Content="{loc:StudioText Triggers}" Tag="Triggers" />
+                <ComboBoxItem Content="{loc:StudioText Indexes}" Tag="Indexes" />
+                <ComboBoxItem Content="{loc:StudioText Domains}" Tag="Domains" />
               </ComboBox>
               <Menu Grid.Column="1" VerticalAlignment="Center">
-                <MenuItem Header="Organize" x:Name="OrganizeMetadataMenuItem" IsEnabled="False">
-                  <MenuItem Header="Move selected category up" x:Name="MoveCategoryUpMenuItem" IsEnabled="False" />
-                  <MenuItem Header="Move selected category down" x:Name="MoveCategoryDownMenuItem" IsEnabled="False" />
+                <MenuItem Header="{loc:StudioText Organize}" x:Name="OrganizeMetadataMenuItem" IsEnabled="False">
+                  <MenuItem Header="{loc:StudioText MoveCategoryUp}" x:Name="MoveCategoryUpMenuItem" IsEnabled="False" />
+                  <MenuItem Header="{loc:StudioText MoveCategoryDown}" x:Name="MoveCategoryDownMenuItem" IsEnabled="False" />
                 </MenuItem>
               </Menu>
             </Grid>
           </StackPanel>
           <Grid Grid.Row="1">
             <TreeView x:Name="MetadataTree" SelectionMode="Single" MinHeight="0"
-                      AutomationProperties.Name="Database object tree" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                      AutomationProperties.Name="{loc:StudioText ObjectTree}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
               <TreeView.ItemsPanel>
                 <ItemsPanelTemplate>
                   <VirtualizingStackPanel />
@@ -277,7 +279,7 @@
                     <PathIcon Classes="action-icon" Margin="0,0,6,0"
                               Foreground="{DynamicResource StudioSecondaryTextBrush}"
                               Data="{Binding Converter={StaticResource MetadataObjectIcon}}" />
-                    <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"
+                    <TextBlock Grid.Column="1" Text="{Binding Converter={StaticResource MetadataObjectLabel}}" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="2" Text="{Binding ParentName}" Classes="secondary" Margin="6,0,0,0"
                                IsVisible="{Binding !!ParentName}" VerticalAlignment="Center" MaxWidth="90"
@@ -286,7 +288,7 @@
                 </TreeDataTemplate>
               </TreeView.DataTemplates>
             </TreeView>
-            <TextBlock x:Name="MetadataEmptyText" Classes="secondary" Text="Connect to browse database objects."
+            <TextBlock x:Name="MetadataEmptyText" Classes="secondary" Text="{loc:StudioText ConnectToBrowse}"
                        IsVisible="{Binding !#MetadataTree.ItemCount}" IsHitTestVisible="False"
                        HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" TextWrapping="Wrap" />
           </Grid>
@@ -312,27 +314,27 @@
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                   <Button x:Name="ExecuteQueryButton" Classes="action compact accent"
-                          IsEnabled="{Binding #ExecuteMenuItem.IsEnabled}" AutomationProperties.Name="Execute SQL">
+                          IsEnabled="{Binding #ExecuteMenuItem.IsEnabled}" AutomationProperties.Name="{loc:StudioText ExecuteSql}">
                     <StackPanel Classes="action-label">
                       <PathIcon Classes="action-icon" Data="{StaticResource ActionExecuteIcon}" />
-                      <TextBlock Text="Execute" />
+                      <TextBlock Text="{loc:StudioText Execute}" />
                       <TextBlock x:Name="ExecuteShortcutText" Opacity="0.8" />
                     </StackPanel>
                   </Button>
                   <Button x:Name="CancelQueryButton" Classes="action compact"
                           IsEnabled="{Binding #CancelQueryMenuItem.IsEnabled}"
-                          AutomationProperties.Name="Cancel SQL execution" ToolTip.Tip="Cancel SQL execution">
+                          AutomationProperties.Name="{loc:StudioText CancelSql}" ToolTip.Tip="{loc:StudioText CancelSql}">
                     <StackPanel Classes="action-label">
                       <PathIcon Classes="action-icon" Data="{StaticResource ActionStopIcon}" />
-                      <TextBlock Text="Cancel" />
+                      <TextBlock Text="{loc:StudioText Cancel}" />
                     </StackPanel>
                   </Button>
                   <Button x:Name="FormatQueryButton" Classes="action icon-only"
-                          AutomationProperties.Name="Format SQL" ToolTip.Tip="Format SQL (Ctrl+Shift+F)">
+                          AutomationProperties.Name="{loc:StudioText FormatSql}" ToolTip.Tip="{loc:StudioText FormatSqlShortcut}">
                     <PathIcon Classes="action-icon" Data="{StaticResource ActionFormatIcon}" />
                   </Button>
                 </StackPanel>
-                <TextBlock Grid.Column="1" x:Name="ConnectionStateText" Text="Not connected"
+                <TextBlock Grid.Column="1" x:Name="ConnectionStateText" Text="{loc:StudioText NotConnected}"
                            Classes="secondary error" FontWeight="SemiBold" VerticalAlignment="Center"
                            TextAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
               </Grid>
@@ -344,7 +346,7 @@
                 <StackPanel Orientation="Horizontal" />
               </ItemsPanelTemplate>
             </TabControl.ItemsPanel>
-            <TabItem Header="SQL Editor" x:Name="SqlEditorTab">
+            <TabItem Header="{loc:StudioText SqlEditor}" x:Name="SqlEditorTab">
               <edit:TextEditor x:Name="SqlEditor" ShowLineNumbers="True"
                                WordWrap="False" HorizontalScrollBarVisibility="Auto"
                                VerticalScrollBarVisibility="Auto"
@@ -357,44 +359,44 @@
                   <Button x:Name="AddSqlEditorButton" Classes="action icon-only" Width="26" Height="26"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                          AutomationProperties.Name="New SQL Editor" ToolTip.Tip="New SQL Editor">
+                          AutomationProperties.Name="{loc:StudioText NewSqlEditor}" ToolTip.Tip="{loc:StudioText NewSqlEditor}">
                     <PathIcon Classes="action-icon" Data="{StaticResource ActionAddIcon}" />
                   </Button>
                 </Grid>
               </TabItem.Header>
             </TabItem>
-            <TabItem Header="Table: (select a table)" x:Name="TableDetailsTab" Classes="inspector-tab" IsVisible="False">
+            <TabItem Header="{loc:StudioText SelectTable}" x:Name="TableDetailsTab" Classes="inspector-tab" IsVisible="False">
               <Grid RowDefinitions="Auto,*">
                 <Border Padding="8" BorderThickness="0,0,0,1"
                         BorderBrush="{DynamicResource StudioDividerBrush}">
-                  <TextBlock x:Name="TableDetailsTitle" Text="Table details" Classes="section-title" />
+                  <TextBlock x:Name="TableDetailsTitle" Text="{loc:StudioText TableDetails}" Classes="section-title" />
                 </Border>
                 <TabControl Grid.Row="1">
-                  <TabItem Header="Fields">
+                  <TabItem Header="{loc:StudioText Fields}">
                     <TableView x:CompileBindings="False" x:Name="TableFieldsGrid" CanUserResizeColumns="True">
                       <TableView.Columns>
-                        <TableViewColumn Header="Field" Binding="{Binding Name}" Width="2*" />
-                        <TableViewColumn Header="Domain" Binding="{Binding Domain}" Width="2*" />
-                        <TableViewColumn Header="Type" Binding="{Binding Type}" Width="2*" />
-                        <TableViewColumn Header="Null" Binding="{Binding Nullable}" Width="Auto" />
-                        <TableViewColumn Header="Position" Binding="{Binding Position}" Width="Auto" />
+                        <TableViewColumn Header="{loc:StudioText Field}" Binding="{Binding Name}" Width="2*" />
+                        <TableViewColumn Header="{loc:StudioText Domain}" Binding="{Binding Domain}" Width="2*" />
+                        <TableViewColumn Header="{loc:StudioText Type}" Binding="{Binding Type}" Width="2*" />
+                        <TableViewColumn Header="{loc:StudioText Null}" Binding="{Binding Nullable}" Width="Auto" />
+                        <TableViewColumn Header="{loc:StudioText Position}" Binding="{Binding Position}" Width="Auto" />
                       </TableView.Columns>
                     </TableView>
                   </TabItem>
-                  <TabItem Header="Data">
+                  <TabItem Header="{loc:StudioText Data}">
                     <Grid RowDefinitions="Auto,*">
                       <Border Grid.Row="0" Padding="6" BorderThickness="0,0,0,1"
                               BorderBrush="{DynamicResource StudioDividerBrush}">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                          <Button Classes="action compact" Content="Previous" x:Name="PreviousTableDataPageButton" IsEnabled="False" />
-                          <Button Classes="action compact" Content="Next" x:Name="NextTableDataPageButton" IsEnabled="False" />
-                          <TextBlock x:Name="TableDataPageStatus" Text="No rows loaded" VerticalAlignment="Center" />
+                          <Button Classes="action compact" Content="{loc:StudioText Previous}" x:Name="PreviousTableDataPageButton" IsEnabled="False" />
+                          <Button Classes="action compact" Content="{loc:StudioText Next}" x:Name="NextTableDataPageButton" IsEnabled="False" />
+                          <TextBlock x:Name="TableDataPageStatus" Text="{loc:StudioText NoRowsLoaded}" VerticalAlignment="Center" />
                         </StackPanel>
                       </Border>
                       <TableView Grid.Row="1" x:CompileBindings="False" x:Name="TableDataGrid" CanUserResizeColumns="True" />
                     </Grid>
                   </TabItem>
-                  <TabItem Header="Constraints">
+                  <TabItem Header="{loc:StudioText Constraints}">
                     <ListBox x:Name="TableConstraintsList">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="database:DatabaseMetadataObject">
@@ -414,18 +416,18 @@
                 </TabControl>
               </Grid>
             </TabItem>
-            <TabItem IsVisible="False" x:Name="QueryHistoryTab" Header="Query History">
+            <TabItem IsVisible="False" x:Name="QueryHistoryTab" Header="{loc:StudioText QueryHistoryTab}">
               <views:QueryHistoryView x:Name="TabbedQueryHistory" Margin="8" />
             </TabItem>
             </TabControl>
           </Grid>
           <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch"
-                        ResizeDirection="Rows" Margin="3,0,0,0" AutomationProperties.Name="Resize query output" />
+                        ResizeDirection="Rows" Margin="3,0,0,0" AutomationProperties.Name="{loc:StudioText ResizeOutput}" />
           <TabControl Grid.Row="2" x:Name="ResultsMessagesTabs">
-            <TabItem x:Name="ResultsTab" Header="Results">
+            <TabItem x:Name="ResultsTab" Header="{loc:StudioText Results}">
               <views:QueryResultsView x:Name="QueryResults" />
             </TabItem>
-            <TabItem x:Name="MessagesTab" Header="Messages">
+            <TabItem x:Name="MessagesTab" Header="{loc:StudioText Messages}">
               <views:MessagesView x:Name="Messages" />
             </TabItem>
           </TabControl>
@@ -436,7 +438,7 @@
             <views:QueryHistoryView x:Name="DockedQueryHistory" Margin="8" />
             <Button x:Name="ExpandHistoryDockButton" Classes="action icon-only" IsVisible="False" Margin="4,8,4,0"
                     HorizontalAlignment="Center" VerticalAlignment="Top"
-                    AutomationProperties.Name="Expand query history" ToolTip.Tip="Expand query history">
+                    AutomationProperties.Name="{loc:StudioText ExpandHistory}" ToolTip.Tip="{loc:StudioText ExpandHistory}">
               <PathIcon Classes="action-icon" Data="{StaticResource ActionExpandLeftIcon}" />
             </Button>
           </Grid>
