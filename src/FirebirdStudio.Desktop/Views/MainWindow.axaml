@@ -13,10 +13,46 @@
     Title="Firebird Studio">
   <Window.Resources>
     <views:MetadataObjectIconConverter x:Key="MetadataObjectIcon" />
+    <DataTemplate x:Key="SqlEditorHeaderTemplate" x:DataType="x:String">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <PathIcon Classes="action-icon" Data="{StaticResource SqlEditorTabIcon}" />
+        <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" MaxWidth="150"
+                   ToolTip.Tip="{Binding}" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="InspectorHeaderTemplate" x:DataType="x:String">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <PathIcon Classes="action-icon" Data="{StaticResource InspectorTabIcon}" />
+        <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" MaxWidth="150"
+                   ToolTip.Tip="{Binding}" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+    <ControlTemplate x:Key="WorkspaceTabsTemplate" TargetType="TabControl">
+      <Grid RowDefinitions="Auto,*" Background="{TemplateBinding Background}">
+        <ScrollViewer x:Name="WorkspaceTabStrip" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                      IsTabStop="False" AutomationProperties.Name="Workspace tabs">
+          <ItemsPresenter x:Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+        </ScrollViewer>
+        <Panel Grid.Row="1" ClipToBounds="True">
+          <ContentPresenter x:Name="PART_SelectedContentHost2" Margin="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" IsVisible="False" />
+          <ContentPresenter x:Name="PART_SelectedContentHost" Margin="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Panel>
+      </Grid>
+    </ControlTemplate>
   </Window.Resources>
   <Window.Styles>
     <Style Selector="Button">
       <Setter Property="Padding" Value="9,5" />
+    </Style>
+    <Style Selector="TabItem.sql-editor-tab">
+      <Setter Property="HeaderTemplate" Value="{StaticResource SqlEditorHeaderTemplate}" />
+    </Style>
+    <Style Selector="TabItem.inspector-tab">
+      <Setter Property="HeaderTemplate" Value="{StaticResource InspectorHeaderTemplate}" />
     </Style>
     <Style Selector="ListBox#ConnectionsList ListBoxItem">
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -117,6 +153,7 @@
           </MenuItem>
           <MenuItem Header="_Help">
             <MenuItem Header="Check for updates…" x:Name="CheckForUpdatesMenuItem" />
+            <MenuItem Header="_About Firebird Studio…" x:Name="AboutMenuItem" />
           </MenuItem>
         </Menu>
         <TextBlock DockPanel.Dock="Right" Text="FIREBIRD STUDIO  ·  DATABASE WORKSPACE"
@@ -263,21 +300,55 @@
           <ColumnDefinition Width="5" />
           <ColumnDefinition Width="300" MinWidth="220" />
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0" RowDefinitions="*,3,190" MinWidth="0">
-          <Grid Grid.Row="0">
-            <TabControl x:Name="EditorTabs">
-            <TabItem Header="SQL Editor" x:Name="SqlEditorTab">
-              <Grid RowDefinitions="Auto,*">
-                <Border Padding="7" BorderThickness="0,0,0,1"
-                        BorderBrush="{DynamicResource StudioDividerBrush}">
-                  <TextBlock x:Name="SqlExecutionHint"
-                             Classes="secondary" TextWrapping="Wrap" />
-                </Border>
-                <edit:TextEditor Grid.Row="1" x:Name="SqlEditor" ShowLineNumbers="True"
-                                 WordWrap="False" HorizontalScrollBarVisibility="Auto"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Text="-- Firebird Studio&#10;SELECT CURRENT_TIMESTAMP FROM RDB$DATABASE;" />
+        <Grid Grid.Column="0" MinWidth="0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" MinHeight="180" />
+            <RowDefinition Height="3" />
+            <RowDefinition Height="210" MinHeight="120" />
+          </Grid.RowDefinitions>
+          <Grid Grid.Row="0" RowDefinitions="Auto,*">
+            <Border Padding="8,4" Background="{DynamicResource StudioSurfaceBrush}"
+                    BorderBrush="{DynamicResource StudioDividerBrush}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Button x:Name="ExecuteQueryButton" Classes="action compact accent"
+                          IsEnabled="{Binding #ExecuteMenuItem.IsEnabled}" AutomationProperties.Name="Execute SQL">
+                    <StackPanel Classes="action-label">
+                      <PathIcon Classes="action-icon" Data="{StaticResource ActionExecuteIcon}" />
+                      <TextBlock Text="Execute" />
+                      <TextBlock x:Name="ExecuteShortcutText" Opacity="0.8" />
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="CancelQueryButton" Classes="action compact"
+                          IsEnabled="{Binding #CancelQueryMenuItem.IsEnabled}"
+                          AutomationProperties.Name="Cancel SQL execution" ToolTip.Tip="Cancel SQL execution">
+                    <StackPanel Classes="action-label">
+                      <PathIcon Classes="action-icon" Data="{StaticResource ActionStopIcon}" />
+                      <TextBlock Text="Cancel" />
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="FormatQueryButton" Classes="action icon-only"
+                          AutomationProperties.Name="Format SQL" ToolTip.Tip="Format SQL (Ctrl+Shift+F)">
+                    <PathIcon Classes="action-icon" Data="{StaticResource ActionFormatIcon}" />
+                  </Button>
+                </StackPanel>
+                <TextBlock Grid.Column="1" x:Name="ConnectionStateText" Text="Not connected"
+                           Classes="secondary error" FontWeight="SemiBold" VerticalAlignment="Center"
+                           TextAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
               </Grid>
+            </Border>
+            <TabControl Grid.Row="1" x:Name="EditorTabs" Template="{StaticResource WorkspaceTabsTemplate}"
+                        AutoScrollToSelectedItem="True">
+            <TabControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </TabControl.ItemsPanel>
+            <TabItem Header="SQL Editor" x:Name="SqlEditorTab">
+              <edit:TextEditor x:Name="SqlEditor" ShowLineNumbers="True"
+                               WordWrap="False" HorizontalScrollBarVisibility="Auto"
+                               VerticalScrollBarVisibility="Auto"
+                               Text="-- Firebird Studio&#10;SELECT CURRENT_TIMESTAMP FROM RDB$DATABASE;" />
             </TabItem>
             <TabItem x:Name="AddSqlEditorTab" IsTabStop="False" Width="40" MinWidth="40"
                      Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
@@ -292,7 +363,7 @@
                 </Grid>
               </TabItem.Header>
             </TabItem>
-            <TabItem Header="Table: (select a table)" x:Name="TableDetailsTab" IsVisible="False">
+            <TabItem Header="Table: (select a table)" x:Name="TableDetailsTab" Classes="inspector-tab" IsVisible="False">
               <Grid RowDefinitions="Auto,*">
                 <Border Padding="8" BorderThickness="0,0,0,1"
                         BorderBrush="{DynamicResource StudioDividerBrush}">
@@ -349,7 +420,7 @@
             </TabControl>
           </Grid>
           <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch"
-                        ResizeDirection="Rows" Margin="3,0,0,0" />
+                        ResizeDirection="Rows" Margin="3,0,0,0" AutomationProperties.Name="Resize query output" />
           <TabControl Grid.Row="2" x:Name="ResultsMessagesTabs">
             <TabItem x:Name="ResultsTab" Header="Results">
               <views:QueryResultsView x:Name="QueryResults" />
@@ -375,19 +446,15 @@
 
     <Border Grid.Row="2" Padding="8,4" BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource StudioDividerBrush}">
-      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="18">
-        <TextBlock Grid.Column="0" x:Name="ConnectionStateText" Text="Not connected"
-                   Classes="secondary error" FontWeight="SemiBold" MaxWidth="280"
+      <Grid MinHeight="16">
+        <Grid IsVisible="{Binding !#MessagesTab.IsSelected}">
+          <TextBlock x:Name="WorkspaceStatusText" Classes="secondary" VerticalAlignment="Center"
+                     IsVisible="{Binding !#FooterNotificationText.IsVisible}"
+                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
+        </Grid>
+        <TextBlock x:Name="FooterNotificationText" FontSize="{StaticResource StudioSecondaryFontSize}"
+                   VerticalAlignment="Center" FontWeight="SemiBold" IsVisible="False"
                    TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
-        <TextBlock Grid.Column="1" Text="Firebird provider 10.3.4" Classes="secondary"
-                   VerticalAlignment="Center" />
-        <TextBlock Grid.Column="2" x:Name="CurrentVersionText" Text="Firebird Studio 0.1.0" Classes="secondary"
-                   VerticalAlignment="Center" />
-        <TextBlock Grid.Column="3" x:Name="FooterNotificationText" FontSize="{StaticResource StudioSecondaryFontSize}"
-                   VerticalAlignment="Center" HorizontalAlignment="Center"
-                   TextAlignment="Center" FontWeight="SemiBold" IsVisible="False" />
-        <TextBlock Grid.Column="4" Text=".NET 10 · Avalonia 12" Classes="secondary"
-                   VerticalAlignment="Center" />
       </Grid>
     </Border>
   </Grid>

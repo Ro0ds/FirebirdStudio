@@ -17,6 +17,8 @@
       <StreamGeometry x:Key="ActionCopyIcon">F0 M5 5H14V15H5Z M6.5 6.5V13.5H12.5V6.5Z M2 1H11V3.5H9.5V2.5H3.5V10.5H4V12H2Z</StreamGeometry>
       <StreamGeometry x:Key="ActionFirstRowIcon">M2 2H14V3.5H2Z M3 10L8 5L13 10L11.9 11.1L8.75 7.95V14H7.25V7.95L4.1 11.1Z</StreamGeometry>
       <StreamGeometry x:Key="ActionLastRowIcon">M2 12.5H14V14H2Z M3 6L8 11L13 6L11.9 4.9L8.75 8.05V2H7.25V8.05L4.1 4.9Z</StreamGeometry>
+      <StreamGeometry x:Key="SqlEditorTabIcon">M5 3L0 8L5 13L6 12L2 8L6 4Z M11 3L16 8L11 13L10 12L14 8L10 4Z M8.7 3H10.1L7.3 13H5.9Z</StreamGeometry>
+      <StreamGeometry x:Key="InspectorTabIcon">F0 M3 1H9L13 5V15H3Z M4.5 2.5V13.5H11.5V6H8V2.5Z M5.5 7.5H10.5V8.5H5.5Z M5.5 10H10.5V11H5.5Z</StreamGeometry>
     </ResourceDictionary>
   </Styles.Resources>
 

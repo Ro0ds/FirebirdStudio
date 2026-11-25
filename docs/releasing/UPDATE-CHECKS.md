@@ -1,6 +1,6 @@
 # In-app update checks, downloads, and installation
 
-Firebird Studio checks the GitHub Releases stable channel for a newer version. The running application displays its current version in the window title and status bar; both values come from the assembly version generated from the root `VERSION` file.
+Firebird Studio checks the GitHub Releases stable channel for a newer version. The running application displays its current version in the window title and in **Help → About Firebird Studio**. Both values come from the assembly version generated from the root `VERSION` file.
 
 ## Release discovery
 
