@@ -15,6 +15,12 @@ internal sealed record StudioPreferences(
 
     [JsonIgnore]
     public Key ExecuteSqlKey => SqlExecutionShortcuts.Resolve(ExecuteSqlShortcut);
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ThemeColorOverrides? LightThemeColors { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ThemeColorOverrides? DarkThemeColors { get; init; }
 }
 
 internal sealed class StudioPreferencesStore
