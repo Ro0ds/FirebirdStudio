@@ -20,7 +20,11 @@ public sealed record SqlExecutionResult(
     IReadOnlyList<IReadOnlyList<string>> Rows,
     int RowsAffected,
     bool HasMoreRows,
-    TimeSpan Elapsed);
+    TimeSpan Elapsed)
+{
+    /// <summary>Comparable values for the materialized cells, with null for SQL NULL or unavailable values.</summary>
+    public IReadOnlyList<IReadOnlyList<IComparable?>>? SortValues { get; init; }
+}
 
 /// <summary>Owns long-lived Firebird sessions independently from connection testing.</summary>
 public interface IFirebirdSessionManager

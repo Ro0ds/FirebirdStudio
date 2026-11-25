@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
+             xmlns:services="using:FirebirdStudio.Desktop.Services"
+             x:Class="FirebirdStudio.Desktop.Views.MessagesView">
+  <UserControl.Resources>
+    <StreamGeometry x:Key="MessageInformationIcon">F0 M8 1A7 7 0 1 0 8 15A7 7 0 1 0 8 1Z M7.25 7H8.75V12H7.25Z M7.25 4H8.75V5.5H7.25Z</StreamGeometry>
+    <StreamGeometry x:Key="MessageWarningIcon">F0 M8 1.5L15 14H1Z M7.25 6H8.75V10H7.25Z M7.25 11H8.75V12.5H7.25Z</StreamGeometry>
+    <StreamGeometry x:Key="MessageErrorIcon">F0 M8 1A7 7 0 1 0 8 15A7 7 0 1 0 8 1Z M5.2 4.2L8 7L10.8 4.2L11.8 5.2L9 8L11.8 10.8L10.8 11.8L8 9L5.2 11.8L4.2 10.8L7 8L4.2 5.2Z</StreamGeometry>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="ListBox#MessageLogItems ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="8,5" />
+      <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Context}" />
+      <Setter Property="AutomationProperties.HelpText" Value="{ReflectionBinding AccessibleDetails}" />
+    </Style>
+    <Style Selector="ListBox#MessageLogItems ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StudioListSelectionBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StudioFocusBrush}" />
+      <Setter Property="BorderThickness" Value="1,0,0,0" />
+    </Style>
+    <Style Selector="PathIcon.message-severity">
+      <Setter Property="Width" Value="12" />
+      <Setter Property="Height" Value="12" />
+      <Setter Property="Data" Value="{StaticResource MessageInformationIcon}" />
+      <Setter Property="Foreground" Value="{DynamicResource StudioSecondaryTextBrush}" />
+    </Style>
+    <Style Selector="PathIcon.message-severity.success">
+      <Setter Property="Data" Value="{StaticResource ActionConfirmIcon}" />
+      <Setter Property="Foreground" Value="{DynamicResource StudioSuccessBrush}" />
+    </Style>
+    <Style Selector="PathIcon.message-severity.warning">
+      <Setter Property="Data" Value="{StaticResource MessageWarningIcon}" />
+      <Setter Property="Foreground" Value="{DynamicResource StudioInformationBrush}" />
+    </Style>
+    <Style Selector="PathIcon.message-severity.error">
+      <Setter Property="Data" Value="{StaticResource MessageErrorIcon}" />
+      <Setter Property="Foreground" Value="{DynamicResource StudioErrorBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,*" MinHeight="0" Background="{DynamicResource StudioSurfaceBrush}">
+    <Border Padding="8,3" BorderBrush="{DynamicResource StudioDividerBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+        <TextBlock x:Name="StatusText" Classes="secondary" Text="{loc:StudioText LoadingConnections}"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
+        <Button Grid.Column="1" x:Name="ClearMessagesButton" Classes="action icon-only"
+                IsEnabled="{Binding !!#MessageLogItems.ItemCount}"
+                AutomationProperties.Name="{loc:StudioText ClearMessages}" ToolTip.Tip="{loc:StudioText ClearMessages}">
+          <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
+        </Button>
+      </Grid>
+    </Border>
+    <Grid Grid.Row="1" x:Name="MessageWorkspace" ColumnDefinitions="*,Auto" MinHeight="0">
+      <Grid>
+        <ListBox x:Name="MessageLogItems" SelectionMode="Single" Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="{loc:StudioText MessageLog}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="services:StudioMessageEntry">
+              <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Classes="panel-title" Text="{Binding Context}" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding Context}" />
+                  <TextBlock Grid.Column="1" Classes="secondary" Text="{Binding TimeText}"
+                             ToolTip.Tip="{Binding TimestampText}" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5">
+                  <PathIcon Classes="message-severity" Classes.success="{Binding IsSuccess}"
+                            Classes.warning="{Binding IsWarning}" Classes.error="{Binding IsError}"
+                            VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Classes="secondary" Text="{Binding SeverityLabel}"
+                             Classes.success="{Binding IsSuccess}" Classes.information="{Binding IsWarning}"
+                             Classes.error="{Binding IsError}" />
+                  <TextBlock Grid.Column="2" Classes="secondary" Text="{Binding Summary}" Margin="2,0,0,0"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Summary}" />
+                </Grid>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Classes="secondary" Text="{loc:StudioText NoMessages}" IsVisible="{Binding !#MessageLogItems.ItemCount}"
+                   IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Grid>
+      <Border Grid.Column="1" x:Name="MessageDetailsPane" IsVisible="False" Padding="7,3,6,6"
+              BorderBrush="{DynamicResource StudioDividerBrush}" BorderThickness="1,0,0,0">
+        <Grid RowDefinitions="Auto,*" RowSpacing="4">
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+            <TextBlock Text="{loc:StudioText Details}" Classes="panel-title" VerticalAlignment="Center" />
+            <Button Grid.Column="1" x:Name="CopyMessageDetailsButton" Classes="action compact"
+                    AutomationProperties.Name="{loc:StudioText CopyMessageDetails}" ToolTip.Tip="{loc:StudioText CopyMessageDetails}">
+              <StackPanel Classes="action-label">
+                <PathIcon Classes="action-icon" Data="{StaticResource ActionCopyIcon}" />
+                <TextBlock Text="{loc:StudioText Copy}" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2" x:Name="CloseMessageDetailsButton" Classes="action icon-only"
+                    AutomationProperties.Name="{loc:StudioText CloseMessageDetails}" ToolTip.Tip="{loc:StudioText CloseMessageDetails}">
+              <PathIcon Classes="action-icon" Data="M4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13L3 12L7 8L3 4Z" />
+            </Button>
+          </Grid>
+          <TextBox Grid.Row="1" x:Name="MessageDetailsText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                   FontFamily="{StaticResource StudioMonospaceFont}" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   SelectionBrush="{DynamicResource SqlSelectionBackground}"
+                   SelectionForegroundBrush="{DynamicResource SqlSelectionForeground}"
+                   AutomationProperties.Name="{loc:StudioText SelectedMessageDetails}" />
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

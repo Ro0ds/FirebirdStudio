@@ -622,6 +622,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 {
                     var columns = new List<string>();
                     var rows = new List<IReadOnlyList<string>>();
+                    var sortValues = new List<IReadOnlyList<IComparable?>>();
                     var hasMoreRows = false;
                     var rowsAffected = -1;
                     var resultCharacters = 0;
@@ -648,15 +649,17 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                             while (rows.Count < 500 && await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                             {
                                 var row = new string[columns.Count];
+                                var sortableRow = new IComparable?[columns.Count];
                                 var rowTruncated = false;
                                 for (var index = 0; index < columns.Count; index++)
                                 {
                                     var dataType = reader.GetDataTypeName(index);
-                                    var value = dataType.Contains("BLOB", StringComparison.OrdinalIgnoreCase)
+                                    var rawValue = dataType.Contains("BLOB", StringComparison.OrdinalIgnoreCase)
                                         ? "[BLOB]"
                                         : dataType.Contains("ARRAY", StringComparison.OrdinalIgnoreCase)
                                             ? "[ARRAY]"
-                                            : FormatSqlValue(reader.GetValue(index));
+                                            : reader.GetValue(index);
+                                    var value = FormatSqlValue(rawValue);
                                     var remaining = maximumResultCharacters - resultCharacters;
                                     if (value.Length > remaining)
                                     {
@@ -665,6 +668,13 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                                     }
 
                                     row[index] = value;
+                                    sortableRow[index] = rawValue switch
+                                    {
+                                        DBNull => null,
+                                        string => value,
+                                        IComparable comparable => comparable,
+                                        _ => value
+                                    };
                                     resultCharacters += value.Length;
                                     if (rowTruncated)
                                     {
@@ -675,6 +685,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                                 }
 
                                 rows.Add(row);
+                                sortValues.Add(sortableRow);
                                 if (rowTruncated)
                                 {
                                     hasMoreRows = true;
@@ -692,7 +703,10 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
 
                 await transaction.CommitAsync(CancellationToken.None).ConfigureAwait(false);
                 stopwatch.Stop();
-                return new SqlExecutionResult(columns, rows, rowsAffected, hasMoreRows, stopwatch.Elapsed);
+                return new SqlExecutionResult(columns, rows, rowsAffected, hasMoreRows, stopwatch.Elapsed)
+                {
+                    SortValues = sortValues
+                };
             }
             catch (Exception executionException)
             {

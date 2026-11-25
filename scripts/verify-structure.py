@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -30,6 +31,8 @@ required = [
     "src/FirebirdStudio.Desktop/Views/ConnectionPasswordWindow.axaml",
     "src/FirebirdStudio.Desktop/Views/ConnectionPasswordWindow.axaml.cs",
     "src/FirebirdStudio.Desktop/Services/StudioPreferencesStore.cs",
+    "src/FirebirdStudio.Desktop/Services/SqlExecutionShortcuts.cs",
+    "src/FirebirdStudio.Desktop/Views/SettingsWindow.axaml",
     "src/FirebirdStudio.Desktop/Services/QueryHistoryStore.cs",
     "docs/architecture/SQL-EXECUTION.md",
     "docs/architecture/CONNECTION-MANAGER.md",
@@ -44,6 +47,35 @@ if missing:
 xml_files = list(root.rglob("*.csproj")) + list(root.rglob("*.props")) + list(root.rglob("*.axaml")) + list(root.rglob("*.manifest"))
 for path in xml_files:
     ET.parse(path)
+
+desktop = root / "src/FirebirdStudio.Desktop"
+
+def read_interface_strings(suffix):
+    resources = desktop / "Localization" / f"Interface{suffix}.resx"
+    strings = {}
+    for entry in ET.parse(resources).findall("data"):
+        key = entry.attrib["name"]
+        value = entry.findtext("value")
+        if key in strings or not value:
+            sys.exit(f"Duplicate or empty interface string: {resources.name} / {key}")
+        strings[key] = value
+    return strings
+
+portuguese = read_interface_strings("")
+english = read_interface_strings(".en")
+localized_views = "\n".join(path.read_text(encoding="utf-8") for path in (desktop / "Views").glob("*.axaml"))
+localized_code = "\n".join(path.read_text(encoding="utf-8") for path in desktop.rglob("*.cs")
+                            if path.parent.name in {"Views", "Services"})
+used_keys = set(re.findall(r"\{loc:StudioText (\w+)\}", localized_views))
+used_keys.update(re.findall(r'\bT\("(\w+)"', localized_code))
+missing_keys = (used_keys | english.keys()) - portuguese.keys()
+if missing_keys:
+    sys.exit(f"Missing Portuguese fallback strings: {', '.join(sorted(missing_keys))}")
+for key, translation in english.items():
+    placeholders = r"\{(\d+)[^{}]*\}"
+    if set(re.findall(placeholders, translation)) != set(re.findall(placeholders, portuguese[key])):
+        sys.exit(f"Mismatched format placeholders for interface string: {key}")
+print("Desktop localization fallback and format checks passed.")
 
 profile_source = (root / "src/FirebirdStudio.Core/Connections/ConnectionProfile.cs").read_text(encoding="utf-8")
 if "public string Password" in profile_source or "public string? Password" in profile_source:
@@ -198,7 +230,7 @@ for token in ["private const int MetadataPageSize = 200", "_metadataNextOffsets"
     if token not in main_window_source:
         print(f"Automatic metadata infinite scrolling is missing: {token}")
         sys.exit(1)
-for token in ["EnableMiddleClickClose", "PointerUpdateKind.MiddleButtonPressed", "ConfirmCloseSqlEditorTabAsync", "delete its saved contents"]:
+for token in ["EnableMiddleClickClose", "PointerUpdateKind.MiddleButtonPressed", "ConfirmCloseSqlEditorTabAsync", 'T("ConfirmCloseEditor"']:
     if token not in main_window_source:
         print(f"Middle-click tab closing or SQL editor confirmation is missing: {token}")
         sys.exit(1)
@@ -226,17 +258,27 @@ for token in ["query-history.json", "MaximumEntries = 250", "File.Move(temporary
     if token not in query_history_source:
         print(f"Persistent query history is missing: {token}")
         sys.exit(1)
-for token in ["OnExecuteClick", "OnQueryHistoryDoubleTapped", "GetMetadataPageAsync", "ExecuteSqlAsync", "MoveCategoryUpMenuItem", "MoveCategoryDownMenuItem"]:
+for token in ["OnExecuteClick", "RestoreQueryFromHistory", "GetMetadataPageAsync", "ExecuteSqlAsync", "MoveCategoryUpMenuItem", "MoveCategoryDownMenuItem"]:
     if token not in main_window_source and token not in metadata_ui_source:
         print(f"Desktop query/history or metadata UI is missing: {token}")
         sys.exit(1)
+query_history_view = (root / "src/FirebirdStudio.Desktop/Views/QueryHistoryView.axaml.cs").read_text(encoding="utf-8")
+for token in ["DoubleTapped", "Key.Enter", "RestoreRequested"]:
+    if token not in query_history_view:
+        print(f"Query history restore interaction is missing: {token}")
+        sys.exit(1)
 print("Read-only expandable metadata catalog and UI source checks passed.")
 print("Persistent category ordering and theme source checks passed.")
-for token in ["QueryResultsGrid", "Key.F5", "ShowTableDetailsAsync", "TableFieldsGrid", "TableDataGrid", "TableDdlText", "SetHistoryDockMode", "TableViewColumn"]:
+for token in ["ApplyExecuteSqlShortcut", "ShowTableDetailsAsync", "TableFieldsGrid", "TableDataGrid", "TableDdlText", "SetHistoryDockMode"]:
     if token not in main_window_source:
-        print(f"Desktop query grid, table details, F5, or history docking is missing: {token}")
+        print(f"Desktop table details, execution shortcut, or history docking is missing: {token}")
         sys.exit(1)
-print("Lazy metadata loading, SQL autocomplete, paged table data, SQL execution, persistent query history, result grids, F5, and history docking source checks passed.")
+results_view = (root / "src/FirebirdStudio.Desktop/Views/QueryResultsView.axaml").read_text(encoding="utf-8")
+result_table = (root / "src/FirebirdStudio.Desktop/Views/ResultTable.cs").read_text(encoding="utf-8")
+if "QueryResultsGrid" not in results_view or "TableViewColumn" not in result_table:
+    print("Desktop query result grid or generated columns are missing.")
+    sys.exit(1)
+print("Lazy metadata loading, SQL autocomplete, paged table data, SQL execution, persistent query history, result grids, configurable execution shortcut, and history docking source checks passed.")
 
 
 # Phase 1 reliability release checks
@@ -249,11 +291,10 @@ for token in ["sql-editor-recovery.json", "File.Move(temporaryPath, _filePath, o
         sys.exit(1)
 for token in [
     "RestoreSqlEditorRecoveryAsync", "ScheduleSqlEditorRecoverySave", "SaveSqlEditorRecoveryNowAsync",
-    "Editor autosaved", "Editor saved", "Key.S", "CloseSqlEditorTabAsync", "Close tab",
-    "RenameSqlEditorTabAsync", "Saving SQL editor workspace before closing", "ReportError", "MessageLogItems",
-    "AddMessage(\"Success\"", "ReportInformation", "MessagesScrollViewer",
-    "Review the restored queries before executing them.",
-    "No active database connection. Select a saved connection profile",
+    'T("EditorAutosaved")', 'T("EditorSaved")', "Key.S", "CloseSqlEditorTabAsync", 'T("CloseTab")',
+    "RenameSqlEditorTabAsync", 'T("SavingWorkspaceForExit")', "ReportError", "_messagesView.ShowLatest()",
+    "AddMessage(\"Success\"", "ReportInformation",
+    'T("WorkspaceRestored"', 'T("NoConnectionForSql")',
     "ReferenceEquals(_resultsMessagesTabs.SelectedItem, _messagesTab)",
 ]:
     if token not in main_window_source:
@@ -262,9 +303,10 @@ for token in [
 if "_sqlEditorRecoveryStore.DeleteAsync()" in main_window_source:
     print("SQL editor workspace must persist after a normal application exit.")
     sys.exit(1)
-for token in ["StudioMessageEntry", "#E7F4E8", "#FFF5D9", "#FBE9E7"]:
-    if token not in (root / "src/FirebirdStudio.Desktop/Services/StudioMessageEntry.cs").read_text(encoding="utf-8"):
-        print(f"Message history severity styling is missing: {token}")
+messages_view = (root / "src/FirebirdStudio.Desktop/Views/MessagesView.axaml").read_text(encoding="utf-8")
+for token in ["MessageLogItems", "MessageDetailsText", "CopyMessageDetailsButton", "MessageWarningIcon", "StudioErrorBrush"]:
+    if token not in messages_view:
+        print(f"Message log, severity styling, or diagnostic details are missing: {token}")
         sys.exit(1)
 for token in ["[DNS resolution]", "[TCP reachability]", "[Firebird provider handshake and authentication]", "ServerVersion", "SanitizeMessage(exception.ToString(), password)"]:
     if token not in connection_tester_source:
@@ -304,11 +346,11 @@ print("Dynamic SQL editor tab placement and database-object navigation source ch
 
 # Connection-time metadata, formatted source, and named SQL parameters
 for token in [
-    'Loading database objects in the background: {categoryName}', 'Large catalogs may take some time; the window remains responsive.',
+    'T("LoadingCategoryInBackground"',
     'await LoadMetadataPageAsync(categoryName, 0, updateStatus: false,',
     '() => _sessionManager.GetMetadataPageAsync(',
     'itemIndex += uiBatchSize',
-    'Loading the first 200 objects from each category in the background',
+    'T("LoadingFirstMetadata")',
     'CreateReadOnlySqlEditor(FirebirdDdlPreview.FormatSource(detail.Kind, detail.Details)',
     'FirebirdDdlPreview.BuildTableDdl',
     'FirebirdDdlPreview.FormatSource("View source"',
@@ -362,9 +404,9 @@ if "long SizeBytes, string Sha256" not in downloader_source:
     print("The verified update artifact metadata is not passed to the installer.")
     sys.exit(1)
 for token in [
-    "Install and restart", "StartExternalUpdater(downloadedUpdate)",
+    'T("InstallRestart")', "StartExternalUpdater(downloadedUpdate)",
     "PrepareForUpdateShutdownAsync", "--expected-size", "--expected-sha256",
-    "Closing database sessions before update", "_isPreparedForUpdateShutdown",
+    'T("ClosingSessionsForUpdate")', "_isPreparedForUpdateShutdown",
 ]:
     if token not in main_window_source:
         print(f"Desktop external updater handoff is missing: {token}")

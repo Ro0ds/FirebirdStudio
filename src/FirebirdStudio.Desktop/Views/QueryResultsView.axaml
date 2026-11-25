@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
+             x:Class="FirebirdStudio.Desktop.Views.QueryResultsView">
+  <Grid RowDefinitions="Auto,*" MinHeight="0">
+    <Border Padding="8,3" BorderBrush="{DynamicResource StudioDividerBrush}" BorderThickness="0,0,0,1"
+            Background="{DynamicResource StudioSurfaceBrush}">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
+        <TextBlock x:Name="ResultsSummary" Classes="panel-title" VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" />
+        <TextBlock Grid.Column="1" x:Name="ResultsElapsed" Classes="secondary" IsVisible="False"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" x:Name="PartialResults" Text="{loc:StudioText PartialPreview}" Classes="secondary information"
+                   IsVisible="False" VerticalAlignment="Center"
+                   ToolTip.Tip="{loc:StudioText PartialPreviewHelp}" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="3">
+          <Button x:Name="FirstResultRowButton" Classes="action icon-only" IsEnabled="False"
+                  AutomationProperties.Name="{loc:StudioText GoFirstRow}" ToolTip.Tip="{loc:StudioText FirstRow}">
+            <PathIcon Classes="action-icon" Data="{StaticResource ActionFirstRowIcon}" />
+          </Button>
+          <Button x:Name="LastResultRowButton" Classes="action icon-only" IsEnabled="False"
+                  AutomationProperties.Name="{loc:StudioText GoLastRow}" ToolTip.Tip="{loc:StudioText LastRow}">
+            <PathIcon Classes="action-icon" Data="{StaticResource ActionLastRowIcon}" />
+          </Button>
+        </StackPanel>
+        <Button Grid.Column="4" x:Name="CopyResultRowButton" Classes="action compact" IsEnabled="False"
+                AutomationProperties.Name="{loc:StudioText CopySelectedRow}" ToolTip.Tip="{loc:StudioText CopySelectedRowTip}">
+          <StackPanel Classes="action-label">
+            <PathIcon Classes="action-icon" Data="{StaticResource ActionCopyIcon}" />
+            <TextBlock Text="{loc:StudioText CopyRow}" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="5" x:Name="ClearResultsButton" Classes="action icon-only" IsEnabled="False"
+                AutomationProperties.Name="{loc:StudioText ClearResults}" ToolTip.Tip="{loc:StudioText ClearResults}">
+          <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
+        </Button>
+      </Grid>
+    </Border>
+    <Grid Grid.Row="1" Background="{DynamicResource StudioSurfaceBrush}">
+      <TableView x:Name="QueryResultsGrid" x:CompileBindings="False" SelectionMode="Single" CanUserResizeColumns="True"
+                 AutomationProperties.Name="{loc:StudioText QueryResults}" IsVisible="False">
+        <TableView.Styles>
+          <Style Selector="Button.result-column-sort">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Padding" Value="0,1" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+          </Style>
+          <Style Selector="TableViewRow">
+            <Setter Property="Padding" Value="0,3" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource StudioDividerBrush}" />
+          </Style>
+          <Style Selector="TableViewRow:selected /template/ Border#Border">
+            <Setter Property="Background" Value="{DynamicResource StudioListSelectionBrush}" />
+          </Style>
+          <Style Selector="TableViewCell">
+            <Setter Property="ToolTip.Tip" Value="{ReflectionBinding $self.Content}" />
+          </Style>
+          <Style Selector="TableViewCell TextBlock">
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+          </Style>
+        </TableView.Styles>
+      </TableView>
+      <TextBlock x:Name="ResultsHint" Classes="secondary" Text="{loc:StudioText QueryResultsHint}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                 TextWrapping="Wrap" Margin="10" />
+      <ProgressBar x:Name="ResultsProgress" Width="100" Height="4" IsIndeterminate="True" IsVisible="False"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Grid>
+  </Grid>
+</UserControl>

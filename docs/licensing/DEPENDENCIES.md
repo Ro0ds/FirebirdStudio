@@ -1,10 +1,11 @@
 # Third-party dependency inventory
 
-Direct package references and centrally pinned versions currently present in the project (including the pinned transitive CliWrap dependency). This is **not** a complete transitive SBOM: the .NET SDK is unavailable in the current work environment, so NuGet restore and `dotnet list package --include-transitive` could not be run.
+This inventory covers direct package references and centrally pinned versions, including the pinned transitive CliWrap dependency. The NuGet restore graph provides the full list of resolved transitive packages.
 
 | Package | Pinned version | Upstream / package evidence | Declared package license | Notes |
 |---|---:|---|---|---|
 | Avalonia | 12.1.6 | https://github.com/AvaloniaUI/Avalonia · https://www.nuget.org/packages/Avalonia/12.1.6 | MIT | .NET 10 compatible; NuGet page lists MIT |
+| Avalonia.Controls.ColorPicker | 12.1.6 | https://www.nuget.org/packages/Avalonia.Controls.ColorPicker/12.1.6 | MIT | Visual color picker and palette from the Avalonia upstream project |
 | Avalonia.Desktop | 12.1.6 | https://www.nuget.org/packages/Avalonia.Desktop/12.1.6 | MIT | Pulls platform-specific Avalonia packages including Native, Win32, X11, Skia and HarfBuzz |
 | Avalonia.Themes.Fluent | 12.1.6 | https://www.nuget.org/packages/Avalonia.Themes.Fluent/12.1.6 | MIT | Same Avalonia upstream project |
 | Avalonia.Fonts.Inter | 12.1.6 | https://www.nuget.org/packages/Avalonia.Fonts.Inter/12.1.6 | MIT | Package license is MIT; bundled Inter font asset is separately licensed under SIL Open Font License 1.1 and its notice must be preserved |

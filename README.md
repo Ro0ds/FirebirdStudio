@@ -4,6 +4,8 @@ A cross-platform, open-source Firebird database IDE foundation for Windows, Linu
 
 > **Project status: functional early-development release.** Connection management, metadata exploration, SQL editing/execution, query history, editor recovery, and staged connection diagnostics are implemented. It is not yet a complete IBExpert replacement.
 
+Portable Windows x64 packages are available from the [latest stable release](https://github.com/Ro0ds/FirebirdStudio/releases/latest). See the [product roadmap](docs/ROADMAP.md) and the [desktop redesign plan](docs/design/DESKTOP-REDESIGN.md).
+
 ## Technology
 
 - C# / .NET 10
@@ -23,11 +25,13 @@ A cross-platform, open-source Firebird database IDE foundation for Windows, Linu
 - Persist non-secret profile metadata as JSON in the current user's application-data directory.
 - Write profile files atomically and restrict Unix directory/file permissions to the current user.
 - Diagnose Firebird connections in stages: profile validation, DNS resolution, TCP reachability, and provider handshake/authentication, with elapsed times and detailed failure information.
-- Connect and disconnect long-lived Firebird sessions from the desktop connection list.
+- Connect and disconnect long-lived Firebird sessions from the desktop connection list. Choose a detailed or minimal connection list and a light or dark theme. These preferences are saved locally.
+- In **File → Settings**, customize the execution shortcut, pick accent and SQL selection colors, or choose English or Brazilian Portuguese. The language change applies after restart.
+- Run SQL with typed named parameters. Format the selection or active document with `Ctrl+Shift+F`.
+- Sort results by clicking a column heading, jump to the first or last row, and copy a row from its context menu.
 - Automatically switch to Messages when an application/database error occurs, show an immediate footer notification, and retain detailed exception information, including stack traces and inner exceptions.
-- Maintain a timestamped Messages history, newest first, with soft green success, yellow information, and red error entries.
-- Autosave open SQL editor tabs 700 ms after typing stops; `Ctrl+S` saves immediately and displays a footer confirmation.
-- Persist all open SQL editor tabs, titles, and query contents between application sessions; autosave after typing pauses, support Ctrl+S, recover after unexpected shutdowns, and notify the user when saved tabs are restored. Tabs can be renamed or closed from their context menu; closing a tab removes it from the saved workspace.
+- Maintain a timestamped Messages history, newest first, with severity labels and icons, short summaries, and copyable details.
+- Save open SQL tabs, titles, contents, and the active tab 700 ms after typing stops or immediately with `Ctrl+S`. The workspace is restored after normal exit or unexpected shutdown. Tabs can be renamed or closed from their context menu.
 - Switch from Messages to Results after successful SQL execution when Messages is currently selected.
 - Keep active provider connections owned by an application-level session manager, with duplicate-session prevention and deterministic asynchronous disposal.
 - Display active session count and server version; close active sessions when the main window closes.
@@ -39,8 +43,8 @@ A cross-platform, open-source Firebird database IDE foundation for Windows, Linu
 - Native credential-store integration is provisional and still requires platform-specific integration tests.
 - IBExpert-specific UI/metadata options (object-name capitalization, metadata cache, SQL plan display, startup auto-connect, idle disconnect, backup defaults, and pre/post-connect scripts); these belong to later feature areas, not the provider's connection string.
 - Legacy NetBEUI/SPX transports and trusted authentication; neither is exposed until support is verified for the cross-platform provider targets.
-- Multi-statement SQL scripts, parameter binding UI, editable result grids, data editing, schema/data comparison, backup/restore, monitoring, and import/export.
-- Real-server integration tests across supported Firebird versions and OS-specific release packaging.
+- Multi-statement SQL scripts, editable result grids, data editing, schema/data comparison, backup/restore, monitoring, and import/export.
+- Real-server integration tests across targeted Firebird versions, and release packages for Linux and macOS.
 
 The `ISecureCredentialStore` abstraction is implemented by an Infrastructure adapter backed by Latchkey. The adapter uses only the native OS credential backend and does not configure a plaintext fallback. Latchkey is a provisional early-stage dependency until Windows, macOS, and Linux native integration tests pass.
 
@@ -64,7 +68,7 @@ The connection profile editor can be used without a Firebird server. The connect
 
 ## Platform notes
 
-Avalonia supports Windows, macOS, and Linux, but support tiers vary by OS release. The application has not yet been built or smoke-tested on all three platforms. Linux may require X11 dependencies; native Wayland is an optional backend in Avalonia 12.1.x. See `docs/architecture/PLATFORM-SUPPORT.md`.
+Windows x64 is the current packaged release target. Linux and macOS remain development targets. See the [platform support policy](docs/architecture/PLATFORM-SUPPORT.md) for the validation scope and the [Windows packaging guide](docs/releasing/WINDOWS.md) for release instructions.
 
 ## Security notes
 
@@ -74,8 +78,9 @@ Avalonia supports Windows, macOS, and Linux, but support tiers vary by OS releas
 - The Firebird provider receives a connection string containing the password in process memory; this is currently unavoidable with the provider API used here. Clearing the UI field does not guarantee zeroization of immutable managed strings.
 - If the OS credential facility is unavailable, password saving fails closed; manual one-session connection remains available without writing a plaintext fallback.
 - The persistent SQL editor workspace writes open editor tabs to local application data 700 ms after typing stops or immediately on `Ctrl+S`. It is retained across normal application exits and unexpected shutdowns. Like query history, it contains SQL text; avoid embedding secrets in SQL statements.
-- SQL execution is now available for one statement at a time. Each execution uses a transaction that is committed on success and rolled back on failure when possible. Result display is capped at 500 rows and approximately 2 million characters; BLOB/ARRAY values are represented by placeholders. Query results are displayed in a read-only, dynamically generated TableView. Query history stores the exact submitted SQL locally (including any literal values in it), retains the latest 250 executions, and restores a selected entry into the editor on double-click. It can be docked on the right or moved to a tab beside the SQL editor. Press F5 to execute the selected SQL, or the current line when no selection exists. Avoid embedding secrets in SQL text.
-- Domain metadata is fetched in pages of 200 objects. Next/previous page entries replace the currently displayed page, keeping the tree bounded instead of accumulating all domain objects.
+- SQL execution runs one statement at a time. Each execution uses a transaction that is committed on success and rolled back on failure when possible. Results are read-only and capped at 500 rows and approximately 2 million characters. BLOB and ARRAY values appear as placeholders. Query history stores the exact submitted SQL locally, including literal values, and retains the latest 250 executions. Double-click an entry to restore it. Avoid embedding secrets in SQL text.
+
+Press `F9` by default to execute the selection or the single statement in the editor. If the document contains multiple statements, select one to run. A custom shortcut can be set in **File → Settings → Keyboard shortcuts**.
 
 ## License
 
@@ -85,7 +90,7 @@ Third-party packages and tools are not relicensed by this project. See `docs/lic
 
 ## Automated tests
 
-A test project is included at `tests/FirebirdStudio.Tests`. It covers connection-profile validation, profile JSON persistence and fail-closed loading, provider connection-string mapping, session lifecycle using a fake provider connection, and the credential adapter using an in-memory fake `ILatchkey`. The fake vault is test-only and is never used by the application.
+A test project is included at `tests/FirebirdStudio.Tests`. It covers connection-profile validation, profile JSON persistence and fail-closed loading, provider connection-string mapping, session lifecycle using a fake provider connection, the credential adapter using an in-memory fake `ILatchkey`, SQL completion, formatter behavior, and DDL previews. The fake vault is test-only and is never used by the application.
 
 Run the suite from the solution root:
 
@@ -96,6 +101,10 @@ dotnet test
 The suite does not connect to a Firebird server or write to a user database. Native credential-store round-trip tests on Windows, macOS, and Linux remain separate platform integration tests.
 
 
-### Initial read-only metadata explorer
+## Read-only metadata explorer
 
-The desktop client can read user tables, views, procedures, triggers, indexes, and domains from Firebird system catalogs on an active session. Domain inventory is paged in batches of 200 to avoid rendering tens of thousands of tree nodes at once. The inventory is displayed as an expandable tree: categories expand to objects, tables expand to columns and constraints, key constraints expand to key columns, indexes expand to ordered segments, and procedures expand to input/output parameters and source. Foreign keys show their referenced table/column mapping and referential actions. Top-level category order and system/light/dark theme preference are persisted locally; moving a category leaves its child objects attached. The desktop shell uses a standard File, Connection, Query, and View menu, with compact typography and a resizable query-history pane that can move to an editor tab. The metadata pane can also be resized. Catalog reads are asynchronous and cancellation-aware. This is not a full metadata editor or a verified compatibility guarantee; the catalog queries still require integration testing against Firebird 2.5, 3, 4, and 5. Packaged procedures are not yet disambiguated. Persistent query history stores submitted statements and supports double-click restore. SQL execution currently supports one statement per execution, commits a successful statement, rolls back on execution failure where possible, and displays up to 500 result rows in a read-only grid. Selecting a table opens a dedicated tab with its field metadata, a first-100-row data preview, constraints, and a generated DDL draft. The DDL draft is intentionally marked for review: domains, defaults, computed fields, triggers, and all check-constraint definitions are not yet fully reconstructed. Multi-statement scripts, parameter binding, and editable result grids remain future work. SQL text is stored exactly as submitted in the local query-history file; avoid putting secrets in SQL literals.
+The explorer reads user tables, views, procedures, triggers, indexes, and domains from the active connection. It loads each category in batches of up to 200 objects and appends more as the user scrolls. The tree shows columns, constraints, ordered key/index segments, and procedure parameters and source where available. Category order is saved locally.
+
+Table and view inspectors display field metadata and browse data in server-side pages of 200 rows. Tables also show constraints and a generated `CREATE TABLE` draft. View, trigger, and procedure inspectors format the corresponding source read from Firebird. The table draft covers the metadata available to the app and requires review before reuse in a migration.
+
+See the [metadata explorer guide](docs/architecture/METADATA-EXPLORER.md) and [SQL workflow guide](docs/architecture/SQL-EXECUTION.md) for details. Real-server integration coverage for Firebird 2.5, 3, 4, and 5 is tracked in the [compatibility matrix](docs/architecture/FIREBIRD-COMPATIBILITY.md).

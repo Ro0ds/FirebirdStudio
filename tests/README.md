@@ -13,6 +13,7 @@ The `FirebirdStudio.Tests` project currently contains deterministic unit tests f
 - Firebird provider connection-string mapping for remote and embedded profiles, including the no-pooling override used by connection tests.
 - Credential adapter save/get/delete, missing entries, stable profile-scoped keys, invalid profile identifiers, pre-cancelled operations, and zeroing of the retrieved byte buffer.
 - Session connect/disconnect, duplicate session rejection, password redaction, cancellation and disposal, pooling configuration, and manager disposal behavior.
+- SQL completion, SQL formatting, generated table DDL, and catalog source previews for views, triggers, procedures, and domains. Multiline comparisons normalize line endings to support LF and CRLF checkouts.
 
 The session manager uses an internal provider-connection factory seam. Tests inject a fake provider connection; they do not connect to a Firebird server. The credential adapter tests inject a fake `ILatchkey`; they do not substitute a plaintext backend into production code.
 
@@ -24,4 +25,4 @@ Real Firebird integration tests must use explicitly disposable test databases an
 
 ## Verification status
 
-The current execution environment does not contain the .NET SDK. Source and project-file checks can be run here, but C# compilation, NuGet restore, test discovery, and test execution must be confirmed by `dotnet restore`, `dotnet build`, and `dotnet test` on a .NET 10 SDK machine. Do not report these tests as passing until those commands have actually completed successfully.
+All 96 tests passed on Windows in Release configuration for v0.1.4. The Windows packaging workflow runs the suite before creating release assets. Run `python scripts/verify-structure.py` for the additional source and project structure checks.

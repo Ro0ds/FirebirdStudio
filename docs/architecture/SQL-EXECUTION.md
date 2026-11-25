@@ -9,8 +9,8 @@
 - Text values are clipped to 4,000 characters in the preview. BLOB and ARRAY values are represented by placeholders to avoid eagerly materializing large values; other binary values are represented by a maximum 64-byte hexadecimal preview.
 - Named parameters written as `:PARAMETER_NAME` are detected outside SQL string literals, quoted identifiers, and comments. Before execution, a dialog asks for each value and its type (Text, Integer, Decimal, Date, Time, Timestamp, Boolean, or NULL). Placeholders are normalized for the Firebird ADO.NET provider and values are bound as parameters; they are not interpolated into SQL text.
 - The Cancel action requests cancellation through the provider token. The server/provider may take time to honor cancellation.
-- The SQL editor can format the selected SQL text, or the full document when there is no selection, using Query → Format SQL (`Ctrl+Shift+F`). The formatter currently applies token-aware spacing and common DML/DDL clause layout; it is not a complete Firebird parser or lossless schema formatter. Review generated output, especially procedural DDL, before executing it. The table-inspector DDL preview is assembled from the metadata currently exposed by the application and is not passed through the SQL formatter.
-- Errors automatically select the Messages page and display a temporary footer notification. The Messages page keeps the latest 500 success, information, and error events in reverse chronological order, each with a timestamp and soft green/yellow/red severity styling. Error entries retain exception types, stack traces, and inner-exception details (with long individual details truncated at 30,000 characters). Successful SQL execution adds a green entry and switches from Messages to Results only when Messages was the selected page.
+- The SQL editor can format the selected SQL text, or the full document when there is no selection, using Query → Format SQL (`Ctrl+Shift+F`). The formatter currently applies token-aware spacing and common DML/DDL clause layout; it is not a complete Firebird parser or lossless schema formatter. Review generated output, especially procedural DDL, before executing it. The table inspector displays its generated DDL directly. View sources use query-formatting rules, trigger and procedure sources use procedural formatting, and domain default and validation expressions retain their catalog text.
+- Errors automatically select the Messages page and display a temporary footer notification. The log shows the latest 500 events, newest first, with a timestamp, severity, and summary. Select an entry to read and copy its details. Error entries retain exception types, stack traces, and inner exceptions. Individual details are capped at 30,000 characters. Successful SQL execution adds a success entry and switches from Messages to Results when Messages was selected.
 
 ## Persistent history
 
@@ -28,9 +28,13 @@ Multi-statement scripts, multiple result sets, structured/editable result grids,
 
 ## Result presentation and table inspection
 
-Query results are rendered in a read-only TableView with columns generated from the provider result metadata. The current preview remains capped at 500 rows and approximately 2 million characters. Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
+The Results tab shows the execution state and, when available, the row count and elapsed time. It marks the preview as partial when the result exceeds the row or aggregate data limit. The read-only grid uses columns generated from the provider result metadata. Click a column header to sort the loaded rows in ascending order. Click it again for descending order. Use `ORDER BY` in the SQL statement to order the full result on the server. The **First row** and **Last row** buttons select and scroll to the first or last loaded row in the current order. Resize columns to inspect long values. Use **Copy row** in the toolbar or a row's context menu to copy the preview values as tab-separated text. An empty result set still displays its column headers.
 
-F5 executes the selected SQL text; without a selection, it executes the entire editor document when it contains one statement. If multiple statements are present, the user must select one. Query history can be docked to the right or moved into a tab alongside the SQL editor.
+Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
+
+The toolbar above the editor shows the active connection next to **Execute**, **Cancel**, and **Format SQL**. The output divider resizes Results and Messages while keeping room for the editor. SQL tabs and inspectors have distinct icons in a horizontally scrollable tab strip. Application, provider, and runtime versions are available in **Help → About Firebird Studio**.
+
+F9 executes the selected SQL text by default. With no selection, it executes the editor document when it contains one statement. If multiple statements are present, select one to execute. To choose a different key, open **File → Settings**, select a key under **Execute SQL**, and save. **Restore default** selects F9 again. The selected shortcut appears in **Query → Execute** and on the toolbar. Query history can be docked to the right or moved into a tab alongside the SQL editor.
 
 
 ## SQL autocomplete and table data browsing
@@ -40,10 +44,10 @@ F5 executes the selected SQL text; without a selection, it executes the entire e
 - Table/view data browsing fetches 200 rows per request using Firebird `ROWS` pagination. Primary-key columns are used for forward/backward keyset seeks when available, avoiding deep-offset scans. Without a primary key, the browser falls back to offset paging and row order is not guaranteed. This is separate from the SQL editor's query-result preview limits.
 
 
-## SQL editor crash recovery
+## SQL editor workspace and crash recovery
 
 - Open SQL editor tabs, tab titles, query contents, and the active editor index are autosaved 700 ms after typing stops. `Ctrl+S` also writes the recovery snapshot immediately. Successful writes show a temporary centered footer confirmation (`Editor autosaved` or `Editor saved`).
 - Recovery snapshots are stored in `sql-editor-recovery.json` under the application-data directory. Writes use a temporary file and atomic replacement; Unix permissions are restricted to the current user.
 - When a recovery snapshot is found at startup, all saved editor tabs are restored and the Messages page displays a notification. Restored SQL is never executed automatically.
-- The recovery snapshot is deleted after a normal application exit. An unexpected process termination leaves it available for the next launch.
+- Normal shutdown saves the latest workspace and retains it for the next launch. After an unexpected shutdown, the next launch restores the most recent saved snapshot.
 - The recovery file contains SQL text and is local application data, not a secret store. Avoid embedding credentials or other secrets in SQL statements.
