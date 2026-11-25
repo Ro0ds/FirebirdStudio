@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="FirebirdStudio.Desktop.Views.AboutWindow"
+        Width="380"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Title="About Firebird Studio">
+  <StackPanel Margin="18" Spacing="14">
+    <TextBlock x:Name="ApplicationVersionText" Classes="section-title" />
+    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8" ColumnSpacing="16">
+      <TextBlock Text="Firebird provider" />
+      <TextBlock Grid.Column="1" x:Name="ProviderVersionText" Classes="secondary" />
+      <TextBlock Grid.Row="1" Text="Avalonia" />
+      <TextBlock Grid.Row="1" Grid.Column="1" x:Name="AvaloniaVersionText" Classes="secondary" />
+      <TextBlock Grid.Row="2" Text=".NET runtime" />
+      <TextBlock Grid.Row="2" Grid.Column="1" x:Name="RuntimeVersionText" Classes="secondary" />
+    </Grid>
+    <Button x:Name="CloseAboutButton" Classes="action" Content="Close" IsCancel="True" IsDefault="True"
+            HorizontalAlignment="Right" />
+  </StackPanel>
+</Window>

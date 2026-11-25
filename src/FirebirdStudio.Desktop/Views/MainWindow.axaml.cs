@@ -88,13 +88,14 @@ public sealed partial class MainWindow : Window
     private readonly MenuItem _moveCategoryUpMenuItem;
     private readonly MenuItem _moveCategoryDownMenuItem;
     private readonly MenuItem _executeButton;
+    private readonly Button _executeQueryAction;
     private readonly MenuItem _sqlAutocompleteMenuItem;
     private readonly MenuItem _cancelQueryButton;
     private readonly QueryHistoryView _dockedQueryHistory;
     private readonly QueryHistoryView _tabbedQueryHistory;
     private readonly QueryResultsView _queryResults;
     private readonly TabControl _editorTabs;
-    private sealed record SqlEditorState(TabItem Tab, AvaloniaEdit.TextEditor Editor, TextBlock ExecutionHint);
+    private sealed record SqlEditorState(TabItem Tab, AvaloniaEdit.TextEditor Editor);
 
     private readonly List<SqlEditorState> _sqlEditors = [];
     private TabItem? _lastActiveSqlTab;
@@ -131,7 +132,7 @@ public sealed partial class MainWindow : Window
     private readonly TabItem _messagesTab;
     private readonly TextBlock _footerNotificationText;
     private readonly TextBlock _connectionStateText;
-    private readonly TextBlock _currentVersionText;
+    private readonly Version _currentVersion;
     private string? _currentTableDetailsName;
 
     private ConnectionProfile? SelectedConnection => (_connectionsList.SelectedItem as ConnectionListItem)?.Profile;
@@ -142,7 +143,7 @@ public sealed partial class MainWindow : Window
 
         var sqlEditor = this.FindControl<AvaloniaEdit.TextEditor>("SqlEditor")!;
         var sqlEditorTab = this.FindControl<TabItem>("SqlEditorTab")!;
-        ConfigureSqlEditorTab(sqlEditorTab, sqlEditor, this.FindControl<TextBlock>("SqlExecutionHint")!);
+        ConfigureSqlEditorTab(sqlEditorTab, sqlEditor);
         _lastActiveSqlTab = sqlEditorTab;
         ApplySqlSyntaxHighlighting(sqlEditor);
 
@@ -187,6 +188,7 @@ public sealed partial class MainWindow : Window
         _moveCategoryUpMenuItem = this.FindControl<MenuItem>("MoveCategoryUpMenuItem")!;
         _moveCategoryDownMenuItem = this.FindControl<MenuItem>("MoveCategoryDownMenuItem")!;
         _executeButton = this.FindControl<MenuItem>("ExecuteMenuItem")!;
+        _executeQueryAction = this.FindControl<Button>("ExecuteQueryButton")!;
         _sqlAutocompleteMenuItem = this.FindControl<MenuItem>("SqlAutocompleteMenuItem")!;
         _sqlAutocompleteMenuItem.Click += async (_, _) => await ShowSqlCompletionAsync();
         this.FindControl<MenuItem>("FormatSqlMenuItem")!.Click += (_, _) => FormatActiveSql();
@@ -239,6 +241,8 @@ public sealed partial class MainWindow : Window
         _disconnectButton = this.FindControl<MenuItem>("DisconnectMenuItem")!;
         _messagesView = this.FindControl<MessagesView>("Messages")!;
         _statusText = _messagesView.CurrentStatus;
+        this.FindControl<TextBlock>("WorkspaceStatusText")!
+            .Bind(TextBlock.TextProperty, _statusText.GetObservable(TextBlock.TextProperty));
         _messagesView.BindEntries(_messages);
         _resultsMessagesTabs = this.FindControl<TabControl>("ResultsMessagesTabs")!;
         _resultsTab = this.FindControl<TabItem>("ResultsTab")!;
@@ -254,11 +258,9 @@ public sealed partial class MainWindow : Window
             await SetConnectionDisplayModeAsync(_preferences.ConnectionDisplayMode == "Detailed" ? "Minimal" : "Detailed");
         _footerNotificationText = this.FindControl<TextBlock>("FooterNotificationText")!;
         _connectionStateText = this.FindControl<TextBlock>("ConnectionStateText")!;
-        _currentVersionText = this.FindControl<TextBlock>("CurrentVersionText")!;
-        var currentVersion = GitHubReleaseChecker.NormalizeVersion(
+        _currentVersion = GitHubReleaseChecker.NormalizeVersion(
             typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 1, 0));
-        Title = $"Firebird Studio - {currentVersion}";
-        _currentVersionText.Text = $"Firebird Studio {currentVersion}";
+        Title = $"Firebird Studio - {_currentVersion}";
 
         _connectionsList.ItemsSource = _connectionItems;
         var detailedConnectionsMenuItem = this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!;
@@ -282,6 +284,9 @@ public sealed partial class MainWindow : Window
         _moveCategoryDownMenuItem.Click += OnMoveCategoryDownClick;
         _executeButton.Click += OnExecuteClick;
         _cancelQueryButton.Click += OnCancelQueryClick;
+        _executeQueryAction.Click += OnExecuteClick;
+        this.FindControl<Button>("CancelQueryButton")!.Click += OnCancelQueryClick;
+        this.FindControl<Button>("FormatQueryButton")!.Click += (_, _) => FormatActiveSql();
         _connectionsList.SelectionChanged += OnSelectionChanged;
         _connectionsList.DoubleTapped += OnConnectionsDoubleTapped;
         _connectionsList.AddHandler(InputElement.KeyDownEvent, OnConnectionsKeyDown, RoutingStrategies.Tunnel);
@@ -314,6 +319,8 @@ public sealed partial class MainWindow : Window
             await SetThemeAsync(_preferences.Theme == "Dark" ? "Light" : "Dark");
         _checkForUpdatesMenuItem.Click += async (_, _) =>
             await CheckForUpdatesAsync(manual: true, cancellationToken: _updateCheckLifetime.Token);
+        this.FindControl<MenuItem>("AboutMenuItem")!.Click += async (_, _) =>
+            await new AboutWindow(_currentVersion).ShowDialog(this);
         _historyDockRightMenuItem.Click += (_, _) => SetHistoryDockMode(true);
         _historyDockTabMenuItem.Click += (_, _) => SetHistoryDockMode(false);
         ApplyExecuteSqlShortcut();
@@ -2113,9 +2120,8 @@ public sealed partial class MainWindow : Window
     {
         var shortcut = _preferences.ExecuteSqlKey;
         _executeButton.InputGesture = new KeyGesture(shortcut);
-        var hint = GetSqlExecutionHint(shortcut);
-        foreach (var editor in _sqlEditors)
-            editor.ExecutionHint.Text = hint;
+        this.FindControl<TextBlock>("ExecuteShortcutText")!.Text = shortcut.ToString();
+        ToolTip.SetTip(_executeQueryAction, GetSqlExecutionHint(shortcut));
     }
 
     private static string GetSqlExecutionHint(Key shortcut) =>
@@ -2488,11 +2494,11 @@ public sealed partial class MainWindow : Window
         return _sqlEditors[0];
     }
 
-    private void ConfigureSqlEditorTab(TabItem tab, AvaloniaEdit.TextEditor editor, TextBlock executionHint)
+    private void ConfigureSqlEditorTab(TabItem tab, AvaloniaEdit.TextEditor editor)
     {
         tab.Tag = editor;
-        executionHint.Text = GetSqlExecutionHint(_preferences.ExecuteSqlKey);
-        _sqlEditors.Add(new SqlEditorState(tab, editor, executionHint));
+        tab.Classes.Add("sql-editor-tab");
+        _sqlEditors.Add(new SqlEditorState(tab, editor));
         editor.Document.TextChanged += (_, _) =>
         {
             if (!_isRestoringEditors)
@@ -2531,28 +2537,8 @@ public sealed partial class MainWindow : Window
         };
         ApplySqlSyntaxHighlighting(editor);
 
-        var content = new Grid();
-        content.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        content.RowDefinitions.Add(new RowDefinition(GridLength.Star));
-        var executionHint = new TextBlock
-        {
-            Classes = { "secondary" },
-            TextWrapping = TextWrapping.Wrap
-        };
-        var hint = new Border
-        {
-            Padding = new Avalonia.Thickness(7),
-            BorderThickness = new Avalonia.Thickness(0, 0, 0, 1),
-            Child = executionHint
-        };
-        content.Children.Add(hint);
-        var editorHost = new Grid();
-        Grid.SetRow(editorHost, 1);
-        editorHost.Children.Add(editor);
-        content.Children.Add(editorHost);
-
-        var tab = new TabItem { Header = $"SQL Editor {number}", Content = content };
-        ConfigureSqlEditorTab(tab, editor, executionHint);
+        var tab = new TabItem { Header = $"SQL Editor {number}", Content = editor };
+        ConfigureSqlEditorTab(tab, editor);
         var insertIndex = _sqlEditors.Count - 1;
         _editorTabs.Items.Insert(insertIndex, tab);
         _editorTabs.SelectedItem = tab;
@@ -2943,6 +2929,7 @@ public sealed partial class MainWindow : Window
             var tab = new TabItem
             {
                 Header = $"{GetMetadataDisplayKind(item.Kind)}: {item.Name}",
+                Classes = { "inspector-tab" },
                 Tag = new MetadataObjectTabIdentity(profile.Id, item.Kind, item.Name),
                 Content = new ScrollViewer { Content = panel }
             };

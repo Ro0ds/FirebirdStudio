@@ -32,7 +32,9 @@ The Results tab shows the execution state and, when available, the row count and
 
 Table selection opens a table-inspection tab containing field/domain/type/nullability/position metadata, paged table data, constraint information, and a generated `CREATE TABLE` draft. The DDL is a convenience preview, not a lossless schema export: domain definitions, defaults, computed expressions, triggers, check constraints, collations, and other database objects are not all reconstructed. Review it before use.
 
-F9 executes the selected SQL text by default. With no selection, it executes the editor document when it contains one statement. If multiple statements are present, select one to execute. To choose a different key, open **File → Settings**, select a key under **Execute SQL**, and save. **Restore default** selects F9 again. The selected shortcut appears in **Query → Execute** and in the editor. Query history can be docked to the right or moved into a tab alongside the SQL editor.
+The toolbar above the editor shows the active connection next to **Execute**, **Cancel**, and **Format SQL**. The output divider resizes Results and Messages while keeping room for the editor. SQL tabs and inspectors have distinct icons in a horizontally scrollable tab strip. Application, provider, and runtime versions are available in **Help → About Firebird Studio**.
+
+F9 executes the selected SQL text by default. With no selection, it executes the editor document when it contains one statement. If multiple statements are present, select one to execute. To choose a different key, open **File → Settings**, select a key under **Execute SQL**, and save. **Restore default** selects F9 again. The selected shortcut appears in **Query → Execute** and on the toolbar. Query history can be docked to the right or moved into a tab alongside the SQL editor.
 
 
 ## SQL autocomplete and table data browsing
