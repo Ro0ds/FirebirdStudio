@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
              xmlns:services="using:FirebirdStudio.Desktop.Services"
              x:Class="FirebirdStudio.Desktop.Views.QueryHistoryView">
   <UserControl.Styles>
@@ -17,24 +18,24 @@
   </UserControl.Styles>
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
-      <TextBlock x:Name="HistoryTitle" Text="Query history" Classes="panel-title" IsVisible="False"
+      <TextBlock x:Name="HistoryTitle" Text="{loc:StudioText QueryHistory}" Classes="panel-title" IsVisible="False"
                  VerticalAlignment="Center" />
       <Button Grid.Column="1" x:Name="ClearHistoryButton" Classes="action compact"
               IsEnabled="{Binding !!#HistoryEntries.ItemCount}"
-              AutomationProperties.Name="Clear query history" ToolTip.Tip="Clear query history">
+              AutomationProperties.Name="{loc:StudioText ClearHistory}" ToolTip.Tip="{loc:StudioText ClearHistory}">
         <StackPanel Classes="action-label">
           <PathIcon Classes="action-icon" Data="{StaticResource ActionClearIcon}" />
-          <TextBlock Text="Clear" />
+          <TextBlock Text="{loc:StudioText Clear}" />
         </StackPanel>
       </Button>
       <Button Grid.Column="2" x:Name="CollapseHistoryButton" Classes="action icon-only" IsVisible="False"
-              AutomationProperties.Name="Collapse query history" ToolTip.Tip="Collapse query history">
+              AutomationProperties.Name="{loc:StudioText CollapseHistory}" ToolTip.Tip="{loc:StudioText CollapseHistory}">
         <PathIcon Classes="action-icon" Data="{StaticResource ActionCollapseRightIcon}" />
       </Button>
     </Grid>
     <Grid Grid.Row="1">
       <ListBox x:Name="HistoryEntries" SelectionMode="Single" Background="Transparent"
-               ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Query history entries">
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="{loc:StudioText HistoryEntries}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="services:QueryHistoryEntry">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
@@ -51,19 +52,19 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <TextBlock Text="No queries in history" Classes="secondary" IsVisible="{Binding !#HistoryEntries.ItemCount}"
+      <TextBlock Text="{loc:StudioText NoHistory}" Classes="secondary" IsVisible="{Binding !#HistoryEntries.ItemCount}"
                  IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Grid>
     <Border Grid.Row="2" x:Name="HistoryPreview" IsVisible="False" Height="160" Padding="0,6,0,0"
             BorderBrush="{DynamicResource StudioDividerBrush}" BorderThickness="0,1,0,0">
       <Grid RowDefinitions="Auto,*" RowSpacing="6">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-          <TextBlock Text="SQL preview" Classes="panel-title" VerticalAlignment="Center" />
+          <TextBlock Text="{loc:StudioText SqlPreview}" Classes="panel-title" VerticalAlignment="Center" />
           <Button Grid.Column="1" x:Name="RestoreHistoryButton" Classes="action compact"
-                  AutomationProperties.Name="Restore SQL to editor" ToolTip.Tip="Restore to editor (Enter in history)">
+                  AutomationProperties.Name="{loc:StudioText RestoreSql}" ToolTip.Tip="{loc:StudioText RestoreSqlShortcut}">
             <StackPanel Classes="action-label">
               <PathIcon Classes="action-icon" Data="{StaticResource ActionRestoreIcon}" />
-              <TextBlock Text="Restore" />
+              <TextBlock Text="{loc:StudioText Restore}" />
             </StackPanel>
           </Button>
         </Grid>
@@ -71,7 +72,7 @@
                  ScrollViewer.VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource StudioMonospaceFont}"
                  SelectionBrush="{DynamicResource SqlSelectionBackground}"
                  SelectionForegroundBrush="{DynamicResource SqlSelectionForeground}"
-                 AutomationProperties.Name="Selected query SQL preview" />
+                 AutomationProperties.Name="{loc:StudioText SelectedSqlPreview}" />
       </Grid>
     </Border>
   </Grid>

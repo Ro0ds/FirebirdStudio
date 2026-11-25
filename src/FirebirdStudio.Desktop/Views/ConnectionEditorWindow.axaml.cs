@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Connections;
+using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
@@ -65,17 +66,17 @@ public sealed partial class ConnectionEditorWindow : Window
         var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storageProvider is null)
         {
-            SetMessage("The file picker is not available on this platform.");
+            SetMessage(T("FilePickerUnavailable"));
             return;
         }
 
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Select a Firebird database",
+            Title = T("PickFirebirdDatabase"),
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Firebird database files")
+                new FilePickerFileType(T("FirebirdDatabaseFiles"))
                 {
                     Patterns = ["*.gdb", "*.GDB", "*.fdb", "*.FDB"]
                 }
@@ -90,12 +91,12 @@ public sealed partial class ConnectionEditorWindow : Window
         if (!string.Equals(extension, ".gdb", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(extension, ".fdb", StringComparison.OrdinalIgnoreCase))
         {
-            SetMessage("Please select a Firebird database file with a .GDB or .FDB extension.");
+            SetMessage(T("InvalidDatabaseExtension"));
             return;
         }
 
         SetText("DatabaseInput", selectedPath);
-        SetMessage($"Selected database: {Path.GetFileName(selectedPath)}");
+        SetMessage(T("DatabaseSelected", Path.GetFileName(selectedPath)));
     }
 
     private async void OnTestConnectionClick(object? sender, RoutedEventArgs e)
@@ -111,16 +112,16 @@ public sealed partial class ConnectionEditorWindow : Window
         var password = this.FindControl<TextBox>("PasswordInput")?.Text ?? string.Empty;
         var testButton = this.FindControl<Button>("TestConnectionButton")!;
         testButton.IsEnabled = false;
-        SetMessage("Testing connection...");
+        SetMessage(T("TestingConnection"));
 
         try
         {
             var result = await _connectionTester.TestAsync(profile, password);
             var message = result.Succeeded && !string.IsNullOrWhiteSpace(result.ServerVersion)
-                ? $"{result.Message}{Environment.NewLine}Server version: {result.ServerVersion}"
+                ? result.Message + Environment.NewLine + T("ServerVersion", result.ServerVersion)
                 : result.Message;
             if (!string.IsNullOrWhiteSpace(result.Diagnostics))
-                message += $"{Environment.NewLine}{Environment.NewLine}Diagnostics:{Environment.NewLine}{result.Diagnostics}";
+                message += Environment.NewLine + Environment.NewLine + T("Diagnostics") + Environment.NewLine + result.Diagnostics;
             SetMessage(message);
         }
         catch (Exception exception)
@@ -128,7 +129,7 @@ public sealed partial class ConnectionEditorWindow : Window
             var details = string.IsNullOrEmpty(password)
                 ? exception.ToString()
                 : exception.ToString().Replace(password, "[REDACTED]", StringComparison.Ordinal);
-            SetMessage($"Connection test could not complete:{Environment.NewLine}{details}");
+            SetMessage(T("ConnectionTestFailed", Environment.NewLine, details));
         }
         finally
         {
@@ -157,7 +158,7 @@ public sealed partial class ConnectionEditorWindow : Window
         }
         catch (Exception exception)
         {
-            SetMessage($"Could not save profile:{Environment.NewLine}{exception}");
+            SetMessage(T("SaveProfileFailed", Environment.NewLine, exception));
         }
         finally
         {

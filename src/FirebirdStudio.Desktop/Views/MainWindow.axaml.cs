@@ -22,6 +22,7 @@ using FirebirdStudio.Core.Database;
 using FirebirdStudio.Infrastructure.Connections;
 using FirebirdStudio.Desktop.Services;
 using FirebirdStudio.Desktop.Sql;
+using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
@@ -30,7 +31,8 @@ public sealed partial class MainWindow : Window
     private readonly ConnectionProfileManager _profileManager;
     private readonly IFirebirdSessionManager _sessionManager;
     private readonly ISecureCredentialStore _credentialStore;
-    private readonly StudioPreferencesStore _preferencesStore = new();
+    private readonly StudioPreferencesStore _preferencesStore;
+    private readonly Task<StudioPreferences>? _startupPreferences;
     private readonly GitHubReleaseChecker _releaseChecker = new();
     private readonly GitHubUpdateDownloader _updateDownloader = new();
     private readonly SemaphoreSlim _updateCheckGate = new(1, 1);
@@ -137,8 +139,14 @@ public sealed partial class MainWindow : Window
 
     private ConnectionProfile? SelectedConnection => (_connectionsList.SelectedItem as ConnectionListItem)?.Profile;
 
-    public MainWindow()
+    public MainWindow() : this(new StudioPreferencesStore(), null)
     {
+    }
+
+    internal MainWindow(StudioPreferencesStore preferencesStore, Task<StudioPreferences>? startupPreferences)
+    {
+        _preferencesStore = preferencesStore;
+        _startupPreferences = startupPreferences;
         AvaloniaXamlLoader.Load(this);
 
         var sqlEditor = this.FindControl<AvaloniaEdit.TextEditor>("SqlEditor")!;
@@ -158,11 +166,11 @@ public sealed partial class MainWindow : Window
         this.FindControl<Button>("NewConnectionButton")!.Click += OnAddConnectionClick;
         _editSelectedConnectionButton.Click += OnEditConnectionClick;
         _connectionSessionButton.Click += OnConnectionSessionClick;
-        var createConnectionContextItem = new MenuItem { Header = "Create connection…" };
-        _connectionContextEditItem = new MenuItem { Header = "Edit connection…", IsEnabled = false };
-        _connectionContextConnectItem = new MenuItem { Header = "Connect to database", IsEnabled = false };
-        _connectionContextDisconnectItem = new MenuItem { Header = "Disconnect from database", IsEnabled = false };
-        _connectionContextDeleteItem = new MenuItem { Header = "Delete connection", IsEnabled = false };
+        var createConnectionContextItem = new MenuItem { Header = T("CreateConnectionDialog") };
+        _connectionContextEditItem = new MenuItem { Header = T("EditConnectionDialog"), IsEnabled = false };
+        _connectionContextConnectItem = new MenuItem { Header = T("ConnectToDatabase"), IsEnabled = false };
+        _connectionContextDisconnectItem = new MenuItem { Header = T("DisconnectFromDatabase"), IsEnabled = false };
+        _connectionContextDeleteItem = new MenuItem { Header = T("DeleteConnection"), IsEnabled = false };
         _connectionsList.ContextMenu = new ContextMenu
         {
             Items =
@@ -211,7 +219,7 @@ public sealed partial class MainWindow : Window
             addEditorHeader.Children.OfType<Button>().FirstOrDefault() is { } addEditorButton)
             addEditorButton.Click += (_, _) => CreateSqlEditorTab();
         _tableDetailsTab = this.FindControl<TabItem>("TableDetailsTab")!;
-        var closeTableDetailsItem = new MenuItem { Header = "Close tab" };
+        var closeTableDetailsItem = new MenuItem { Header = T("CloseTab") };
         closeTableDetailsItem.Click += (_, _) => CloseTableDetailsTab();
         _tableDetailsTab.ContextMenu = new ContextMenu { Items = { closeTableDetailsItem } };
         EnableMiddleClickClose(_tableDetailsTab, () => { CloseTableDetailsTab(); return Task.CompletedTask; });
@@ -249,10 +257,10 @@ public sealed partial class MainWindow : Window
         _messagesTab = this.FindControl<TabItem>("MessagesTab")!;
         _messagesView.ClearRequested += (_, _) => ClearMessages();
         _messagesView.CopyDetailsRequested += async details =>
-            await CopyToClipboardAsync(details, "Copying message details", "Message details copied");
+            await CopyToClipboardAsync(details, T("CopyingMessageDetails"), T("MessageDetailsCopied"));
         _queryResults.ClearRequested += (_, _) => ClearResults();
         _queryResults.CopyRowRequested += async row =>
-            await CopyToClipboardAsync(row, "Copying result row", "Result row copied");
+            await CopyToClipboardAsync(row, T("CopyingResultRow"), T("ResultRowCopied"));
         var toggleConnectionDisplayButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
         toggleConnectionDisplayButton.Click += async (_, _) =>
             await SetConnectionDisplayModeAsync(_preferences.ConnectionDisplayMode == "Detailed" ? "Minimal" : "Detailed");
@@ -333,7 +341,7 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            _preferences = await _preferencesStore.LoadAsync();
+            _preferences = await (_startupPreferences ?? _preferencesStore.LoadAsync());
             if (_preferences.Theme == "Default")
                 _preferences = _preferences with { Theme = "Light" };
             ApplyTheme();
@@ -343,7 +351,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Loading application settings; defaults are being used", exception);
+            ReportError(T("SettingsLoadError"), exception);
         }
 
         try
@@ -355,7 +363,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Loading query history", exception);
+            ReportError(T("LoadingHistory"), exception);
         }
 
         try
@@ -365,12 +373,12 @@ public sealed partial class MainWindow : Window
             foreach (var profile in profiles.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                 _connectionItems.Add(new ConnectionListItem(profile));
 
-            _statusText.Text = $"Loaded {_connectionItems.Count} saved connection profile(s). Passwords are not stored in the profile file.";
+            _statusText.Text = T("SavedProfilesLoaded", _connectionItems.Count);
             UpdateConnectionState();
         }
         catch (Exception exception)
         {
-            ReportError("Loading connection profiles", exception);
+            ReportError(T("LoadingProfiles"), exception);
         }
 
         try
@@ -379,7 +387,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("SQL editor recovery", exception);
+            ReportError(T("SqlEditorRecovery"), exception);
         }
 
         // This loop checks once immediately, then every 24 hours without blocking startup.
@@ -417,20 +425,20 @@ public sealed partial class MainWindow : Window
         if (!acquired)
         {
             if (manual)
-                ShowFooterNotification("An update check is already running", "information");
+                ShowFooterNotification(T("UpdateCheckRunning"), "information");
             return;
         }
 
         try
         {
             if (manual)
-                ShowFooterNotification("Checking for updates…", "information");
+                ShowFooterNotification(T("CheckingUpdatesStatus"), "information");
 
             var latestRelease = await _releaseChecker.GetLatestStableReleaseAsync(cancellationToken);
             if (latestRelease is null)
             {
                 if (manual)
-                    ShowFooterNotification("No stable release has been published yet", "information");
+                    ShowFooterNotification(T("NoStableRelease"), "information");
                 return;
             }
 
@@ -439,7 +447,7 @@ public sealed partial class MainWindow : Window
             if (latestRelease.Version <= currentVersion)
             {
                 if (manual)
-                    ShowFooterNotification("Firebird Studio is up to date", "success");
+                    ShowFooterNotification(T("AppUpToDate"), "success");
                 return;
             }
 
@@ -455,9 +463,9 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             if (manual)
-                ReportError("Checking for updates", exception);
+                ReportError(T("CheckingUpdates"), exception);
             else
-                AddMessage("Warning", "Automatic update check", exception.Message);
+                AddMessage("Warning", T("AutomaticUpdateCheck"), exception.Message);
         }
         finally
         {
@@ -468,14 +476,14 @@ public sealed partial class MainWindow : Window
     private async Task ShowUpdateAvailableDialogAsync(AvailableRelease release, Version currentVersion)
     {
         var notes = string.IsNullOrWhiteSpace(release.ReleaseNotes)
-            ? "No release notes were provided."
+            ? T("NoReleaseNotes")
             : release.ReleaseNotes.Trim();
         if (notes.Length > 8_000)
-            notes = notes[..8_000] + Environment.NewLine + "[Release notes truncated.]";
+            notes = notes[..8_000] + Environment.NewLine + T("ReleaseNotesTruncated");
 
         var dialog = new Window
         {
-            Title = "Firebird Studio update available",
+            Title = T("UpdateAvailable"),
             Width = 560,
             SizeToContent = SizeToContent.Height,
             MaxHeight = 620,
@@ -483,7 +491,7 @@ public sealed partial class MainWindow : Window
             CanResize = false
         };
 
-        var viewReleaseButton = CreateDialogButton("View release", () =>
+        var viewReleaseButton = CreateDialogButton(T("ViewRelease"), () =>
         {
             dialog.Close();
             try
@@ -492,11 +500,11 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception exception)
             {
-                ReportError("Opening the GitHub release page", exception);
+                ReportError(T("OpeningReleasePage"), exception);
             }
         });
-        var laterButton = CreateDialogButton("Later", () => dialog.Close());
-        var downloadButton = CreateDialogButton("Download update", () =>
+        var laterButton = CreateDialogButton(T("Later"), () => dialog.Close());
+        var downloadButton = CreateDialogButton(T("DownloadUpdate"), () =>
         {
             dialog.Close();
             _ = DownloadUpdateAsync(release);
@@ -510,12 +518,12 @@ public sealed partial class MainWindow : Window
             {
                 new TextBlock
                 {
-                    Text = $"Version {release.TagName} is available. You are using version {currentVersion}.",
+                    Text = T("NewVersionAvailable", release.TagName, currentVersion),
                     FontSize = 14,
                     FontWeight = FontWeight.SemiBold,
                     TextWrapping = TextWrapping.Wrap
                 },
-                new TextBlock { Text = "Release notes", FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = T("ReleaseNotes"), FontWeight = FontWeight.SemiBold },
                 new ScrollViewer
                 {
                     MaxHeight = 300,
@@ -548,11 +556,11 @@ public sealed partial class MainWindow : Window
         };
         var statusText = new TextBlock
         {
-            Text = "Preparing the release download…",
+            Text = T("PreparingDownload"),
             TextWrapping = TextWrapping.Wrap
         };
         string? downloadDirectory = null;
-        var openFolderButton = CreateDialogButton("Open download folder", () =>
+        var openFolderButton = CreateDialogButton(T("OpenDownloadFolder"), () =>
         {
             if (downloadDirectory is not { } directory || !Directory.Exists(directory))
                 return;
@@ -563,31 +571,32 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception exception)
             {
-                ReportError("Opening the update download folder", exception);
+                ReportError(T("OpeningDownloadFolder"), exception);
             }
         });
         openFolderButton.IsVisible = false;
 
         var dialog = new Window
         {
-            Title = $"Download Firebird Studio {release.Version}",
+            Title = T("DownloadAppVersion", release.Version),
             Width = 520,
             SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             CanResize = false
         };
 
-        var installButton = CreateDialogButton("Install and restart", () =>
+        var installButton = CreateDialogButton(T("InstallRestart"), () =>
         {
             installRequested = true;
             dialog.Close();
         });
         installButton.IsVisible = false;
 
-        var cancelButton = new Button { Content = "Cancel download" };
+        var cancelButton = new Button { Content = T("CancelDownload") };
+        var downloadFinished = false;
         cancelButton.Click += (_, _) =>
         {
-            if (cancelButton.Content?.ToString() == "Close")
+            if (downloadFinished)
                 dialog.Close();
             else
                 cancellation.Cancel();
@@ -601,7 +610,7 @@ public sealed partial class MainWindow : Window
             {
                 new TextBlock
                 {
-                    Text = $"Downloading Firebird Studio {release.Version}",
+                    Text = T("DownloadingAppVersion", release.Version),
                     FontSize = 14,
                     FontWeight = FontWeight.SemiBold
                 },
@@ -629,8 +638,8 @@ public sealed partial class MainWindow : Window
                             return;
                         progressBar.Value = value.Percentage;
                         statusText.Text = value.TotalBytes > 0
-                            ? $"Downloading… {value.Percentage:F0}% ({FormatBytes(value.BytesReceived)} of {FormatBytes(value.TotalBytes)})"
-                            : $"Downloading… {FormatBytes(value.BytesReceived)}";
+                            ? T("DownloadProgress", value.Percentage, FormatBytes(value.BytesReceived), FormatBytes(value.TotalBytes))
+                            : T("DownloadBytes", FormatBytes(value.BytesReceived));
                     }));
 
                 downloadedUpdate = await _updateDownloader.DownloadAsync(
@@ -639,38 +648,38 @@ public sealed partial class MainWindow : Window
                 progressBar.Value = 100;
                 downloadDirectory = downloadedUpdate.DirectoryPath;
                 openFolderButton.IsVisible = true;
-                cancelButton.Content = "Close";
 
                 var updaterExecutable = GetUpdaterExecutablePath();
                 if (File.Exists(updaterExecutable))
                 {
-                    statusText.Text =
-                        $"Download complete and SHA-256 verified.\n\n{downloadedUpdate.FileName}\n\nInstall and restart Firebird Studio to apply this update.";
+                    statusText.Text = T("VerifiedDownloadReady", downloadedUpdate.FileName);
                     installButton.IsVisible = true;
                 }
                 else
                 {
-                    var reason = "Automatic installation is available in published packages. Development builds can still use manual extraction.";
-                    statusText.Text =
-                        $"Download complete. SHA-256 verified. The ZIP package is ready for manual extraction. {reason}\n\n{downloadedUpdate.FileName}";
+                    var reason = T("DevelopmentUpdateNotice");
+                    statusText.Text = T("VerifiedDownloadManual", reason, downloadedUpdate.FileName);
                 }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 if (dialog.IsVisible)
                 {
-                    statusText.Text = "Download canceled. Incomplete files were removed.";
-                    cancelButton.Content = "Close";
+                    statusText.Text = T("DownloadCancelled");
                 }
             }
             catch (Exception exception)
             {
                 if (dialog.IsVisible)
                 {
-                    statusText.Text = $"Download failed: {exception.Message}";
-                    ReportError("Downloading or verifying the update package", exception);
-                    cancelButton.Content = "Close";
+                    statusText.Text = T("DownloadFailed", exception.Message);
+                    ReportError(T("DownloadingUpdate"), exception);
                 }
+            }
+            finally
+            {
+                downloadFinished = true;
+                cancelButton.Content = T("Close");
             }
         };
 
@@ -686,7 +695,7 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception exception)
             {
-                ReportError("Starting the external update installer", exception);
+                ReportError(T("StartingUpdater"), exception);
             }
         }
     }
@@ -700,7 +709,7 @@ public sealed partial class MainWindow : Window
     private void StartExternalUpdater(DownloadedUpdate update)
     {
         if (_isQueryExecuting)
-            throw new InvalidOperationException("Wait for the running SQL query to finish before installing an update.");
+            throw new InvalidOperationException(T("WaitToInstallUpdate"));
 
         var installDirectory = Path.GetFullPath(AppContext.BaseDirectory);
         var executablePath = Environment.ProcessPath;
@@ -822,7 +831,7 @@ public sealed partial class MainWindow : Window
 
         _connectionsList.SelectedItem = row;
         UpdateConnectionState();
-        _statusText.Text = $"Connection profile '{savedProfile.Name}' saved. No password was written to disk.";
+        _statusText.Text = T("ProfileSaved", savedProfile.Name);
     }
 
     private async void OnRemoveConnectionClick(object? sender, RoutedEventArgs e)
@@ -833,7 +842,7 @@ public sealed partial class MainWindow : Window
         var profile = row.Profile;
         if (_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
-            _statusText.Text = "Disconnect this profile before removing it.";
+            _statusText.Text = T("DisconnectBeforeRemoving");
             return;
         }
 
@@ -849,16 +858,16 @@ public sealed partial class MainWindow : Window
             try
             {
                 await _credentialStore.DeletePasswordAsync(profile.Id);
-                _statusText.Text = $"Connection profile '{profile.Name}' removed. The database itself was not changed.";
+                _statusText.Text = T("ProfileRemoved", profile.Name);
             }
             catch (Exception credentialException)
             {
-                ReportError($"Removing the saved credential for connection profile '{profile.Name}'", credentialException);
+                ReportError(T("RemovingCredential", profile.Name), credentialException);
             }
         }
         catch (Exception exception)
         {
-            ReportError($"Removing connection profile '{profile.Name}'", exception);
+            ReportError(T("RemovingProfile", profile.Name), exception);
         }
     }
 
@@ -866,7 +875,7 @@ public sealed partial class MainWindow : Window
     {
         var confirmation = new Window
         {
-            Title = "Delete connection",
+            Title = T("DeleteConnection"),
             Width = 420,
             SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -883,7 +892,7 @@ public sealed partial class MainWindow : Window
             {
                 new TextBlock
                 {
-                    Text = $"Delete the saved connection '{profile.Name}'? The database and its files will not be changed.",
+                    Text = T("ConfirmDeleteConnection", profile.Name),
                     TextWrapping = TextWrapping.Wrap
                 },
                 new StackPanel
@@ -893,8 +902,8 @@ public sealed partial class MainWindow : Window
                     Spacing = 8,
                     Children =
                     {
-                        CreateDialogButton("Cancel", () => CloseConfirmation(false)),
-                        CreateDialogButton("Delete", () => CloseConfirmation(true))
+                        CreateDialogButton(T("Cancel"), () => CloseConfirmation(false)),
+                        CreateDialogButton(T("Delete"), () => CloseConfirmation(true))
                     }
                 }
             }
@@ -961,7 +970,7 @@ public sealed partial class MainWindow : Window
     {
         if (_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
-            _statusText.Text = $"'{profile.Name}' is already connected.";
+            _statusText.Text = T("AlreadyConnected", profile.Name);
             return;
         }
 
@@ -990,8 +999,8 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            credentialStoreNotice = $"The operating system credential store is unavailable. You can still connect by entering the password manually. Details: {exception.Message}";
-            ReportError("Accessing the operating system credential store", exception);
+            credentialStoreNotice = T("CredentialStoreUnavailable", exception.Message);
+            ReportError(T("AccessingCredentialStore"), exception);
         }
 
         var passwordPrompt = new ConnectionPasswordWindow(profile.Name, savedPassword, credentialStoreNotice);
@@ -1002,26 +1011,26 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        _statusText.Text = $"Connecting to '{profile.Name}'...";
+        _statusText.Text = T("ConnectingToProfile", profile.Name);
         try
         {
             var result = await _sessionManager.ConnectAsync(profile, password);
             if (result.Succeeded)
             {
                 _statusText.Text = result.Message;
-                AddMessage("Success", $"Connection to '{profile.Name}'", result.Message);
-                ShowFooterNotification("Database connection established", "success");
+                AddMessage("Success", T("ConnectionToProfile", profile.Name), result.Message);
+                ShowFooterNotification(T("ConnectionEstablished"), "success");
             }
             else
-                ReportError($"Connection to '{profile.Name}'", result.Diagnostics ?? result.Message);
+                ReportError(T("ConnectionToProfile", profile.Name), result.Diagnostics ?? result.Message);
             UpdateConnectionState();
 
             if (result.Succeeded)
             {
                 if (SelectedConnection?.Id == profile.Id)
                 {
-                    _statusText.Text = "Connected. Loading database objects in the background; the window remains responsive.";
-                    AddMessage("Information", "Database metadata", "Loading the first 200 objects from each category in the background. The window remains responsive; database requests may wait briefly while metadata is read.");
+                    _statusText.Text = T("ConnectedLoadingObjects");
+                    AddMessage("Information", T("DatabaseMetadata"), T("LoadingFirstMetadata"));
                     await RefreshMetadataAsync(profile);
                 }
 
@@ -1030,32 +1039,32 @@ public sealed partial class MainWindow : Window
                     if (passwordPrompt.RememberPassword && password.Length > 0)
                     {
                         await _credentialStore.SavePasswordAsync(profile.Id, password);
-                        _statusText.Text = "Connected. Password saved in the operating system credential store.";
+                        _statusText.Text = T("PasswordSaved");
                     }
                     else if (passwordPrompt.RememberPassword)
                     {
                         await _credentialStore.DeletePasswordAsync(profile.Id);
-                        _statusText.Text = "Connected. An empty password was not saved; you will be prompted next time.";
+                        _statusText.Text = T("EmptyPasswordNotSaved");
                     }
                     else if (savedPassword is not null)
                     {
                         await _credentialStore.DeletePasswordAsync(profile.Id);
-                        _statusText.Text = "Connected. Previously saved password removed from the operating system credential store.";
+                        _statusText.Text = T("PasswordRemoved");
                     }
                 }
                 catch (Exception exception)
                 {
-                    ReportError("Saving or removing the connection credential after connecting", exception);
+                    ReportError(T("UpdatingCredential"), exception);
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            _statusText.Text = "Connection attempt cancelled.";
+            _statusText.Text = T("ConnectCancelled");
         }
         catch (Exception exception)
         {
-            ReportError($"Connection to '{profile.Name}'", exception, password);
+            ReportError(T("ConnectionToProfile", profile.Name), exception, password);
         }
         finally
         {
@@ -1095,12 +1104,12 @@ public sealed partial class MainWindow : Window
                 _currentTableDetailsName = null;
                 _tableDetailsTab.IsVisible = false;
             }
-            _statusText.Text = $"Disconnected from '{profile.Name}'.";
-            ReportInformation("Database connection", _statusText.Text);
+            _statusText.Text = T("DisconnectedFromProfile", profile.Name);
+            ReportInformation(T("DatabaseConnection"), _statusText.Text);
         }
         catch (Exception exception)
         {
-            ReportError($"Disconnecting from '{profile.Name}'", exception);
+            ReportError(T("DisconnectingFromProfile", profile.Name), exception);
         }
         finally
         {
@@ -1120,7 +1129,7 @@ public sealed partial class MainWindow : Window
         _tableDetailsTab.IsVisible = false;
         _previousTableDataPageButton.IsEnabled = false;
         _nextTableDataPageButton.IsEnabled = false;
-        _tableDataPageStatus.Text = "No rows loaded";
+        _tableDataPageStatus.Text = T("NoRowsLoaded");
         UpdateActionAvailability();
 
         if (_connectionsList.SelectedItem is ConnectionListItem { IsConnected: true } row)
@@ -1145,9 +1154,9 @@ public sealed partial class MainWindow : Window
         _connectionContextDisconnectItem.IsEnabled = _disconnectButton.IsEnabled;
         _editSelectedConnectionButton.IsEnabled = _editButton.IsEnabled;
         _connectionSessionButton.IsEnabled = canChange;
-        _connectionSessionButton.Content = isConnected ? "Disconnect" : "Connect";
+        _connectionSessionButton.Content = isConnected ? T("Disconnect") : T("Connect");
         ToolTip.SetTip(_connectionSessionButton,
-            isConnected ? "Disconnect from the selected database" : "Connect to the selected database");
+            isConnected ? T("DisconnectSelected") : T("ConnectSelected"));
 
         _refreshMetadataButton.IsEnabled = isConnected && !_isMetadataRefreshRunning;
         _refreshMetadataMenuItem.IsEnabled = _refreshMetadataButton.IsEnabled;
@@ -1156,7 +1165,7 @@ public sealed partial class MainWindow : Window
         _clearMetadataSearchButton.IsEnabled = isConnected && !string.IsNullOrEmpty(_metadataSearchBox.Text);
         _metadataConnectionText.Text = isConnected ? selected?.Name : null;
         if (!isConnected)
-            _metadataEmptyText.Text = "Connect to browse database objects.";
+            _metadataEmptyText.Text = T("ConnectToBrowse");
         _executeButton.IsEnabled = isConnected && !_isQueryExecuting;
         _sqlAutocompleteMenuItem.IsEnabled = isConnected;
         _cancelQueryButton.IsEnabled = _isQueryExecuting;
@@ -1164,10 +1173,10 @@ public sealed partial class MainWindow : Window
 
         _connectionStateText.Text = (selected, selectedSession) switch
         {
-            ({ } profile, { } session) => $"Connected: {profile.Name} · {session.ServerVersion}",
-            ({ } profile, null) => $"Not connected: {profile.Name}",
-            _ when sessions.Count > 0 => $"{sessions.Count} active database session(s)",
-            _ => "Not connected"
+            ({ } profile, { } session) => T("ConnectedToServer", profile.Name, session.ServerVersion),
+            ({ } profile, null) => T("NotConnectedToProfile", profile.Name),
+            _ when sessions.Count > 0 => T("ActiveSessions", sessions.Count),
+            _ => T("NotConnected")
         };
         var hasActiveSession = isConnected || selected is null && sessions.Count > 0;
         _connectionStateText.Classes.Set("error", !hasActiveSession);
@@ -1197,8 +1206,8 @@ public sealed partial class MainWindow : Window
         var loadGeneration = _metadataLoadGeneration;
         _isMetadataRefreshRunning = true;
         UpdateActionAvailability();
-        _metadataEmptyText.Text = "Loading database objects…";
-        _statusText.Text = $"Preparing database object categories for '{profile.Name}'...";
+        _metadataEmptyText.Text = T("LoadingObjects");
+        _statusText.Text = T("PreparingCategories", profile.Name);
         try
         {
             // Keep provider work off the UI thread as some provider operations may perform
@@ -1222,7 +1231,7 @@ public sealed partial class MainWindow : Window
                 // keeping the category node and its current selection stable.
                 _metadataObjects.Add(category with
                 {
-                    Details = $"Objects load in batches of {MetadataPageSize}",
+                    Details = T("ObjectsLoadInBatches", MetadataPageSize),
                     Children = new BatchObservableCollection<DatabaseMetadataObject>()
                 });
             }
@@ -1237,23 +1246,23 @@ public sealed partial class MainWindow : Window
                 if (SelectedConnection is not { } selectedProfile || selectedProfile.Id != profile.Id)
                     return;
                 var categoryName = orderedCategories[index].Name;
-                _statusText.Text = $"Loading database objects in the background: {categoryName} ({index + 1}/{orderedCategories.Length}). Large catalogs may take some time; the window remains responsive.";
+                _statusText.Text = T("LoadingCategoryInBackground", MetadataCategoryName(categoryName), index + 1, orderedCategories.Length);
                 await LoadMetadataPageAsync(categoryName, 0, updateStatus: false,
                     cancellationToken: metadataCancellation.Token, loadGeneration: loadGeneration);
                 if (loadGeneration != _metadataLoadGeneration)
                     return;
                 if (!_metadataNextOffsets.ContainsKey(categoryName))
-                    failedCategories.Add(categoryName);
+                    failedCategories.Add(MetadataCategoryName(categoryName));
             }
 
             _statusText.Text = failedCategories.Count == 0
-                ? $"Loaded up to the first {MetadataPageSize} objects per category for '{profile.Name}'. Scroll within an expanded category to load additional batches automatically."
-                : $"Metadata loading completed with errors in: {string.Join(", ", failedCategories)}. You can retry with Refresh.";
-            _metadataEmptyText.Text = "No database objects to display.";
-            AddMessage(failedCategories.Count == 0 ? "Success" : "Warning", "Database metadata",
+                ? T("FirstObjectsLoaded", MetadataPageSize, profile.Name)
+                : T("MetadataLoadPartial", string.Join(", ", failedCategories));
+            _metadataEmptyText.Text = T("NoObjects");
+            AddMessage(failedCategories.Count == 0 ? "Success" : "Warning", T("DatabaseMetadata"),
                 failedCategories.Count == 0
-                    ? $"Initial metadata loading completed for {orderedCategories.Length} categories. Additional objects load automatically in batches of {MetadataPageSize}."
-                    : $"Initial metadata loading failed for: {string.Join(", ", failedCategories)}.");
+                    ? T("InitialMetadataLoaded", orderedCategories.Length, MetadataPageSize)
+                    : T("InitialMetadataFailed", string.Join(", ", failedCategories)));
             Dispatcher.UIThread.Post(TryLoadMoreMetadataWhenVisible);
         }
         catch (OperationCanceledException) when (
@@ -1265,8 +1274,8 @@ public sealed partial class MainWindow : Window
         {
             if (loadGeneration == _metadataLoadGeneration)
             {
-                _metadataEmptyText.Text = "Could not load objects. Use Refresh to retry.";
-                ReportError($"Preparing database metadata for '{profile.Name}'", exception);
+                _metadataEmptyText.Text = T("ObjectsLoadFailed");
+                ReportError(T("PreparingMetadata", profile.Name), exception);
             }
         }
         finally
@@ -1327,7 +1336,7 @@ public sealed partial class MainWindow : Window
             await RefreshMetadataAsync(profile);
         }
         if (searchTerm.Length == 1 && string.Equals(_metadataSearchBox.Text?.Trim(), searchTerm, StringComparison.Ordinal))
-            _statusText.Text = "Enter at least 2 characters to search database objects and columns.";
+            _statusText.Text = T("ObjectSearchMinLength");
     }
 
     private async Task SearchMetadataAsync(ConnectionProfile profile, string searchTerm, bool debounce)
@@ -1340,8 +1349,8 @@ public sealed partial class MainWindow : Window
         {
             if (debounce)
                 await Task.Delay(300, cancellation.Token);
-            _metadataEmptyText.Text = "Searching database objects…";
-            _statusText.Text = $"Searching database objects for '{searchTerm}'...";
+            _metadataEmptyText.Text = T("SearchingObjects");
+            _statusText.Text = T("SearchingObjectsFor", searchTerm);
             var results = await Task.Run(
                 () => _sessionManager.SearchMetadataAsync(profile.Id, searchTerm, cancellation.Token, kindFilter),
                 cancellation.Token);
@@ -1353,7 +1362,7 @@ public sealed partial class MainWindow : Window
 
             CancelMetadataLoading();
             _isMetadataSearchActive = true;
-            _metadataEmptyText.Text = "No objects match your search.";
+            _metadataEmptyText.Text = T("NoMatchingObjects");
             _metadataObjects.Clear();
             UpdateActionAvailability();
             const int searchUiBatchSize = 50;
@@ -1369,10 +1378,12 @@ public sealed partial class MainWindow : Window
             }
             cancellation.Token.ThrowIfCancellationRequested();
 
-            var filterDescription = kindFilter is null ? "database objects and columns" : kindFilter == "Column" ? "columns" : kindFilter.ToLowerInvariant();
+            var filterDescription = kindFilter is null
+                ? T("ObjectsAndColumns")
+                : MetadataCategoryName(kindFilter).ToLower(Culture);
             _statusText.Text = results.Count == 0
-                ? $"No {filterDescription} match '{searchTerm}'."
-                : $"Found {results.Count:N0} {filterDescription} matching '{searchTerm}'.";
+                ? T("NoObjectsMatchingTerm", filterDescription, searchTerm)
+                : T("ObjectsMatchingTerm", results.Count, filterDescription, searchTerm);
         }
         catch (OperationCanceledException)
         {
@@ -1382,8 +1393,8 @@ public sealed partial class MainWindow : Window
         {
             if (!cancellation.IsCancellationRequested)
             {
-                _metadataEmptyText.Text = "Could not search objects. Use Refresh to retry.";
-                ReportError($"Searching database objects for '{searchTerm}'", exception);
+                _metadataEmptyText.Text = T("ObjectsSearchFailed");
+                ReportError(T("SearchingMetadata", searchTerm), exception);
             }
         }
         finally
@@ -1419,7 +1430,7 @@ public sealed partial class MainWindow : Window
         {
             var relationKind = GetOwningRelationKind(column.ParentName);
             await ShowTableDetailsAsync(new DatabaseMetadataObject(relationKind, column.ParentName, null,
-                $"Opened from column search: {column.Name}"));
+                T("OpenedFromColumn", column.Name)));
             return;
         }
 
@@ -1437,7 +1448,7 @@ public sealed partial class MainWindow : Window
             !string.IsNullOrWhiteSpace(constraint.ParentName))
         {
             await ShowTableDetailsAsync(new DatabaseMetadataObject(
-                "Tables", constraint.ParentName, null, $"Opened from constraint: {constraint.Name}"));
+                "Tables", constraint.ParentName, null, T("OpenedFromConstraint", constraint.Name)));
         }
     }
 
@@ -1478,30 +1489,30 @@ public sealed partial class MainWindow : Window
             case "View source" when item.ParentName is not null:
                 var relationKind = item.Kind == "View source" ? "Views" : GetOwningRelationKind(item.ParentName);
                 await ShowTableDetailsAsync(new DatabaseMetadataObject(
-                    relationKind, item.ParentName, null, $"Opened from {item.Kind.ToLowerInvariant()}: {item.Name}"));
+                    relationKind, item.ParentName, null, T("OpenedFromMetadata", item.Kind.ToLowerInvariant(), item.Name)));
                 return;
             case "Index segment" when item.ParentName is not null:
                 await ShowMetadataObjectDetailsAsync(new DatabaseMetadataObject(
-                    "Indexes", item.ParentName, null, $"Opened from index segment: {item.Name}"));
+                    "Indexes", item.ParentName, null, T("OpenedFromIndex", item.Name)));
                 return;
             case "Procedure parameter":
             case "Procedure parameter group":
             case "Procedure source":
                 if (item.ParentName is not null)
                     await ShowMetadataObjectDetailsAsync(new DatabaseMetadataObject(
-                        "Procedures", item.ParentName, null, $"Opened from {item.Kind.ToLowerInvariant()}: {item.Name}"));
+                        "Procedures", item.ParentName, null, T("OpenedFromMetadata", item.Kind.ToLowerInvariant(), item.Name)));
                 return;
             case "Trigger source":
                 if (item.ParentName is not null)
                     await ShowMetadataObjectDetailsAsync(new DatabaseMetadataObject(
-                        "Triggers", item.ParentName, null, "Opened from trigger source"));
+                        "Triggers", item.ParentName, null, T("OpenedFromTrigger")));
                 return;
             case "Domain properties":
             case "Domain default":
             case "Domain validation":
                 if (item.ParentName is not null)
                     await ShowMetadataObjectDetailsAsync(new DatabaseMetadataObject(
-                        "Domains", item.ParentName, null, $"Opened from {item.Kind.ToLowerInvariant()}: {item.Name}"));
+                        "Domains", item.ParentName, null, T("OpenedFromMetadata", item.Kind.ToLowerInvariant(), item.Name)));
                 return;
             case "Procedures":
             case "Triggers":
@@ -1525,20 +1536,20 @@ public sealed partial class MainWindow : Window
                 return;
             var description = item.Details;
             if (item.Kind == "Procedures" && details.Count == 0)
-                description += "; package-aware details unavailable for duplicate procedure name";
+                description += T("DuplicateProcedureDetails");
             else if (item.Kind == "Indexes")
-                description += $"; {details.Count} segment(s)";
+                description += T("IndexSegments", details.Count);
             else if (item.Kind == "Procedures")
-                description += $"; {details.Count} detail group(s)";
+                description += T("DetailGroups", details.Count);
             else if (item.Kind == "Triggers")
-                description += "; source loaded";
+                description += T("SourceLoaded");
 
             UpdateMetadataObjectNode(item, item with { Details = description, Children = details });
-            _statusText.Text = $"Loaded {details.Count:N0} detail item(s) for {item.Kind.ToLowerInvariant()} '{item.Name}'.";
+            _statusText.Text = T("MetadataDetailsLoaded", details.Count, item.Kind.ToLowerInvariant(), item.Name);
         }
         catch (Exception exception)
         {
-            ReportError($"Loading metadata details for '{item.Kind}' object '{item.Name}'", exception);
+            ReportError(T("LoadingMetadataDetails", item.Kind, item.Name), exception);
         }
     }
 
@@ -1582,8 +1593,8 @@ public sealed partial class MainWindow : Window
 
         if (updateStatus)
             _statusText.Text = offset == 0
-                ? $"Loading {categoryName} metadata..."
-                : $"Loading the next {MetadataPageSize} {categoryName.ToLowerInvariant()} objects; this may take some time...";
+                ? T("LoadingCategory", categoryName)
+                : T("LoadingMoreObjects", MetadataPageSize, categoryName.ToLowerInvariant());
         try
         {
             // Some Firebird provider operations can still perform synchronous work internally.
@@ -1648,8 +1659,8 @@ public sealed partial class MainWindow : Window
 
             if (updateStatus)
                 _statusText.Text = hasMore
-                    ? $"Loaded {displayed:N0} more {categoryName.ToLowerInvariant()} object(s). Scroll down to load more."
-                    : $"Loaded all {nextOffset:N0} {categoryName.ToLowerInvariant()} object(s).";
+                    ? T("MoreObjectsLoaded", displayed, categoryName.ToLowerInvariant())
+                    : T("AllObjectsLoaded", nextOffset, categoryName.ToLowerInvariant());
 
             // If the current page fits in the visible tree area, continue filling it automatically.
             Dispatcher.UIThread.Post(TryLoadMoreMetadataWhenVisible);
@@ -1662,7 +1673,7 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             if (generation == _metadataLoadGeneration)
-                ReportError($"Loading {categoryName} metadata", exception);
+                ReportError(T("LoadingCategoryContext", categoryName), exception);
         }
         finally
         {
@@ -1779,13 +1790,13 @@ public sealed partial class MainWindow : Window
         {
             MetadataCategoryOrder = _metadataObjects.Select(item => item.Name).ToArray()
         };
-        await SavePreferencesAsync("Metadata category order saved.");
+        await SavePreferencesAsync(T("CategoryOrderSaved"));
     }
 
     private void ClearMessages()
     {
         _messages.Clear();
-        _statusText.Text = "Message log cleared.";
+        _statusText.Text = T("MessagesCleared");
         _messagesView.ShowLatest();
     }
 
@@ -1793,7 +1804,7 @@ public sealed partial class MainWindow : Window
     {
         if (_isQueryExecuting)
         {
-            ShowFooterNotification("Wait for the running query to finish before clearing query history.", "information");
+            ShowFooterNotification(T("WaitToClearHistory"), "information");
             return;
         }
 
@@ -1801,12 +1812,12 @@ public sealed partial class MainWindow : Window
         {
             await _queryHistoryStore.SaveAsync(Array.Empty<QueryHistoryEntry>());
             _queryHistory.Clear();
-            _statusText.Text = "Query history cleared.";
-            ShowFooterNotification("Query history cleared", "success");
+            _statusText.Text = T("HistoryClearedStatus");
+            ShowFooterNotification(T("HistoryCleared"), "success");
         }
         catch (Exception exception)
         {
-            ReportError("Clearing query history", exception);
+            ReportError(T("ClearingHistory"), exception);
         }
     }
 
@@ -1814,20 +1825,20 @@ public sealed partial class MainWindow : Window
     {
         if (_isQueryExecuting)
         {
-            ShowFooterNotification("Wait for the running query to finish before clearing results.", "information");
+            ShowFooterNotification(T("WaitToClearResults"), "information");
             return;
         }
 
         _queryResults.Reset();
-        _statusText.Text = "Query results cleared.";
-        ShowFooterNotification("Query results cleared", "success");
+        _statusText.Text = T("ResultsClearedStatus");
+        ShowFooterNotification(T("ResultsCleared"), "success");
     }
 
     private async Task CopyToClipboardAsync(string text, string errorContext, string successMessage)
     {
         if (Clipboard is not { } clipboard)
         {
-            ReportError(errorContext, "Clipboard is unavailable.");
+            ReportError(errorContext, T("ClipboardUnavailable"));
             return;
         }
 
@@ -1852,14 +1863,14 @@ public sealed partial class MainWindow : Window
 
         if (string.IsNullOrWhiteSpace(source))
         {
-            ReportInformation("SQL formatting", "There is no SQL text to format.");
+            ReportInformation(T("SqlFormatting"), T("NoSqlToFormat"));
             return;
         }
 
         var formatted = FirebirdSqlFormatter.Format(source);
         if (string.Equals(source, formatted, StringComparison.Ordinal))
         {
-            _statusText.Text = "SQL is already formatted.";
+            _statusText.Text = T("SqlAlreadyFormatted");
             return;
         }
 
@@ -1877,9 +1888,9 @@ public sealed partial class MainWindow : Window
 
         _editorTabs.SelectedItem = GetActiveSqlEditorTab().Tab;
         _statusText.Text = hasSelection
-            ? "Selected SQL formatted."
-            : "SQL editor content formatted.";
-        ShowFooterNotification("SQL formatted", "success");
+            ? T("SelectedSqlFormatted")
+            : T("EditorSqlFormatted");
+        ShowFooterNotification(T("SqlFormatted"), "success");
     }
 
     private async void OnExecuteClick(object? sender, RoutedEventArgs e) => await ExecuteSelectedSqlAsync();
@@ -1889,7 +1900,7 @@ public sealed partial class MainWindow : Window
         if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
-            ReportError("SQL execution", "No active database connection. Select a saved connection profile and connect before executing SQL.");
+            ReportError(T("SqlExecution"), T("NoConnectionForSql"));
             return;
         }
 
@@ -1900,13 +1911,13 @@ public sealed partial class MainWindow : Window
         }
         catch (InvalidOperationException exception)
         {
-            ReportError("SQL execution could not start", exception.Message);
+            ReportError(T("QueryCouldNotStart"), exception.Message);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(sql))
         {
-            ReportInformation("SQL execution", "There is no SQL statement to execute. Select a statement or enter SQL in the editor.");
+            ReportInformation(T("SqlExecution"), T("NoSqlToExecute"));
             return;
         }
 
@@ -1917,7 +1928,7 @@ public sealed partial class MainWindow : Window
             parameterValues = await ShowSqlParametersDialogAsync(parameterNames);
             if (parameterValues is null)
             {
-                _statusText.Text = "SQL execution cancelled; parameter values were not submitted.";
+                _statusText.Text = T("ParametersCancelled");
                 return;
             }
         }
@@ -1927,9 +1938,10 @@ public sealed partial class MainWindow : Window
         _queryExecutionCancellation = cancellation;
         _isQueryExecuting = true;
         _queryResults.ShowRunning();
-        _statusText.Text = $"Executing SQL on '{profile.Name}'...";
+        _statusText.Text = T("ExecutingOnProfile", profile.Name);
         UpdateActionAvailability();
         var succeeded = false;
+        var cancelled = false;
         var outcome = string.Empty;
         try
         {
@@ -1942,29 +1954,30 @@ public sealed partial class MainWindow : Window
                 _completionDomainCache.Remove(profile.Id);
             }
             outcome = result.Columns.Count > 0
-                ? $"{result.Rows.Count} row(s) returned in {result.Elapsed.TotalMilliseconds:N0} ms"
+                ? T("RowsReturnedInTime", result.Rows.Count, result.Elapsed.TotalMilliseconds)
                 : result.RowsAffected >= 0
-                    ? $"{result.RowsAffected} row(s) affected in {result.Elapsed.TotalMilliseconds:N0} ms"
-                    : $"Statement completed in {result.Elapsed.TotalMilliseconds:N0} ms";
+                    ? T("RowsAffectedInTime", result.RowsAffected, result.Elapsed.TotalMilliseconds)
+                    : T("StatementTime", result.Elapsed.TotalMilliseconds);
             _queryResults.ShowResult(result);
             _statusText.Text = outcome;
-            AddMessage("Success", "SQL execution", outcome);
+            AddMessage("Success", T("SqlExecution"), outcome);
             if (ReferenceEquals(_resultsMessagesTabs.SelectedItem, _messagesTab))
                 _resultsMessagesTabs.SelectedItem = _resultsTab;
-            ShowFooterNotification("Query executed successfully", "success");
+            ShowFooterNotification(T("QuerySucceeded"), "success");
         }
         catch (OperationCanceledException)
         {
-            outcome = "Execution cancelled.";
+            cancelled = true;
+            outcome = T("QueryCancelledStatus");
             _queryResults.ShowCancelled();
             _statusText.Text = outcome;
-            ReportInformation("SQL execution", outcome);
+            ReportInformation(T("SqlExecution"), outcome);
         }
         catch (Exception exception)
         {
             outcome = exception.Message;
             _queryResults.ShowFailed();
-            ReportError("SQL execution (the statement transaction was rolled back when possible)", exception);
+            ReportError(T("SqlExecutionRollback"), exception);
         }
         finally
         {
@@ -1972,7 +1985,10 @@ public sealed partial class MainWindow : Window
             _queryExecutionCancellation = null;
             cancellation.Dispose();
             var entry = new QueryHistoryEntry(
-                DateTimeOffset.UtcNow, profile.Id, profile.Name, sql, succeeded, outcome);
+                DateTimeOffset.UtcNow, profile.Id, profile.Name, sql, succeeded, outcome)
+            {
+                Cancelled = cancelled
+            };
             _queryHistory.Insert(0, entry);
             while (_queryHistory.Count > 250)
                 _queryHistory.RemoveAt(_queryHistory.Count - 1);
@@ -1982,7 +1998,7 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception historyException)
             {
-                ReportError("Saving query history", historyException);
+                ReportError(T("SavingHistory"), historyException);
             }
 
             UpdateActionAvailability();
@@ -1991,13 +2007,24 @@ public sealed partial class MainWindow : Window
 
     private async Task<IReadOnlyDictionary<string, object?>?> ShowSqlParametersDialogAsync(IReadOnlyList<string> names)
     {
-        var parameterTypes = new[] { "Text", "Integer", "Decimal", "Date", "Time", "Timestamp", "Boolean", "NULL" };
+        (string Id, string Label)[] parameterTypes =
+        [
+            ("Text", T("ParameterText")), ("Integer", T("ParameterInteger")),
+            ("Decimal", T("ParameterDecimal")), ("Date", T("ParameterDate")),
+            ("Time", T("ParameterTime")), ("Timestamp", T("ParameterTimestamp")),
+            ("Boolean", T("ParameterBoolean")), ("NULL", T("ParameterNULL"))
+        ];
         var entries = new List<(string Name, TextBox Value, ComboBox Type)>();
         var fields = new StackPanel { Spacing = 8 };
         foreach (var name in names)
         {
-            var value = new TextBox { PlaceholderText = $"Value for :{name}", MinWidth = 210 };
-            var type = new ComboBox { ItemsSource = parameterTypes, SelectedIndex = 0, MinWidth = 115 };
+            var value = new TextBox { PlaceholderText = T("ParameterPlaceholder", name), MinWidth = 210 };
+            var type = new ComboBox
+            {
+                ItemsSource = parameterTypes.Select(option => new ComboBoxItem { Content = option.Label, Tag = option.Id }).ToArray(),
+                SelectedIndex = 0,
+                MinWidth = 115
+            };
             var row = new StackPanel
             {
                 Orientation = Avalonia.Layout.Orientation.Horizontal,
@@ -2014,11 +2041,11 @@ public sealed partial class MainWindow : Window
         }
 
         var error = new TextBlock { Foreground = Avalonia.Media.Brushes.IndianRed, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-        var cancel = new Button { Content = "Cancel", MinWidth = 90 };
-        var execute = new Button { Content = "Execute", MinWidth = 90 };
+        var cancel = new Button { Content = T("Cancel"), MinWidth = 90 };
+        var execute = new Button { Content = T("Execute"), MinWidth = 90 };
         var dialog = new Window
         {
-            Title = "SQL Parameters",
+            Title = T("SqlParameters"),
             Width = 560,
             Height = Math.Min(620, 170 + names.Count * 48),
             MinHeight = 220,
@@ -2042,7 +2069,7 @@ public sealed partial class MainWindow : Window
                         Spacing = 10,
                         Children =
                         {
-                            new TextBlock { Text = "Enter a value for each named SQL parameter. Choose its data type to bind it correctly.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                            new TextBlock { Text = T("SqlParametersHelp"), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                             new ScrollViewer { Content = fields, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto },
                             error
                         }
@@ -2058,12 +2085,15 @@ public sealed partial class MainWindow : Window
             {
                 var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
                 foreach (var entry in entries)
-                    values[entry.Name] = ParseSqlParameterValue(entry.Value.Text ?? string.Empty, entry.Type.SelectedItem?.ToString() ?? "Text");
+                {
+                    var type = (entry.Type.SelectedItem as ComboBoxItem)?.Tag as string ?? "Text";
+                    values[entry.Name] = ParseSqlParameterValue(entry.Value.Text ?? string.Empty, type);
+                }
                 dialog.Close(values);
             }
             catch (Exception exception) when (exception is FormatException or OverflowException)
             {
-                error.Text = $"Invalid parameter value: {exception.Message}";
+                error.Text = T("InvalidParameter", exception.Message);
             }
         };
         return await dialog.ShowDialog<Dictionary<string, object?>>(this);
@@ -2085,7 +2115,7 @@ public sealed partial class MainWindow : Window
     {
         if (_queryExecutionCancellation is { IsCancellationRequested: false } cancellation)
         {
-            _statusText.Text = "Cancellation requested...";
+            _statusText.Text = T("CancellationRequested");
             _queryResults.ShowCancelling();
             cancellation.Cancel();
         }
@@ -2098,7 +2128,7 @@ public sealed partial class MainWindow : Window
         _editorTabs.SelectedItem = editorTab.Tab;
         editorTab.Editor.CaretOffset = 0;
         Dispatcher.UIThread.Post(() => editorTab.Editor.TextArea.Focus(), DispatcherPriority.Input);
-        _statusText.Text = $"Restored query from {entry.ExecutedAt.ToLocalTime():g} ({entry.ProfileName}).";
+        _statusText.Text = T("RestoredQuery", entry.ExecutedAt.ToLocalTime(), entry.ProfileName);
     }
 
     private SqlEditorState GetHistoryEditorTab() =>
@@ -2114,6 +2144,7 @@ public sealed partial class MainWindow : Window
         var updatedPreferences = _preferences with
         {
             ExecuteSqlShortcut = changes.ExecuteShortcut.ToString(),
+            InterfaceLanguage = changes.InterfaceLanguage,
             LightThemeColors = changes.Light,
             DarkThemeColors = changes.Dark
         };
@@ -2123,7 +2154,7 @@ public sealed partial class MainWindow : Window
         _preferences = updatedPreferences;
         ApplyTheme();
         ApplyExecuteSqlShortcut();
-        await SavePreferencesAsync("Settings saved.");
+        await SavePreferencesAsync(T(changes.InterfaceLanguage == Culture.Name ? "SettingsSaved" : "SettingsSavedRestart"));
     }
 
     private void ApplyExecuteSqlShortcut()
@@ -2135,9 +2166,7 @@ public sealed partial class MainWindow : Window
     }
 
     private static string GetSqlExecutionHint(Key shortcut) =>
-        $"{shortcut} executes the selected SQL or the only statement in this editor. " +
-        "If the editor contains multiple statements, select the one to execute. Separate statements with semicolons. " +
-        "Ctrl+Space opens Firebird SQL and database-object suggestions.";
+        T("ExecuteSqlHint", shortcut);
 
     private async Task SetThemeAsync(string theme)
     {
@@ -2146,7 +2175,7 @@ public sealed partial class MainWindow : Window
 
         _preferences = _preferences with { Theme = theme };
         ApplyTheme();
-        await SavePreferencesAsync($"Theme set to {theme}.");
+        await SavePreferencesAsync(T("ThemeChanged", ThemeName(theme)));
     }
 
     private void ApplyTheme()
@@ -2180,10 +2209,10 @@ public sealed partial class MainWindow : Window
         this.FindControl<MenuItem>("ConnectionDisplayDetailedMenuItem")!.IsChecked = showDetails;
         this.FindControl<MenuItem>("ConnectionDisplayMinimalMenuItem")!.IsChecked = !showDetails;
         var toggleButton = this.FindControl<Button>("ToggleConnectionDisplayButton")!;
-        toggleButton.Content = showDetails ? "Minimal" : "Detailed";
+        toggleButton.Content = T(showDetails ? "Minimal" : "Detailed");
         ToolTip.SetTip(toggleButton, showDetails
-            ? "Switch to minimal connection names"
-            : "Switch to detailed connection information");
+            ? T("SwitchToCompact")
+            : T("SwitchToDetailed"));
     }
 
     private async Task SetConnectionDisplayModeAsync(string mode)
@@ -2199,14 +2228,14 @@ public sealed partial class MainWindow : Window
             await _preferencesStore.SaveAsync(_preferences);
             ApplyConnectionDisplayMode();
             _statusText.Text = mode == "Detailed"
-                ? "Detailed connection display enabled."
-                : "Minimal connection display enabled.";
+                ? T("DetailedModeEnabled")
+                : T("MinimalModeEnabled");
         }
         catch (Exception exception)
         {
             _preferences = previousPreferences;
             ApplyConnectionDisplayMode();
-            ReportError("Saving connection display preference", exception);
+            ReportError(T("SavingConnectionMode"), exception);
         }
     }
 
@@ -2263,7 +2292,7 @@ public sealed partial class MainWindow : Window
         if (e.Key == Key.S && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             e.Handled = true;
-            await SaveSqlEditorRecoveryNowAsync();
+            await SaveSqlEditorRecoveryNowAsync(T("EditorSaved"));
             return;
         }
 
@@ -2293,7 +2322,7 @@ public sealed partial class MainWindow : Window
         if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
-            _statusText.Text = "Connect to a database before requesting SQL suggestions.";
+            _statusText.Text = T("ConnectForCompletion");
             return;
         }
 
@@ -2304,7 +2333,7 @@ public sealed partial class MainWindow : Window
             var documentText = editor.Document.Text;
             if (!_completionMetadataCache.TryGetValue(profile.Id, out var schema))
             {
-                _statusText.Text = "Loading SQL completion metadata...";
+                _statusText.Text = T("LoadingCompletionMetadata");
                 schema = await Task.Run(() => _sessionManager.GetSqlCompletionMetadataAsync(profile.Id));
                 _completionMetadataCache[profile.Id] = schema;
             }
@@ -2316,7 +2345,7 @@ public sealed partial class MainWindow : Window
             {
                 if (!_completionDomainCache.TryGetValue(profile.Id, out var domains))
                 {
-                    _statusText.Text = "Loading database domains for type completion...";
+                    _statusText.Text = T("LoadingCompletionDomains");
                     domains = await Task.Run(() => _sessionManager.GetSqlCompletionDomainsAsync(profile.Id));
                     _completionDomainCache[profile.Id] = domains;
                 }
@@ -2329,7 +2358,7 @@ public sealed partial class MainWindow : Window
             var suggestions = SqlCompletionCatalog.Build(documentText, caretOffset, completionSchema);
             if (suggestions.Count == 0)
             {
-                _statusText.Text = "No SQL suggestions match the current context.";
+                _statusText.Text = T("NoSqlSuggestions");
                 return;
             }
 
@@ -2343,12 +2372,12 @@ public sealed partial class MainWindow : Window
             foreach (var suggestion in suggestions)
                 completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(suggestion));
             completionWindow.Show();
-            _statusText.Text = $"{suggestions.Count:N0} SQL suggestion(s) · database: {profile.Name}" +
-                (domainSearchDeferred ? " · type a prefix and press Ctrl+Space to search database domains" : string.Empty);
+            _statusText.Text = T("SqlSuggestionsCount", suggestions.Count, profile.Name) +
+                (domainSearchDeferred ? T("DomainSearchTip") : string.Empty);
         }
         catch (Exception exception)
         {
-            ReportError("SQL autocomplete", exception);
+            ReportError(T("SqlAutocomplete"), exception);
         }
     }
 
@@ -2360,7 +2389,7 @@ public sealed partial class MainWindow : Window
             var selectedSql = editor.SelectedText.Trim();
             EnsureMultipleStatementsAreSeparated(selectedSql);
             if (SplitSqlStatements(selectedSql).Count > 1)
-                throw new InvalidOperationException("Select exactly one SQL statement to execute. Multiple statements must be executed separately.");
+                throw new InvalidOperationException(T("SelectOneStatement"));
             return selectedSql;
         }
 
@@ -2368,7 +2397,7 @@ public sealed partial class MainWindow : Window
         EnsureMultipleStatementsAreSeparated(documentText);
         var statements = SplitSqlStatements(documentText);
         if (statements.Count > 1)
-            throw new InvalidOperationException("This editor contains multiple SQL statements. Select the complete statement you want to execute. Separate statements with semicolons.");
+            throw new InvalidOperationException(T("SelectCompleteStatement"));
 
         if (statements.Count == 0)
             return string.Empty;
@@ -2434,7 +2463,7 @@ public sealed partial class MainWindow : Window
         }
 
         if (starts > 1 && SplitSqlStatements(sql).Count <= 1)
-            throw new InvalidOperationException("Multiple SQL statements must be separated with semicolons. Add a semicolon between statements, then select the statement you want to execute.");
+            throw new InvalidOperationException(T("SeparateStatements"));
     }
 
     private static IReadOnlyList<string> SplitSqlStatements(string sql)
@@ -2517,9 +2546,9 @@ public sealed partial class MainWindow : Window
             if (!_isRestoringEditors)
                 ScheduleSqlEditorRecoverySave();
         };
-        var renameItem = new MenuItem { Header = "Rename editor…" };
+        var renameItem = new MenuItem { Header = T("RenameEditorDialog") };
         renameItem.Click += async (_, _) => await RenameSqlEditorTabAsync(tab);
-        var closeItem = new MenuItem { Header = "Close tab" };
+        var closeItem = new MenuItem { Header = T("CloseTab") };
         closeItem.Click += async (_, _) => await CloseSqlEditorTabAsync(tab);
         tab.ContextMenu = new ContextMenu { Items = { renameItem, closeItem } };
         EnableMiddleClickClose(tab, () => CloseSqlEditorTabAsync(tab));
@@ -2550,7 +2579,7 @@ public sealed partial class MainWindow : Window
         };
         ApplySqlSyntaxHighlighting(editor);
 
-        var tab = new TabItem { Header = $"SQL Editor {number}", Content = editor };
+        var tab = new TabItem { Header = T("NumberedEditor", number), Content = editor };
         ConfigureSqlEditorTab(tab, editor);
         var insertIndex = _sqlEditors.Count - 1;
         _editorTabs.Items.Insert(insertIndex, tab);
@@ -2561,12 +2590,12 @@ public sealed partial class MainWindow : Window
 
     private async Task RenameSqlEditorTabAsync(TabItem tab)
     {
-        var currentName = tab.Header?.ToString() ?? "SQL Editor";
+        var currentName = tab.Header?.ToString() ?? T("SqlEditor");
         var nameInput = new TextBox { Text = currentName, Margin = new Avalonia.Thickness(0, 8, 0, 12) };
-        var renameButton = new Button { Content = "Rename", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, MinWidth = 90 };
+        var renameButton = new Button { Content = T("RenameEditor"), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, MinWidth = 90 };
         var dialog = new Window
         {
-            Title = "Rename SQL Editor",
+            Title = T("RenameSqlEditor"),
             Width = 360,
             Height = 145,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -2574,7 +2603,7 @@ public sealed partial class MainWindow : Window
             Content = new StackPanel
             {
                 Margin = new Avalonia.Thickness(14),
-                Children = { new TextBlock { Text = "Editor title" }, nameInput, renameButton }
+                Children = { new TextBlock { Text = T("EditorTitle") }, nameInput, renameButton }
             }
         };
         renameButton.Click += (_, _) => dialog.Close(true);
@@ -2615,11 +2644,11 @@ public sealed partial class MainWindow : Window
 
     private async Task<bool> ConfirmCloseSqlEditorTabAsync(TabItem tab)
     {
-        var cancelButton = new Button { Content = "Cancel", MinWidth = 90 };
-        var closeButton = new Button { Content = "Close editor", MinWidth = 100 };
+        var cancelButton = new Button { Content = T("Cancel"), MinWidth = 90 };
+        var closeButton = new Button { Content = T("CloseEditor"), MinWidth = 100 };
         var dialog = new Window
         {
-            Title = "Close SQL Editor",
+            Title = T("CloseSqlEditor"),
             Width = 390,
             Height = 165,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -2632,7 +2661,7 @@ public sealed partial class MainWindow : Window
                 {
                     new TextBlock
                     {
-                        Text = $"'{tab.Header}' contains SQL text. Close this editor and delete its saved contents?",
+                        Text = T("ConfirmCloseEditor", tab.Header),
                         TextWrapping = Avalonia.Media.TextWrapping.Wrap
                     },
                     new StackPanel
@@ -2667,7 +2696,7 @@ public sealed partial class MainWindow : Window
         if (SelectedConnection is not { } profile ||
             !_sessionManager.GetActiveSessions().Any(session => session.ProfileId == profile.Id))
         {
-            ShowFooterNotification("Connect to a database to navigate database objects.", "information");
+            ShowFooterNotification(T("ConnectToNavigate"), "information");
             return;
         }
 
@@ -2693,7 +2722,7 @@ public sealed partial class MainWindow : Window
             if (relation is not null)
             {
                 await ShowTableDetailsAsync(new DatabaseMetadataObject(
-                    relation.Kind == "View" ? "Views" : "Tables", relation.Name, null, "Opened from SQL Editor"));
+                    relation.Kind == "View" ? "Views" : "Tables", relation.Name, null, T("OpenedFromSqlEditor")));
                 return;
             }
 
@@ -2708,7 +2737,7 @@ public sealed partial class MainWindow : Window
                     _ => databaseObject.Kind + "s"
                 };
                 await ShowMetadataObjectDetailsAsync(new DatabaseMetadataObject(
-                    kind, databaseObject.Name, null, $"{databaseObject.Kind} opened from SQL Editor"));
+                    kind, databaseObject.Name, null, T("OpenedObjectFromEditor", databaseObject.Kind)));
                 return;
             }
 
@@ -2724,12 +2753,12 @@ public sealed partial class MainWindow : Window
                 var owner = fieldMatches[0];
                 await ShowTableDetailsAsync(new DatabaseMetadataObject(
                     owner.Kind == "View" ? "Views" : "Tables", owner.Name, null,
-                    $"Opened from SQL field '{identifier}'"));
+                    T("OpenedFromField", identifier)));
             }
         }
         catch (Exception exception)
         {
-            ReportError($"Navigating to database object '{identifier}'", exception);
+            ReportError(T("NavigatingToObject", identifier), exception);
         }
     }
 
@@ -2893,8 +2922,8 @@ public sealed partial class MainWindow : Window
                 panel.Children.Add(new TextBlock
                 {
                     Text = item.Kind == "Procedures"
-                        ? "No details are available. The procedure name may be ambiguous because of package metadata."
-                        : "No additional metadata is available for this object.",
+                        ? T("AmbiguousProcedureMetadata")
+                        : T("NoAdditionalMetadata"),
                     Opacity = 0.75,
                     TextWrapping = Avalonia.Media.TextWrapping.Wrap
                 });
@@ -2946,7 +2975,7 @@ public sealed partial class MainWindow : Window
                 Tag = new MetadataObjectTabIdentity(profile.Id, item.Kind, item.Name),
                 Content = new ScrollViewer { Content = panel }
             };
-            var closeItem = new MenuItem { Header = "Close tab" };
+            var closeItem = new MenuItem { Header = T("CloseTab") };
             closeItem.Click += (_, _) => CloseMetadataObjectTab(tab);
             tab.ContextMenu = new ContextMenu { Items = { closeItem } };
             EnableMiddleClickClose(tab, () => { CloseMetadataObjectTab(tab); return Task.CompletedTask; });
@@ -2956,7 +2985,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError($"Opening {item.Kind} object '{item.Name}'", exception);
+            ReportError(T("OpeningObject", item.Kind, item.Name), exception);
         }
     }
 
@@ -2980,10 +3009,10 @@ public sealed partial class MainWindow : Window
 
     private static string GetMetadataDisplayKind(string kind) => kind switch
     {
-        "Procedures" => "Procedure",
-        "Triggers" => "Trigger",
-        "Indexes" => "Index",
-        "Domains" => "Domain",
+        "Procedures" => T("Procedure"),
+        "Triggers" => T("Trigger"),
+        "Indexes" => T("Index"),
+        "Domains" => T("Domain"),
         _ => kind
     };
 
@@ -3002,10 +3031,10 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        _tableDetailsTab.Header = $"{(table.Kind == "Views" ? "View" : "Table")}: {table.Name}";
+        _tableDetailsTab.Header = $"{T(table.Kind == "Views" ? "View" : "Table")}: {table.Name}";
         _tableDetailsTab.IsVisible = true;
         _editorTabs.SelectedItem = _tableDetailsTab;
-        _tableDetailsTitle.Text = $"{table.Name}  ·  Loading object details...";
+        _tableDetailsTitle.Text = T("LoadingObjectDetails", table.Name);
         _currentTableDetailsName = table.Name;
         _currentTableDataOffset = 0;
         _currentTableDataPage = null;
@@ -3016,7 +3045,7 @@ public sealed partial class MainWindow : Window
         _tableDataGrid.Columns.Clear();
         _previousTableDataPageButton.IsEnabled = false;
         _nextTableDataPageButton.IsEnabled = false;
-        _tableDataPageStatus.Text = "Loading...";
+        _tableDataPageStatus.Text = T("Loading");
 
         try
         {
@@ -3042,13 +3071,13 @@ public sealed partial class MainWindow : Window
                 : FirebirdDdlPreview.FormatSource("View source", details.FirstOrDefault(item => item.Kind == "View source")?.Details
                     ?? "-- View definition is not available.");
             _tableDdlText.TextArea.TextView.Redraw();
-            _tableDetailsTitle.Text = $"{table.Name}  ·  {fields.Length} column(s) · {constraints.Count} constraint(s)";
+            _tableDetailsTitle.Text = T("TableDetailsSummary", table.Name, fields.Length, constraints.Count);
             await LoadTableDataPageAsync(profile, table.Name, 0, null, false);
         }
         catch (Exception exception)
         {
-            ReportError($"Loading table details for '{table.Name}'", exception);
-            _tableDataPageStatus.Text = "Load failed";
+            ReportError(T("LoadingTableDetails", table.Name), exception);
+            _tableDataPageStatus.Text = T("LoadFailed");
         }
     }
 
@@ -3076,7 +3105,7 @@ public sealed partial class MainWindow : Window
     {
         _previousTableDataPageButton.IsEnabled = false;
         _nextTableDataPageButton.IsEnabled = false;
-        _tableDataPageStatus.Text = $"Loading rows {offset + 1:N0}–{offset + TableDataPageSize:N0}...";
+        _tableDataPageStatus.Text = T("LoadingRows", offset + 1, offset + TableDataPageSize);
         try
         {
             var page = await _sessionManager.GetTableDataPageAsync(
@@ -3093,16 +3122,16 @@ public sealed partial class MainWindow : Window
             var first = page.Rows.Count == 0 ? 0 : offset + 1;
             var last = offset + page.Rows.Count;
             _tableDataPageStatus.Text = page.Rows.Count == 0
-                ? "No rows on this page"
-                : $"Rows {first:N0}–{last:N0} · page size {TableDataPageSize}" +
-                    (page.HasStableOrder ? " · primary-key seek" : " · offset (no primary key)") +
-                    (page.HasNext ? " · more available" : " · end reached");
-            _statusText.Text = $"Loaded {page.Rows.Count:N0} row(s) from '{tableName}' (offset {offset:N0}).";
+                ? T("NoRowsOnPage")
+                : T("PageRows", first, last, TableDataPageSize) +
+                    (page.HasStableOrder ? T("PrimaryKeySeek") : T("OffsetPaging")) +
+                    (page.HasNext ? T("MoreRowsAvailable") : T("EndOfRows"));
+            _statusText.Text = T("RowsLoaded", page.Rows.Count, tableName, offset);
         }
         catch (Exception exception)
         {
-            _tableDataPageStatus.Text = "Load failed";
-            ReportError($"Loading table data for '{tableName}'", exception);
+            _tableDataPageStatus.Text = T("LoadFailed");
+            ReportError(T("LoadingTableData", tableName), exception);
         }
     }
 
@@ -3126,7 +3155,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Saving application preferences (the setting remains active for this session)", exception);
+            ReportError(T("SavingPreferences"), exception);
         }
     }
 
@@ -3148,7 +3177,7 @@ public sealed partial class MainWindow : Window
             await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
             await PersistSqlEditorRecoveryAsync(
                 cancellationToken,
-                showNotification ? "Editor autosaved" : null);
+                showNotification ? T("EditorAutosaved") : null);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -3156,7 +3185,7 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             if (IsVisible)
-                ReportError("Saving SQL editor recovery data", exception);
+                ReportError(T("SavingEditorRecovery"), exception);
         }
         finally
         {
@@ -3166,7 +3195,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async Task SaveSqlEditorRecoveryNowAsync(string? confirmation = "Editor saved")
+    private async Task SaveSqlEditorRecoveryNowAsync(string? confirmation)
     {
         var pendingSave = _recoverySaveTask;
         _recoverySaveCancellation?.Cancel();
@@ -3177,7 +3206,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Saving SQL editor recovery data", exception);
+            ReportError(T("SavingEditorRecovery"), exception);
         }
     }
 
@@ -3189,7 +3218,7 @@ public sealed partial class MainWindow : Window
         var snapshot = new SqlEditorRecoverySnapshot(
             1,
             DateTimeOffset.UtcNow,
-            _sqlEditors.Select(item => item.Tab.Header?.ToString() ?? "SQL Editor").ToArray(),
+            _sqlEditors.Select(item => item.Tab.Header?.ToString() ?? T("SqlEditor")).ToArray(),
             _sqlEditors.Select(item => item.Editor.Text ?? string.Empty).ToArray(),
             Math.Max(0, activeIndex));
         await _sqlEditorRecoveryStore.SaveAsync(snapshot, cancellationToken);
@@ -3206,7 +3235,7 @@ public sealed partial class MainWindow : Window
         if (snapshot.Version != 1 || snapshot.Queries.Length == 0 ||
             snapshot.Queries.Length > 50 || snapshot.Titles.Length != snapshot.Queries.Length)
         {
-            ReportError("SQL editor recovery", "The recovery file has an unsupported version or invalid editor data. It was not restored.");
+            ReportError(T("SqlEditorRecovery"), T("InvalidEditorRecovery"));
             return;
         }
 
@@ -3227,7 +3256,7 @@ public sealed partial class MainWindow : Window
                 }
 
                 editorTab.Tab.Header = string.IsNullOrWhiteSpace(snapshot.Titles[index])
-                    ? $"SQL Editor {index + 1}"
+                    ? T("NumberedEditor", index + 1)
                     : snapshot.Titles[index];
                 editorTab.Editor.Text = snapshot.Queries[index] ?? string.Empty;
             }
@@ -3241,8 +3270,8 @@ public sealed partial class MainWindow : Window
         }
 
         ReportInformation(
-            "Saved SQL workspace",
-            $"Restored {snapshot.Queries.Length} SQL editor tab(s) from the previous session (last saved {snapshot.SavedAt.ToLocalTime():g}). Review the restored queries before executing them.");
+            T("SavedSqlWorkspace"),
+            T("WorkspaceRestored", snapshot.Queries.Length, snapshot.SavedAt.ToLocalTime()));
     }
 
     private void ReportError(string context, Exception exception, string? secretToRedact = null)
@@ -3256,10 +3285,10 @@ public sealed partial class MainWindow : Window
     private void ReportError(string context, string details)
     {
         AddMessage("Error", context, details);
-        _statusText.Text = $"{context} failed.";
+        _statusText.Text = T("OperationFailed", context);
         _resultsMessagesTabs.SelectedItem = _messagesTab;
         _messagesView.ShowLatest();
-        ShowFooterNotification($"Error: {context}", "error");
+        ShowFooterNotification(T("OperationError", context), "error");
     }
 
     private void ReportInformation(string context, string details)
@@ -3275,7 +3304,7 @@ public sealed partial class MainWindow : Window
     {
         const int maximumDetailsCharacters = 30_000;
         if (details.Length > maximumDetailsCharacters)
-            details = details[..maximumDetailsCharacters] + Environment.NewLine + "[Message details truncated.]";
+            details = details[..maximumDetailsCharacters] + Environment.NewLine + T("DetailsTruncated");
         _messages.Insert(0, new StudioMessageEntry(DateTimeOffset.Now, severity, context, details));
         while (_messages.Count > 500)
             _messages.RemoveAt(_messages.Count - 1);
@@ -3334,7 +3363,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Saving SQL editor workspace before update", exception);
+            ReportError(T("SavingWorkspaceForUpdate"), exception);
         }
 
         _recoverySaveCancellation?.Cancel();
@@ -3345,7 +3374,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Closing database sessions before update", exception);
+            ReportError(T("ClosingSessionsForUpdate"), exception);
         }
 
         _isPreparedForUpdateShutdown = true;
@@ -3368,7 +3397,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Saving SQL editor workspace before closing", exception);
+            ReportError(T("SavingWorkspaceForExit"), exception);
         }
 
         _recoverySaveCancellation?.Cancel();
@@ -3379,7 +3408,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ReportError("Closing database sessions", exception);
+            ReportError(T("ClosingSessions"), exception);
         }
     }
 

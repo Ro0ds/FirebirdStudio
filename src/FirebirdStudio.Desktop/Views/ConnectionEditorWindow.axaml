@@ -1,78 +1,79 @@
 <Window
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
     x:Class="FirebirdStudio.Desktop.Views.ConnectionEditorWindow"
     Width="760"
     Height="860"
     MinWidth="640"
     MinHeight="700"
     WindowStartupLocation="CenterOwner"
-    Title="Firebird connection registration">
+    Title="{loc:StudioText ConnectionRegistrationTitle}">
   <Grid RowDefinitions="*,Auto,Auto" Margin="18">
     <TabControl Grid.Row="0">
-      <TabItem Header="General">
+      <TabItem Header="{loc:StudioText General}">
         <ScrollViewer>
           <StackPanel Spacing="10" Margin="8">
-            <TextBlock Text="Connection registration" Classes="section-title" />
-            <TextBlock Text="The connection name is the local alias shown in the database list. Passwords are not stored in the profile." TextWrapping="Wrap" Classes="secondary" />
+            <TextBlock Text="{loc:StudioText ConnectionRegistration}" Classes="section-title" />
+            <TextBlock Text="{loc:StudioText ConnectionRegistrationHelp}" TextWrapping="Wrap" Classes="secondary" />
 
-            <TextBlock Text="Connection name / alias" />
-            <TextBox x:Name="NameInput" PlaceholderText="Production database" />
+            <TextBlock Text="{loc:StudioText ConnectionName}" />
+            <TextBox x:Name="NameInput" PlaceholderText="{loc:StudioText ExampleConnectionName}" />
 
-            <TextBlock Text="Server type" />
+            <TextBlock Text="{loc:StudioText ServerType}" />
             <ComboBox x:Name="ServerTypeInput" SelectedIndex="0">
-              <ComboBoxItem Content="Remote server (TCP/IP)" />
-              <ComboBoxItem Content="Embedded database" />
+              <ComboBoxItem Content="{loc:StudioText RemoteServer}" />
+              <ComboBoxItem Content="{loc:StudioText EmbeddedDatabase}" />
             </ComboBox>
-            <TextBlock Text="Remote connections use TCP/IP. Embedded mode loads the selected client library in this process." TextWrapping="Wrap" Classes="secondary" />
+            <TextBlock Text="{loc:StudioText ServerTypeHelp}" TextWrapping="Wrap" Classes="secondary" />
 
             <Grid ColumnDefinitions="*,130" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="5">
-                <TextBlock Text="Server / host" />
+                <TextBlock Text="{loc:StudioText ServerHost}" />
                 <TextBox x:Name="HostInput" PlaceholderText="localhost" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="5">
-                <TextBlock Text="TCP port" />
+                <TextBlock Text="{loc:StudioText TcpPort}" />
                 <TextBox x:Name="PortInput" Text="3050" />
               </StackPanel>
             </Grid>
 
-            <TextBlock Text="Database file path or server-side alias" />
+            <TextBlock Text="{loc:StudioText DatabasePath}" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-              <TextBox Grid.Column="0" x:Name="DatabaseInput" PlaceholderText="C:\Databases\APP.FDB or /var/lib/firebird/data/APP.FDB or an alias" />
-              <Button Grid.Column="1" x:Name="BrowseDatabaseButton" Classes="action" Content="Browse…" />
+              <TextBox Grid.Column="0" x:Name="DatabaseInput" PlaceholderText="{loc:StudioText ExampleDatabasePath}" />
+              <Button Grid.Column="1" x:Name="BrowseDatabaseButton" Classes="action" Content="{loc:StudioText Browse}" />
             </Grid>
-            <TextBlock Text="The file picker accepts .GDB and .FDB files on this computer. For remote connections, the selected path must also be accessible to the Firebird server; server-side aliases can be entered manually." Classes="secondary" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:StudioText DatabaseFileHelp}" Classes="secondary" TextWrapping="Wrap" />
 
-            <TextBlock Text="Client library path (required for embedded mode)" />
-            <TextBox x:Name="ClientLibraryInput" PlaceholderText="Path to fbclient.dll, libfbclient.so, or platform equivalent" />
+            <TextBlock Text="{loc:StudioText ClientLibraryPath}" />
+            <TextBox x:Name="ClientLibraryInput" PlaceholderText="{loc:StudioText ClientLibraryExample}" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="5">
-                <TextBlock Text="User name" />
+                <TextBlock Text="{loc:StudioText UserName}" />
                 <TextBox x:Name="UserNameInput" Text="SYSDBA" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="5">
-                <TextBlock Text="Role (optional)" />
+                <TextBlock Text="{loc:StudioText OptionalRole}" />
                 <TextBox x:Name="RoleInput" />
               </StackPanel>
             </Grid>
 
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="5">
-                <TextBlock Text="Character set" />
+                <TextBlock Text="{loc:StudioText CharacterSet}" />
                 <TextBox x:Name="CharacterSetInput" Text="UTF8" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="5">
-                <TextBlock Text="SQL dialect" />
+                <TextBlock Text="{loc:StudioText SqlDialect}" />
                 <ComboBox x:Name="DialectInput" SelectedIndex="2">
-                  <ComboBoxItem Content="Dialect 1" />
-                  <ComboBoxItem Content="Dialect 2" />
-                  <ComboBoxItem Content="Dialect 3" />
+                  <ComboBoxItem Content="{loc:StudioText Dialect1}" />
+                  <ComboBoxItem Content="{loc:StudioText Dialect2}" />
+                  <ComboBoxItem Content="{loc:StudioText Dialect3}" />
                 </ComboBox>
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="5">
-                <TextBlock Text="Connect timeout (s)" />
+                <TextBlock Text="{loc:StudioText ConnectTimeout}" />
                 <TextBox x:Name="TimeoutInput" Text="15" />
               </StackPanel>
             </Grid>
@@ -80,58 +81,58 @@
         </ScrollViewer>
       </TabItem>
 
-      <TabItem Header="Advanced">
+      <TabItem Header="{loc:StudioText Advanced}">
         <ScrollViewer>
           <StackPanel Spacing="10" Margin="8">
-            <TextBlock Text="Provider and network options" Classes="section-title" />
-            <TextBlock Text="These options are passed to the Firebird .NET provider. A connection test always bypasses the pool to test a fresh connection." TextWrapping="Wrap" Classes="secondary" />
+            <TextBlock Text="{loc:StudioText NetworkOptions}" Classes="section-title" />
+            <TextBlock Text="{loc:StudioText NetworkOptionsHelp}" TextWrapping="Wrap" Classes="secondary" />
 
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="5">
-                <TextBlock Text="Packet size (bytes)" />
+                <TextBlock Text="{loc:StudioText PacketSize}" />
                 <TextBox x:Name="PacketSizeInput" Text="8192" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="5">
-                <TextBlock Text="Fetch size (rows)" />
+                <TextBlock Text="{loc:StudioText FetchSize}" />
                 <TextBox x:Name="FetchSizeInput" Text="200" />
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="5">
-                <TextBlock Text="Database cache pages" />
+                <TextBlock Text="{loc:StudioText DatabaseCachePages}" />
                 <TextBox x:Name="DatabaseCachePagesInput" Text="0" />
               </StackPanel>
             </Grid>
 
-            <CheckBox x:Name="PoolingInput" Content="Enable connection pooling" IsChecked="True" />
+            <CheckBox x:Name="PoolingInput" Content="{loc:StudioText EnablePooling}" IsChecked="True" />
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="5">
-                <TextBlock Text="Minimum pool size" />
+                <TextBlock Text="{loc:StudioText MinPoolSize}" />
                 <TextBox x:Name="MinPoolSizeInput" Text="0" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="5">
-                <TextBlock Text="Maximum pool size" />
+                <TextBlock Text="{loc:StudioText MaxPoolSize}" />
                 <TextBox x:Name="MaxPoolSizeInput" Text="100" />
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="5">
-                <TextBlock Text="Connection lifetime (s)" />
+                <TextBlock Text="{loc:StudioText ConnectionLifetime}" />
                 <TextBox x:Name="ConnectionLifetimeInput" Text="0" />
               </StackPanel>
             </Grid>
 
-            <CheckBox x:Name="CompressionInput" Content="Enable wire compression (if supported by the server and provider)" />
-            <CheckBox x:Name="DisableDatabaseTriggersInput" Content="Suppress database triggers for this connection" />
-            <TextBlock Text="Warning: suppressing database triggers can bypass database-side business rules. The provider does not allow this option together with connection pooling." TextWrapping="Wrap" FontSize="12" Opacity="0.8" />
-            <CheckBox x:Name="DisableGarbageCollectionInput" Content="Disable garbage collection for this connection" />
-            <TextBlock Text="This option changes Firebird garbage-collection behavior. Leave it disabled unless you understand the operational impact." TextWrapping="Wrap" FontSize="12" Opacity="0.8" />
+            <CheckBox x:Name="CompressionInput" Content="{loc:StudioText EnableCompression}" />
+            <CheckBox x:Name="DisableDatabaseTriggersInput" Content="{loc:StudioText SuppressDatabaseTriggers}" />
+            <TextBlock Text="{loc:StudioText SuppressDatabaseTriggersWarning}" TextWrapping="Wrap" FontSize="12" Opacity="0.8" />
+            <CheckBox x:Name="DisableGarbageCollectionInput" Content="{loc:StudioText DisableGarbageCollection}" />
+            <TextBlock Text="{loc:StudioText GarbageCollectionHelp}" TextWrapping="Wrap" FontSize="12" Opacity="0.8" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
     </TabControl>
 
     <StackPanel Grid.Row="1" Spacing="5" Margin="0,12,0,0">
-      <TextBlock Text="Password (used only for the test below)" />
+      <TextBlock Text="{loc:StudioText TestPassword}" />
       <TextBox x:Name="PasswordInput" PasswordChar="●" IsUndoEnabled="False" />
-      <TextBlock Text="The test password is cleared after the attempt and is never saved in the connection profile. Remembered passwords for saved sessions are managed separately through the operating system credential store." TextWrapping="Wrap" Classes="secondary" />
-      <Button x:Name="TestConnectionButton" Classes="action" Content="Run connection diagnostics" HorizontalAlignment="Left" />
+      <TextBlock Text="{loc:StudioText TestPasswordHelp}" TextWrapping="Wrap" Classes="secondary" />
+      <Button x:Name="TestConnectionButton" Classes="action" Content="{loc:StudioText RunDiagnostics}" HorizontalAlignment="Left" />
       <ScrollViewer MaxHeight="180" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
         <TextBlock x:Name="TestResultText" TextWrapping="Wrap" MinHeight="38"
                    FontFamily="Cascadia Code, Consolas, monospace" FontSize="10" />
@@ -139,11 +140,11 @@
     </StackPanel>
 
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,14,0,0">
-      <Button x:Name="CancelButton" Classes="action" Content="Cancel" />
-      <Button x:Name="SaveButton" Classes="action accent" AutomationProperties.Name="Save profile">
+      <Button x:Name="CancelButton" Classes="action" Content="{loc:StudioText Cancel}" />
+      <Button x:Name="SaveButton" Classes="action accent" AutomationProperties.Name="{loc:StudioText SaveProfile}">
         <StackPanel Classes="action-label">
           <PathIcon Classes="action-icon" Data="{StaticResource ActionConfirmIcon}" />
-          <TextBlock Text="Save profile" />
+          <TextBlock Text="{loc:StudioText SaveProfile}" />
         </StackPanel>
       </Button>
     </StackPanel>

@@ -17,7 +17,19 @@ public sealed partial class App : Avalonia.Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new Views.MainWindow();
+            var store = new StudioPreferencesStore();
+            var preferences = store.LoadAsync();
+            try
+            {
+                StudioText.SelectLanguage(preferences.GetAwaiter().GetResult().InterfaceLanguage);
+            }
+            catch (Exception)
+            {
+                // The main window reports the same load failure when it opens.
+                StudioText.SelectLanguage(StudioText.English);
+            }
+
+            desktop.MainWindow = new Views.MainWindow(store, preferences);
         }
 
         base.OnFrameworkInitializationCompleted();

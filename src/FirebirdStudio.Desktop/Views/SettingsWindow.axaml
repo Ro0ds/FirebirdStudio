@@ -1,12 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
         xmlns:colors="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.ColorPicker"
         x:Class="FirebirdStudio.Desktop.Views.SettingsWindow"
         Width="540"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
-        Title="Settings">
+        Title="{loc:StudioText Settings}">
   <Window.Styles>
     <Style Selector="colors|ColorPicker.theme-color">
       <Setter Property="IsAlphaEnabled" Value="False" />
@@ -17,50 +18,53 @@
   </Window.Styles>
   <Grid Margin="18" RowDefinitions="*,Auto,Auto" RowSpacing="12">
     <TabControl>
-      <TabItem Header="Keyboard shortcuts">
+      <TabItem Header="{loc:StudioText KeyboardShortcuts}">
         <StackPanel Spacing="12" Margin="0,10">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-            <TextBlock Text="Execute SQL" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:StudioText ExecuteSql}" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" x:Name="ExecuteSqlShortcutBox" MinWidth="100"
-                      AutomationProperties.Name="Execute SQL shortcut" />
+                      AutomationProperties.Name="{loc:StudioText ExecuteSqlShortcut}" />
           </Grid>
-          <Button x:Name="ResetShortcutButton" Content="Restore default" Classes="action" />
+          <Button x:Name="ResetShortcutButton" Content="{loc:StudioText RestoreDefault}" Classes="action" />
         </StackPanel>
       </TabItem>
-      <TabItem Header="Appearance" x:Name="AppearanceSettingsTab">
+      <TabItem Header="{loc:StudioText Appearance}" x:Name="AppearanceSettingsTab">
         <ScrollViewer MaxHeight="440" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="12" Margin="0,10,4,0">
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="Theme colors" Classes="section-title" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:StudioText ThemeColors}" Classes="section-title" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" x:Name="PaletteThemeBox" MinWidth="100"
-                        AutomationProperties.Name="Theme to customize" />
+                        AutomationProperties.Name="{loc:StudioText ThemeToCustomize}">
+                <ComboBoxItem Content="{loc:StudioText ThemeLight}" Tag="Light" />
+                <ComboBoxItem Content="{loc:StudioText ThemeDark}" Tag="Dark" />
+              </ComboBox>
             </Grid>
             <Grid ColumnDefinitions="*,108,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="7">
-              <TextBlock Text="Accent" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:StudioText Accent}" VerticalAlignment="Center" />
               <TextBox Grid.Column="1" x:Name="AccentColorBox" PlaceholderText="#RRGGBB"
-                       AutomationProperties.Name="Accent color in hexadecimal" />
+                       AutomationProperties.Name="{loc:StudioText AccentHex}" />
               <colors:ColorPicker Grid.Column="2" x:Name="AccentColorPicker" Classes="theme-color"
-                                  AutomationProperties.Name="Choose accent color" ToolTip.Tip="Choose accent color" />
-              <TextBlock Grid.Row="1" Text="SQL selection background" VerticalAlignment="Center" />
+                                  AutomationProperties.Name="{loc:StudioText ChooseAccent}" ToolTip.Tip="{loc:StudioText ChooseAccent}" />
+              <TextBlock Grid.Row="1" Text="{loc:StudioText SqlSelectionBackground}" VerticalAlignment="Center" />
               <TextBox Grid.Row="1" Grid.Column="1" x:Name="SelectionBackgroundBox" PlaceholderText="#RRGGBB"
-                       AutomationProperties.Name="SQL selection background in hexadecimal" />
+                       AutomationProperties.Name="{loc:StudioText SqlSelectionBackgroundHex}" />
               <colors:ColorPicker Grid.Row="1" Grid.Column="2" x:Name="SelectionBackgroundPicker" Classes="theme-color"
-                                  AutomationProperties.Name="Choose SQL selection background"
-                                  ToolTip.Tip="Choose SQL selection background" />
-              <TextBlock Grid.Row="2" Text="SQL selection text" VerticalAlignment="Center" />
+                                  AutomationProperties.Name="{loc:StudioText ChooseSqlSelectionBackground}"
+                                  ToolTip.Tip="{loc:StudioText ChooseSqlSelectionBackground}" />
+              <TextBlock Grid.Row="2" Text="{loc:StudioText SqlSelectionText}" VerticalAlignment="Center" />
               <TextBox Grid.Row="2" Grid.Column="1" x:Name="SelectionForegroundBox" PlaceholderText="#RRGGBB"
-                       AutomationProperties.Name="SQL selection text color in hexadecimal" />
+                       AutomationProperties.Name="{loc:StudioText SqlSelectionTextHex}" />
               <colors:ColorPicker Grid.Row="2" Grid.Column="2" x:Name="SelectionForegroundPicker" Classes="theme-color"
-                                  AutomationProperties.Name="Choose SQL selection text color"
-                                  ToolTip.Tip="Choose SQL selection text color" />
+                                  AutomationProperties.Name="{loc:StudioText ChooseSqlSelectionText}"
+                                  ToolTip.Tip="{loc:StudioText ChooseSqlSelectionText}" />
             </Grid>
             <Border x:Name="PalettePreviewSurface" Padding="10" CornerRadius="4" BorderThickness="1"
                     BorderBrush="{DynamicResource StudioDividerBrush}">
               <StackPanel Spacing="8">
-                <TextBlock x:Name="PalettePreviewTitle" Text="Preview" Classes="panel-title" />
+                <TextBlock x:Name="PalettePreviewTitle" Text="{loc:StudioText Preview}" Classes="panel-title" />
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                   <Border x:Name="AccentPreview" Padding="8,4" CornerRadius="3">
-                    <TextBlock x:Name="AccentPreviewText" Text="Execute" />
+                    <TextBlock x:Name="AccentPreviewText" Text="{loc:StudioText Execute}" />
                   </Border>
                   <Border Grid.Column="1" x:Name="SelectionPreview" Padding="6,4" BorderThickness="1" HorizontalAlignment="Left">
                     <TextBlock x:Name="SelectionPreviewText" Text="SELECT ID FROM ORDERS"
@@ -70,18 +74,32 @@
                 <TextBlock x:Name="SelectionContrastText" />
               </StackPanel>
             </Border>
-            <Button x:Name="ResetThemeColorsButton" Classes="action" Content="Restore theme defaults" />
+            <Button x:Name="ResetThemeColorsButton" Classes="action" Content="{loc:StudioText RestoreThemeDefaults}" />
           </StackPanel>
         </ScrollViewer>
+      </TabItem>
+      <TabItem Header="{loc:StudioText Language}">
+        <StackPanel Spacing="12" Margin="0,10">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <TextBlock Text="{loc:StudioText InterfaceLanguage}" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" x:Name="InterfaceLanguageBox" MinWidth="156"
+                      AutomationProperties.Name="{loc:StudioText InterfaceLanguage}">
+              <ComboBoxItem Content="English" Tag="en-US" />
+              <ComboBoxItem Content="Português (Brasil)" Tag="pt-BR" />
+            </ComboBox>
+          </Grid>
+          <TextBlock Text="{loc:StudioText LanguageRestartHint}"
+                     Classes="secondary" TextWrapping="Wrap" />
+        </StackPanel>
       </TabItem>
     </TabControl>
     <TextBlock Grid.Row="1" x:Name="PaletteValidationText" Classes="error" IsVisible="False" TextWrapping="Wrap" />
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-      <Button x:Name="CancelSettingsButton" Content="Cancel" Classes="action" IsCancel="True" />
-      <Button x:Name="SaveSettingsButton" Classes="action accent" IsDefault="True" AutomationProperties.Name="Save settings">
+      <Button x:Name="CancelSettingsButton" Content="{loc:StudioText Cancel}" Classes="action" IsCancel="True" />
+      <Button x:Name="SaveSettingsButton" Classes="action accent" IsDefault="True" AutomationProperties.Name="{loc:StudioText SaveSettings}">
         <StackPanel Classes="action-label">
           <PathIcon Classes="action-icon" Data="{StaticResource ActionConfirmIcon}" />
-          <TextBlock Text="Save" />
+          <TextBlock Text="{loc:StudioText Save}" />
         </StackPanel>
       </Button>
     </StackPanel>

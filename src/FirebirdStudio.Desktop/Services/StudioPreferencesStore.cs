@@ -13,6 +13,8 @@ internal sealed record StudioPreferences(
     public static StudioPreferences Default { get; } =
         new("Light", Array.Empty<string>(), ExecuteSqlShortcut: SqlExecutionShortcuts.Default.ToString());
 
+    public string InterfaceLanguage { get; init; } = StudioText.English;
+
     [JsonIgnore]
     public Key ExecuteSqlKey => SqlExecutionShortcuts.Resolve(ExecuteSqlShortcut);
 
@@ -80,7 +82,8 @@ internal sealed class StudioPreferencesStore
                 Theme = theme,
                 MetadataCategoryOrder = order,
                 ConnectionDisplayMode = connectionDisplayMode,
-                ExecuteSqlShortcut = preferences.ExecuteSqlKey.ToString()
+                ExecuteSqlShortcut = preferences.ExecuteSqlKey.ToString(),
+                InterfaceLanguage = StudioText.ResolveLanguage(preferences.InterfaceLanguage)
             };
         }
         finally

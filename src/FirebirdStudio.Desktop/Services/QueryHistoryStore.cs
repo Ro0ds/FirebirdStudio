@@ -11,17 +11,20 @@ internal sealed record QueryHistoryEntry(
     bool Succeeded,
     string Outcome)
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Cancelled { get; init; }
+
     [JsonIgnore]
-    public bool IsCancelled => Outcome == "Execution cancelled.";
+    public bool IsCancelled => Cancelled || Outcome == "Execution cancelled.";
 
     [JsonIgnore]
     public bool HasFailed => !Succeeded && !IsCancelled;
 
     [JsonIgnore]
-    public string Status => IsCancelled ? "Cancelled" : Succeeded ? "Success" : "Failed";
+    public string Status => StudioText.T(IsCancelled ? "Cancelled" : Succeeded ? "Success" : "Failed");
 
     [JsonIgnore]
-    public string ExecutionContext => $"{ExecutedAt.ToLocalTime():g} · {ProfileName}";
+    public string ExecutionContext => $"{ExecutedAt.ToLocalTime().ToString("g", StudioText.Culture)} · {ProfileName}";
 
     [JsonIgnore]
     public string AccessibleDetails => $"{ExecutionContext} · {Status}";

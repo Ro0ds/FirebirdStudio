@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using FirebirdStudio.Core.Connections;
+using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
@@ -7,14 +8,14 @@ internal sealed class ConnectionListItem(ConnectionProfile profile) : INotifyPro
 {
     public ConnectionProfile Profile { get; private set; } = profile;
     public bool IsConnected { get; private set; }
-    public string Status => IsConnected ? "Connected" : "Offline";
+    public string Status => T(IsConnected ? "Connected" : "Offline");
     public string AccessibleName => $"{Profile.Name}, {Status}";
     public string Endpoint
     {
         get
         {
             if (Profile.ServerType == ConnectionServerType.Embedded)
-                return "Embedded database";
+                return T("EmbeddedDatabase");
 
             var host = Profile.Host ?? string.Empty;
             if (host.Contains(':') && !host.StartsWith('['))

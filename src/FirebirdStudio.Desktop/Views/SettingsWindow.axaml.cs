@@ -2,10 +2,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using FirebirdStudio.Desktop.Services;
+using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
-internal sealed record SettingsChanges(Key ExecuteShortcut, ThemeColorOverrides? Light, ThemeColorOverrides? Dark);
+internal sealed record SettingsChanges(Key ExecuteShortcut, string InterfaceLanguage, ThemeColorOverrides? Light, ThemeColorOverrides? Dark);
 
 internal sealed partial class SettingsWindow : Window
 {
@@ -23,10 +24,10 @@ internal sealed partial class SettingsWindow : Window
         _editedTheme = preferences.Theme == "Dark" ? "Dark" : "Light";
         InitializeComponent();
 
+        InterfaceLanguageBox.SelectedIndex = preferences.InterfaceLanguage == StudioText.Portuguese ? 1 : 0;
         ExecuteSqlShortcutBox.ItemsSource = SqlExecutionShortcuts.Options;
         ExecuteSqlShortcutBox.SelectedItem = preferences.ExecuteSqlKey;
-        PaletteThemeBox.ItemsSource = new[] { "Light", "Dark" };
-        PaletteThemeBox.SelectedItem = _editedTheme;
+        PaletteThemeBox.SelectedIndex = _editedTheme == "Dark" ? 1 : 0;
 
         ResetShortcutButton.Click += (_, _) => ExecuteSqlShortcutBox.SelectedItem = SqlExecutionShortcuts.Default;
         CancelSettingsButton.Click += (_, _) => Close();
@@ -53,7 +54,7 @@ internal sealed partial class SettingsWindow : Window
 
     private void ChangeEditedTheme()
     {
-        if (PaletteThemeBox.SelectedItem is not string theme || theme == _editedTheme)
+        if (PaletteThemeBox.SelectedItem is not ComboBoxItem { Tag: string theme } || theme == _editedTheme)
             return;
         StoreThemeDraft();
         _editedTheme = theme;
@@ -106,7 +107,7 @@ internal sealed partial class SettingsWindow : Window
         SelectionPreview.Background = new SolidColorBrush(palette.SelectionBackground);
         SelectionPreview.BorderBrush = new SolidColorBrush(palette.Accent);
         SelectionPreviewText.Foreground = new SolidColorBrush(palette.SelectionForeground);
-        SelectionContrastText.Text = $"SQL selection contrast {StudioAppearance.Contrast(palette.SelectionBackground, palette.SelectionForeground):F2}:1";
+        SelectionContrastText.Text = T("SelectionContrast", StudioAppearance.Contrast(palette.SelectionBackground, palette.SelectionForeground));
 
         PaletteValidationText.Text = error;
         PaletteValidationText.IsVisible = error is not null;
@@ -127,12 +128,13 @@ internal sealed partial class SettingsWindow : Window
             SelectionForeground = foregroundParsed ? foreground : defaults.SelectionForeground
         };
 
+        var themeLabel = ThemeName(theme).ToLower(Culture);
         if (!accentParsed || !backgroundParsed || !foregroundParsed)
-            return (palette, $"Use #RRGGBB for all three {theme.ToLowerInvariant()} theme colors.");
+            return (palette, T("PaletteInvalidHex", themeLabel));
         if (StudioAppearance.Contrast(accent, defaults.Surface) < StudioAppearance.MinimumTextContrast)
-            return (palette, $"The {theme.ToLowerInvariant()} theme accent needs at least 4.5:1 contrast against its surface.");
+            return (palette, T("PaletteInvalidAccentContrast", themeLabel));
         if (StudioAppearance.Contrast(background, foreground) < StudioAppearance.MinimumTextContrast)
-            return (palette, $"The {theme.ToLowerInvariant()} theme SQL selection text needs at least 4.5:1 contrast against its background.");
+            return (palette, T("PaletteInvalidSelectionContrast", themeLabel));
         return (palette, null);
     }
 
@@ -141,10 +143,11 @@ internal sealed partial class SettingsWindow : Window
         StoreThemeDraft();
         var light = Evaluate("Light", _lightDraft);
         var dark = Evaluate("Dark", _darkDraft);
-        if (light.Error is not null || dark.Error is not null || ExecuteSqlShortcutBox.SelectedItem is not Key shortcut)
+        if (light.Error is not null || dark.Error is not null || ExecuteSqlShortcutBox.SelectedItem is not Key shortcut ||
+            InterfaceLanguageBox.SelectedItem is not ComboBoxItem { Tag: string language })
             return;
 
-        Close(new SettingsChanges(shortcut, _appearance.CreateOverrides("Light", light.Palette),
+        Close(new SettingsChanges(shortcut, language, _appearance.CreateOverrides("Light", light.Palette),
             _appearance.CreateOverrides("Dark", dark.Palette)));
     }
 
