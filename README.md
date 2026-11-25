@@ -4,7 +4,7 @@ A cross-platform, open-source Firebird database IDE foundation for Windows, Linu
 
 > **Project status: functional early-development release.** Connection management, metadata exploration, SQL editing/execution, query history, editor recovery, and staged connection diagnostics are implemented. It is not yet a complete IBExpert replacement.
 
-The [v0.1.4 release](https://github.com/Ro0ds/FirebirdStudio/releases/tag/v0.1.4) ships portable Windows x64 packages. See the [product roadmap](docs/ROADMAP.md) and the [desktop redesign plan](docs/design/DESKTOP-REDESIGN.md).
+Portable Windows x64 packages are available from the [latest stable release](https://github.com/Ro0ds/FirebirdStudio/releases/latest). See the [product roadmap](docs/ROADMAP.md) and the [desktop redesign plan](docs/design/DESKTOP-REDESIGN.md).
 
 ## Technology
 
@@ -26,7 +26,9 @@ The [v0.1.4 release](https://github.com/Ro0ds/FirebirdStudio/releases/tag/v0.1.4
 - Write profile files atomically and restrict Unix directory/file permissions to the current user.
 - Diagnose Firebird connections in stages: profile validation, DNS resolution, TCP reachability, and provider handshake/authentication, with elapsed times and detailed failure information.
 - Connect and disconnect long-lived Firebird sessions from the desktop connection list. Choose a detailed or minimal connection list and a light or dark theme. These preferences are saved locally.
+- In **File → Settings**, customize the execution shortcut, pick accent and SQL selection colors, or choose English or Brazilian Portuguese. The language change applies after restart.
 - Run SQL with typed named parameters. Format the selection or active document with `Ctrl+Shift+F`.
+- Sort results by clicking a column heading, jump to the first or last row, and copy a row from its context menu.
 - Automatically switch to Messages when an application/database error occurs, show an immediate footer notification, and retain detailed exception information, including stack traces and inner exceptions.
 - Maintain a timestamped Messages history, newest first, with severity labels and icons, short summaries, and copyable details.
 - Save open SQL tabs, titles, contents, and the active tab 700 ms after typing stops or immediately with `Ctrl+S`. The workspace is restored after normal exit or unexpected shutdown. Tabs can be renamed or closed from their context menu.
@@ -76,7 +78,9 @@ Windows x64 is the current packaged release target. Linux and macOS remain devel
 - The Firebird provider receives a connection string containing the password in process memory; this is currently unavoidable with the provider API used here. Clearing the UI field does not guarantee zeroization of immutable managed strings.
 - If the OS credential facility is unavailable, password saving fails closed; manual one-session connection remains available without writing a plaintext fallback.
 - The persistent SQL editor workspace writes open editor tabs to local application data 700 ms after typing stops or immediately on `Ctrl+S`. It is retained across normal application exits and unexpected shutdowns. Like query history, it contains SQL text; avoid embedding secrets in SQL statements.
-- SQL execution is now available for one statement at a time. Each execution uses a transaction that is committed on success and rolled back on failure when possible. Result display is capped at 500 rows and approximately 2 million characters; BLOB/ARRAY values are represented by placeholders. Query results are displayed in a read-only, dynamically generated TableView. Query history stores the exact submitted SQL locally (including any literal values in it), retains the latest 250 executions, and restores a selected entry into the editor on double-click. It can be docked on the right or moved to a tab beside the SQL editor. Press `F5` to execute the selection or the single statement in the editor. If the document contains multiple statements, select one statement to run. Avoid embedding secrets in SQL text.
+- SQL execution runs one statement at a time. Each execution uses a transaction that is committed on success and rolled back on failure when possible. Results are read-only and capped at 500 rows and approximately 2 million characters. BLOB and ARRAY values appear as placeholders. Query history stores the exact submitted SQL locally, including literal values, and retains the latest 250 executions. Double-click an entry to restore it. Avoid embedding secrets in SQL text.
+
+Press `F9` by default to execute the selection or the single statement in the editor. If the document contains multiple statements, select one to run. A custom shortcut can be set in **File → Settings → Keyboard shortcuts**.
 
 ## License
 
