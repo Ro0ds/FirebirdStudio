@@ -1,8 +1,8 @@
 # Desktop identity and usability plan
 
-This proposal starts from v0.1.4. The goal is a compact database workspace where the active connection, SQL editor, and result of an action are easy to identify at a glance. Each milestone is delivered through small PRs to `development`. The [integration and release workflow](../releasing/DEVELOPMENT.md) describes how those changes are tested and promoted.
+The desktop redesign began in v0.1.4 and shipped in v0.2.0. This document records the original design and milestones. The [0.2.0 release notes](../releasing/0.2.0.md) record what shipped and the validation completed. The [product roadmap](../ROADMAP.md) tracks the next cycle.
 
-## Current interface
+## Interface before the redesign
 
 - Light and dark modes use the Avalonia Fluent theme, with some colors set directly in the views and SQL colorizer. SQL selection in light mode has been reported as unreadable. Check the same states in the editable SQL tabs and the read-only DDL editors.
 - Database Connections has persisted Detailed and Minimal modes. Database Objects combines a tree, filtering, refresh, and category ordering. Rows sometimes repeat their category or expose long metadata strings in limited space.

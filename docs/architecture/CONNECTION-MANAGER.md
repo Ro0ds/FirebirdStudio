@@ -60,6 +60,22 @@ The error result does not include the connection string, and the exact supplied 
 
 A connection test is not a persistent database session. The desktop session manager separately owns long-lived connections.
 
+## Create a database
+
+Open **File → Create database**. Choose **Use the active Firebird connection** to create with the current instance. The dialog displays its version. For TCP/IP, enter a path or alias on the server. For an embedded connection, choose an absolute local path.
+
+The local file pickers for creating a database and registering a connection both accept `.fdb` and `.gdb`. When saving a new database through the picker, the default extension is `.fdb`.
+
+Creation uses a separate provider operation with the selected credentials and rejects existing targets. The current connection stays open. If requested, the app saves a separate connection profile after creating the file.
+
+On Windows x64, choose **Use embedded Firebird** and select a version to create a local database. This option is available with or without an active connection. The available Firebird releases are 2.5.9, 3.0.14, 4.0.7, and 5.0.4. A saved embedded profile records the chosen version. The connection editor also offers an external client library for existing installations.
+
+In **File → Settings → Embedded Firebird**, **Download on demand** is the default and retrieves the engine when creating a database, testing its connection, or connecting. **Download all engines** installs the missing versions when Settings is saved. Downloaded engines are reused from the per-user cache under `%LOCALAPPDATA%\FirebirdStudio\engines`. Packages come from official Firebird releases and are checked against pinned sizes and SHA-256 digests before installation. [Firebird releases](https://github.com/FirebirdSQL/firebird/releases)
+
+On Windows, engine downloads use the same TLS 1.2 configuration as application update downloads. The GitHub release downloads require HTTPS access to `github.com` and `release-assets.githubusercontent.com`.
+
+Embedded connections use a separate provider load context for each native library so that version-specific capabilities can coexist. On Windows x64, the integration smoke test opened simultaneous connections to all four engines and verified the format of the created database files through `MON$DATABASE`. Firebird 2.5, 3.0, 4.0, and 5.0 reported ODS 11.2, 12.0, 13.0, and 13.1 respectively.
+
 ## Credential storage
 
 `ISecureCredentialStore` is the application port for OS-backed secrets. `LatchkeySecureCredentialStore` implements it through Latchkey 0.1.0 and selects only the library's native `Auto` backend: Windows Credential Manager, macOS Keychain Services, or Linux freedesktop Secret Service (typically backed by GNOME Keyring or KWallet). The adapter does not configure Latchkey's plaintext file backend or any fallback.

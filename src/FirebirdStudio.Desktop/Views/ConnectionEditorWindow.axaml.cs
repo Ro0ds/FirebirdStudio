@@ -1,10 +1,11 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Connections;
+using FirebirdStudio.Desktop.Services;
+using FirebirdStudio.Infrastructure.Connections;
 using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
@@ -26,13 +27,34 @@ public sealed partial class ConnectionEditorWindow : Window
         _profileManager = profileManager ?? throw new ArgumentNullException(nameof(profileManager));
         _connectionTester = connectionTester ?? throw new ArgumentNullException(nameof(connectionTester));
 
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
+        RuntimeBox.Items.Add(new ComboBoxItem { Content = T("ExternalFirebirdLibrary") });
+        if (EmbeddedFirebirdInstaller.IsSupported || profile.EmbeddedEngineVersion is not null)
+        {
+            foreach (var version in EmbeddedFirebirdInstaller.Versions)
+                RuntimeBox.Items.Add(new ComboBoxItem { Content = T("ManagedFirebirdEngine", version), Tag = version });
+        }
+
+        RuntimeBox.SelectedItem = RuntimeBox.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(item => Equals(item.Tag, profile.EmbeddedEngineVersion)) ?? RuntimeBox.Items[0];
         PopulateFields(profile);
+        RuntimeBox.SelectionChanged += (_, _) => UpdateRuntimeControls();
+        this.FindControl<ComboBox>("ServerTypeInput")!.SelectionChanged += (_, _) => UpdateRuntimeControls();
+        UpdateRuntimeControls();
 
         this.FindControl<Button>("TestConnectionButton")!.Click += OnTestConnectionClick;
         this.FindControl<Button>("BrowseDatabaseButton")!.Click += OnBrowseDatabaseClick;
         this.FindControl<Button>("SaveButton")!.Click += OnSaveClick;
         this.FindControl<Button>("CancelButton")!.Click += (_, _) => CloseEditor();
+    }
+
+    private string? SelectedEngine => (RuntimeBox.SelectedItem as ComboBoxItem)?.Tag as string;
+
+    private void UpdateRuntimeControls()
+    {
+        var embedded = this.FindControl<ComboBox>("ServerTypeInput")!.SelectedIndex == (int)ConnectionServerType.Embedded;
+        RuntimeSelectPanel.IsVisible = embedded && RuntimeBox.ItemCount > 1;
+        ClientLibraryPanel.IsVisible = embedded && SelectedEngine is null;
     }
 
     private void PopulateFields(ConnectionProfile profile)
@@ -74,22 +96,14 @@ public sealed partial class ConnectionEditorWindow : Window
         {
             Title = T("PickFirebirdDatabase"),
             AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType(T("FirebirdDatabaseFiles"))
-                {
-                    Patterns = ["*.gdb", "*.GDB", "*.fdb", "*.FDB"]
-                }
-            ]
+            FileTypeFilter = [FirebirdDatabaseFiles.CreateFilter()]
         });
 
         if (files.Count == 0)
             return;
 
         var selectedPath = files[0].Path.LocalPath;
-        var extension = Path.GetExtension(selectedPath);
-        if (!string.Equals(extension, ".gdb", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(extension, ".fdb", StringComparison.OrdinalIgnoreCase))
+        if (!FirebirdDatabaseFiles.HasSupportedExtension(selectedPath))
         {
             SetMessage(T("InvalidDatabaseExtension"));
             return;
@@ -116,7 +130,10 @@ public sealed partial class ConnectionEditorWindow : Window
 
         try
         {
-            var result = await _connectionTester.TestAsync(profile, password);
+            var embeddedEngines = ((App)Avalonia.Application.Current!).EmbeddedEngines;
+            var resolved = await embeddedEngines.ResolveAsync(profile,
+                new Progress<string>(version => SetMessage(T("DownloadingFirebirdEngine", version))));
+            var result = await _connectionTester.TestAsync(resolved, password);
             var message = result.Succeeded && !string.IsNullOrWhiteSpace(result.ServerVersion)
                 ? result.Message + Environment.NewLine + T("ServerVersion", result.ServerVersion)
                 : result.Message;
@@ -179,18 +196,20 @@ public sealed partial class ConnectionEditorWindow : Window
     {
         var serverTypeIndex = this.FindControl<ComboBox>("ServerTypeInput")?.SelectedIndex ?? 0;
         var dialectIndex = this.FindControl<ComboBox>("DialectInput")?.SelectedIndex ?? 2;
+        var embedded = serverTypeIndex == (int)ConnectionServerType.Embedded;
 
         return new ConnectionProfile
         {
             Id = _originalProfile.Id,
             Name = GetText("NameInput").Trim(),
-            ServerType = serverTypeIndex == (int)ConnectionServerType.Embedded
+            ServerType = embedded
                 ? ConnectionServerType.Embedded
                 : ConnectionServerType.Remote,
             Host = GetText("HostInput").Trim(),
             Port = ParseInt("PortInput"),
             Database = GetText("DatabaseInput").Trim(),
-            ClientLibraryPath = NullIfWhiteSpace(GetText("ClientLibraryInput")),
+            ClientLibraryPath = embedded && SelectedEngine is null ? NullIfWhiteSpace(GetText("ClientLibraryInput")) : null,
+            EmbeddedEngineVersion = embedded ? SelectedEngine : null,
             UserName = GetText("UserNameInput").Trim(),
             Role = NullIfWhiteSpace(GetText("RoleInput")),
             CharacterSet = GetText("CharacterSetInput").Trim(),

@@ -2,11 +2,13 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using FirebirdStudio.Desktop.Services;
+using FirebirdStudio.Infrastructure.Connections;
 using static FirebirdStudio.Desktop.Services.StudioText;
 
 namespace FirebirdStudio.Desktop.Views;
 
-internal sealed record SettingsChanges(Key ExecuteShortcut, string InterfaceLanguage, ThemeColorOverrides? Light, ThemeColorOverrides? Dark);
+internal sealed record SettingsChanges(Key ExecuteShortcut, string InterfaceLanguage, ThemeColorOverrides? Light,
+    ThemeColorOverrides? Dark, bool DownloadAllEmbeddedEngines);
 
 internal sealed partial class SettingsWindow : Window
 {
@@ -15,6 +17,7 @@ internal sealed partial class SettingsWindow : Window
     private ThemeColorOverrides _darkDraft;
     private string _editedTheme;
     private bool _updatingColorPickers;
+    private CancellationTokenSource? _engineDownload;
 
     public SettingsWindow(StudioPreferences preferences, StudioAppearance appearance)
     {
@@ -24,6 +27,8 @@ internal sealed partial class SettingsWindow : Window
         _editedTheme = preferences.Theme == "Dark" ? "Dark" : "Light";
         InitializeComponent();
 
+        EmbeddedEnginesSettingsTab.IsVisible = EmbeddedFirebirdInstaller.IsSupported;
+        EmbeddedDownloadBox.SelectedIndex = preferences.DownloadAllEmbeddedEngines ? 1 : 0;
         InterfaceLanguageBox.SelectedIndex = preferences.InterfaceLanguage == StudioText.Portuguese ? 1 : 0;
         ExecuteSqlShortcutBox.ItemsSource = SqlExecutionShortcuts.Options;
         ExecuteSqlShortcutBox.SelectedItem = preferences.ExecuteSqlKey;
@@ -31,7 +36,8 @@ internal sealed partial class SettingsWindow : Window
 
         ResetShortcutButton.Click += (_, _) => ExecuteSqlShortcutBox.SelectedItem = SqlExecutionShortcuts.Default;
         CancelSettingsButton.Click += (_, _) => Close();
-        SaveSettingsButton.Click += (_, _) => Save();
+        SaveSettingsButton.Click += async (_, _) => await SaveAsync();
+        Closed += (_, _) => _engineDownload?.Cancel();
         PaletteThemeBox.SelectionChanged += (_, _) => ChangeEditedTheme();
         ResetThemeColorsButton.Click += (_, _) => ShowThemeDraft(DisplayValues(_appearance.Defaults(_editedTheme)));
         ConnectColorField(AccentColorBox, AccentColorPicker);
@@ -111,7 +117,7 @@ internal sealed partial class SettingsWindow : Window
 
         PaletteValidationText.Text = error;
         PaletteValidationText.IsVisible = error is not null;
-        SaveSettingsButton.IsEnabled = error is null;
+        SaveSettingsButton.IsEnabled = error is null && _engineDownload is null;
     }
 
     private (StudioPalette Palette, string? Error) Evaluate(string theme, ThemeColorOverrides draft)
@@ -138,17 +144,60 @@ internal sealed partial class SettingsWindow : Window
         return (palette, null);
     }
 
-    private void Save()
+    private async Task SaveAsync()
     {
         StoreThemeDraft();
         var light = Evaluate("Light", _lightDraft);
         var dark = Evaluate("Dark", _darkDraft);
-        if (light.Error is not null || dark.Error is not null || ExecuteSqlShortcutBox.SelectedItem is not Key shortcut ||
+        if (_engineDownload is not null || light.Error is not null || dark.Error is not null || ExecuteSqlShortcutBox.SelectedItem is not Key shortcut ||
             InterfaceLanguageBox.SelectedItem is not ComboBoxItem { Tag: string language })
             return;
 
+        var downloadAll = EmbeddedDownloadBox.SelectedIndex == 1;
+        if (downloadAll && EmbeddedFirebirdInstaller.IsSupported && !await DownloadEnginesAsync())
+            return;
+
         Close(new SettingsChanges(shortcut, language, _appearance.CreateOverrides("Light", light.Palette),
-            _appearance.CreateOverrides("Dark", dark.Palette)));
+            _appearance.CreateOverrides("Dark", dark.Palette), downloadAll));
+    }
+
+    private async Task<bool> DownloadEnginesAsync()
+    {
+        using var cancellation = new CancellationTokenSource();
+        _engineDownload = cancellation;
+        SettingsTabs.SelectedItem = EmbeddedEnginesSettingsTab;
+        SettingsTabs.IsEnabled = SaveSettingsButton.IsEnabled = false;
+        EmbeddedDownloadStatus.IsVisible = true;
+        EmbeddedDownloadStatus.Classes.Set("error", false);
+        EmbeddedDownloadStatus.Text = T("CheckingFirebirdEngines");
+        try
+        {
+            var installer = ((App)Avalonia.Application.Current!).EmbeddedEngines;
+            await installer.DownloadAllAsync(new Progress<string>(version =>
+            {
+                if (_engineDownload is not null)
+                    EmbeddedDownloadStatus.Text = T("DownloadingFirebirdEngine", version);
+            }), cancellation.Token);
+            return !cancellation.IsCancellationRequested;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (Exception exception)
+        {
+            EmbeddedDownloadStatus.Text = exception is HttpRequestException { HttpRequestError: HttpRequestError.SecureConnectionError }
+                ? T("FirebirdDownloadTlsFailed", exception.GetBaseException().Message)
+                : T("FirebirdDownloadFailed", exception.Message);
+            EmbeddedDownloadStatus.Classes.Set("error", true);
+            return false;
+        }
+        finally
+        {
+            _engineDownload = null;
+            SettingsTabs.IsEnabled = true;
+            UpdatePalettePreview();
+        }
     }
 
     private static ThemeColorOverrides DisplayValues(StudioPalette palette) => new(

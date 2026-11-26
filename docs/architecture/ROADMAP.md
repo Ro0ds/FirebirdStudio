@@ -2,15 +2,19 @@
 
 The product-level four-phase roadmap is maintained in [`../ROADMAP.md`](../ROADMAP.md). This file tracks implementation slices and their acceptance evidence; it does not redefine the product phases.
 
+The v0.2.0 desktop redesign is published for Windows x64. The [release notes](../releasing/0.2.0.md) record the candidate smoke test on Firebird 5.0.4 embedded. The next integration milestone starts with a repeatable Firebird 5 TCP/IP test. [Compatibility matrix](FIREBIRD-COMPATIBILITY.md)
+
 | Phase | Scope | Acceptance evidence | Status |
 |---|---|---|---|
 | 0 | Repository foundation and desktop shell | Restore/build/run on all three OS families | Windows x64 packages published, Linux and macOS verification pending |
-| 1A | Connection profiles and connection testing | Profile validation/persistence tests; real server tests on FB 2.5, 3, 4, 5 | Expanded registration fields and deterministic tests implemented, real-server tests pending |
+| 1A | Connection profiles and connection testing | Profile validation and persistence tests, integration tests on FB 2.5, 3, 4, 5 | Registration fields and deterministic tests implemented. FB 5.0.4 embedded connection smoke passed. TCP/IP and other versions pending. |
 | 1B | Persistent secure credential storage | Native keyring integration tests on Windows, macOS, Linux; fail-closed behavior | Latchkey adapter and remember/forget UI implemented provisionally; automated adapter tests use a fake; native platform integration tests pending |
-| 1C | Active connection/session lifecycle and reliability | Connect/disconnect, state transitions, detailed errors, SQL recovery, staged connection diagnostics, concurrency and disposal tests | Session lifecycle, detailed error reporting, timestamped severity-colored message history, idle/Ctrl+S editor recovery saves, crash restoration, and staged connection diagnostics implemented, real-server verification pending |
-| 2 | Metadata explorer | Verified metadata fixtures per server version | Initial read-only catalog inventory implemented; real-server compatibility tests pending |
+| 1C | Active connection/session lifecycle and reliability | Connect/disconnect, state transitions, detailed errors, SQL recovery, staged connection diagnostics, concurrency and disposal tests | Session lifecycle, diagnostic reporting, and editor recovery implemented. The FB 5.0.4 embedded smoke covered connection switching, queued cancellation, and restoration after restart. Broader integration pending. |
+| 1D | Database creation on the active instance | Create, reopen, query, and reject an existing target | Passed with Firebird 5.0.4 over TCP/IP. [Creation workflow](CONNECTION-MANAGER.md#create-a-database) |
+| 1E | Managed embedded engines | Validate both download settings and create and reopen with the selected engine | Passed on Windows x64 with Firebird 2.5.9, 3.0.14, 4.0.7, and 5.0.4. |
+| 2 | Metadata explorer | Verified metadata fixtures per server version | Read-only catalog implemented. The FB 5.0.4 embedded smoke covered paging, search, and table, view, and trigger DDL. TCP/IP and other versions pending. |
 | 3 | SQL editor and execution | Parameters, transactions, cancellation, errors, multi-statement behavior documented | Initial single-statement execution, transaction commit/rollback, cancellation, 500-row read-only TableView preview, configurable execution shortcut with `F9` as the default, table-inspection tab (fields/data/constraints/generated DDL), and persistent 250-entry query history with double-click restore and right/tab docking implemented. Typed named parameter binding and SQL formatting are available. Multi-statement scripts remain planned |
-| 4 | Data grid and record editor | Paging, sorting, filtering, safe updates | Not implemented |
+| 4 | Data grid and record editor | Paging, sorting, filtering, safe updates | Table data paging and read-only result sorting, row navigation, and copying shipped. Filtering and record editing remain planned. |
 | 5 | Object editors | Round-trip DDL tests for tables, views, procedures, triggers, domains, indexes | Not implemented |
 | 6 | Security administration | Roles, users, grants, privilege tests | Not implemented |
 | 7 | Backup, restore, validation, statistics | Utility compatibility and failure recovery tests | Not implemented |
@@ -18,7 +22,7 @@ The product-level four-phase roadmap is maintained in [`../ROADMAP.md`](../ROADM
 | 9 | Data comparison and synchronization | Preview, transaction strategy, conflict handling, rollback tests | Not implemented |
 | 10 | Monitoring and diagnostics | Version-aware monitoring queries and permissions behavior | Not implemented |
 | 11 | Import/export | Encoding, nulls, decimals, dates, large-file tests | Not implemented |
-| 12 | Release hardening | OS packaging, SBOM, license notices, security and regression suite | Not implemented |
+| 12 | Release hardening | OS packaging, SBOM, license notices, security and regression suite | Windows x64 packaging, PR validation, and stable release workflow are in use. Linux and macOS packaging and a complete SBOM are pending. |
 
 No phase is complete merely because its UI exists. Each phase requires acceptance evidence.
 

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
-using FirebirdSql.Data.FirebirdClient;
+using System.Data;
+using System.Data.Common;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Database;
 
@@ -9,10 +10,26 @@ namespace FirebirdStudio.Infrastructure.Connections.Provider;
 internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConnectionFactory
 {
     public IFirebirdProviderConnection Create(string connectionString) =>
-        new FirebirdProviderConnection(new FbConnection(connectionString));
+        new FirebirdProviderConnection(FirebirdDbConnectionFactory.Create(connectionString));
 
-    private sealed class FirebirdProviderConnection(FbConnection connection) : IFirebirdProviderConnection
+    private sealed class FirebirdProviderConnection(DbConnection connection) : IFirebirdProviderConnection
     {
+        private DbCommand CreateCommand(string sql, DbTransaction? transaction = null)
+        {
+            var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.Transaction = transaction;
+            return command;
+        }
+
+        private static void AddParameter(DbCommand command, string name, object value)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            command.Parameters.Add(parameter);
+        }
+
         public Task OpenAsync(CancellationToken cancellationToken) => connection.OpenAsync(cancellationToken);
 
         public string ServerVersion => connection.ServerVersion;
@@ -62,7 +79,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
             var lastRow = checked(offset + pageSize + 1);
             var sql = definition.Sql + $" ORDER BY 1 ROWS {firstRow} TO {lastRow}";
             var result = new List<DatabaseMetadataObject>(pageSize + 1);
-            await using var command = new FbCommand(sql, connection);
+            await using var command = CreateCommand(sql);
             await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -117,13 +134,13 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 "ORDER BY object_kind, object_name, parent_name";
 
             var results = new List<DatabaseMetadataObject>();
-            await using var command = new FbCommand(sql, connection);
-            command.Parameters.AddWithValue("@searchTerm", searchTerm);
-            var kindFilterParameter = new FbParameter("@kindFilter", FbDbType.VarChar)
-            {
-                Size = 16,
-                Value = string.IsNullOrWhiteSpace(kindFilter) ? DBNull.Value : kindFilter.Trim()
-            };
+            await using var command = CreateCommand(sql);
+            AddParameter(command, "@searchTerm", searchTerm);
+            var kindFilterParameter = command.CreateParameter();
+            kindFilterParameter.ParameterName = "@kindFilter";
+            kindFilterParameter.DbType = DbType.String;
+            kindFilterParameter.Size = 16;
+            kindFilterParameter.Value = string.IsNullOrWhiteSpace(kindFilter) ? DBNull.Value : kindFilter.Trim();
             command.Parameters.Add(kindFilterParameter);
             await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -148,8 +165,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     "COALESCE(CAST(RDB$STATISTICS AS VARCHAR(32)), '?') " +
                     "FROM RDB$INDEX_SEGMENTS WHERE RDB$INDEX_NAME = @objectName ORDER BY RDB$FIELD_POSITION";
                 var segments = new List<DatabaseMetadataObject>();
-                await using var command = new FbCommand(indexSql, connection);
-                command.Parameters.AddWithValue("@objectName", name);
+                await using var command = CreateCommand(indexSql);
+                AddParameter(command, "@objectName", name);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
@@ -177,8 +194,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     "LEFT JOIN RDB$COLLATIONS co ON co.RDB$COLLATION_ID = f.RDB$COLLATION_ID " +
                     "AND co.RDB$CHARACTER_SET_ID = f.RDB$CHARACTER_SET_ID " +
                     "WHERE f.RDB$FIELD_NAME = @objectName AND COALESCE(f.RDB$SYSTEM_FLAG, 0) = 0";
-                await using var command = new FbCommand(domainSql, connection);
-                command.Parameters.AddWithValue("@objectName", name);
+                await using var command = CreateCommand(domainSql);
+                AddParameter(command, "@objectName", name);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     return Array.Empty<DatabaseMetadataObject>();
@@ -215,9 +232,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 const string duplicateSql =
                     "SELECT COUNT(*) FROM RDB$PROCEDURES WHERE RDB$PROCEDURE_NAME = @objectName " +
                     "AND COALESCE(RDB$SYSTEM_FLAG, 0) = 0";
-                await using (var command = new FbCommand(duplicateSql, connection))
+                await using (var command = CreateCommand(duplicateSql))
                 {
-                    command.Parameters.AddWithValue("@objectName", name);
+                    AddParameter(command, "@objectName", name);
                     var count = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false), CultureInfo.InvariantCulture);
                     if (count > 1) return Array.Empty<DatabaseMetadataObject>();
                 }
@@ -231,9 +248,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     "FROM RDB$PROCEDURE_PARAMETERS pp JOIN RDB$FIELDS f ON f.RDB$FIELD_NAME = pp.RDB$FIELD_SOURCE " +
                     "WHERE pp.RDB$PROCEDURE_NAME = @objectName ORDER BY pp.RDB$PARAMETER_TYPE, pp.RDB$PARAMETER_NUMBER";
                 var parameters = new List<DatabaseMetadataObject>();
-                await using (var command = new FbCommand(parameterSql, connection))
+                await using (var command = CreateCommand(parameterSql))
                 {
-                    command.Parameters.AddWithValue("@objectName", name);
+                    AddParameter(command, "@objectName", name);
                     await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     {
@@ -259,9 +276,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 const string sourceSql =
                     "SELECT RDB$PROCEDURE_SOURCE FROM RDB$PROCEDURES WHERE RDB$PROCEDURE_NAME = @objectName " +
                     "AND COALESCE(RDB$SYSTEM_FLAG, 0) = 0";
-                await using (var command = new FbCommand(sourceSql, connection))
+                await using (var command = CreateCommand(sourceSql))
                 {
-                    command.Parameters.AddWithValue("@objectName", name);
+                    AddParameter(command, "@objectName", name);
                     await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                     if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false) && !reader.IsDBNull(0))
                     {
@@ -279,8 +296,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 const string triggerSql =
                     "SELECT RDB$TRIGGER_SOURCE FROM RDB$TRIGGERS WHERE RDB$TRIGGER_NAME = @objectName " +
                     "AND COALESCE(RDB$SYSTEM_FLAG, 0) = 0";
-                await using var command = new FbCommand(triggerSql, connection);
-                command.Parameters.AddWithValue("@objectName", name);
+                await using var command = CreateCommand(triggerSql);
+                AddParameter(command, "@objectName", name);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false) && !reader.IsDBNull(0))
                 {
@@ -309,9 +326,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 "FROM RDB$RELATION_FIELDS rf JOIN RDB$FIELDS f ON f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE " +
                 "LEFT JOIN RDB$CHARACTER_SETS cs ON cs.RDB$CHARACTER_SET_ID = f.RDB$CHARACTER_SET_ID " +
                 "WHERE rf.RDB$RELATION_NAME = @relationName ORDER BY rf.RDB$FIELD_POSITION";
-            await using (var command = new FbCommand(columnSql, connection))
+            await using (var command = CreateCommand(columnSql))
             {
-                command.Parameters.AddWithValue("@relationName", name);
+                AddParameter(command, "@relationName", name);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
@@ -343,9 +360,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 "ORDER BY rc.RDB$CONSTRAINT_NAME, local_segment.RDB$FIELD_POSITION";
             var constraintColumns = new Dictionary<string, List<DatabaseMetadataObject>>(StringComparer.OrdinalIgnoreCase);
             var constraintDescriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            await using (var command = new FbCommand(constraintSql, connection))
+            await using (var command = CreateCommand(constraintSql))
             {
-                command.Parameters.AddWithValue("@relationName", name);
+                AddParameter(command, "@relationName", name);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
@@ -391,8 +408,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
             {
                 const string viewSourceSql =
                     "SELECT RDB$VIEW_SOURCE FROM RDB$RELATIONS WHERE RDB$RELATION_NAME = @relationName";
-                await using var command = new FbCommand(viewSourceSql, connection);
-                command.Parameters.AddWithValue("@relationName", name);
+                await using var command = CreateCommand(viewSourceSql);
+                AddParameter(command, "@relationName", name);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false) && !reader.IsDBNull(0))
                 {
@@ -412,7 +429,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
             const string relationSql =
                 "SELECT TRIM(RDB$RELATION_NAME), CASE WHEN RDB$VIEW_BLR IS NULL THEN 'Table' ELSE 'View' END " +
                 "FROM RDB$RELATIONS WHERE COALESCE(RDB$SYSTEM_FLAG, 0) = 0 ORDER BY RDB$RELATION_NAME";
-            await using (var command = new FbCommand(relationSql, connection))
+            await using (var command = CreateCommand(relationSql))
             await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
                 {
                     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -428,7 +445,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     "FROM RDB$RELATION_FIELDS rf JOIN RDB$RELATIONS r ON r.RDB$RELATION_NAME = rf.RDB$RELATION_NAME " +
                     "WHERE COALESCE(r.RDB$SYSTEM_FLAG, 0) = 0 ORDER BY rf.RDB$RELATION_NAME, rf.RDB$FIELD_POSITION";
                 var fields = new Dictionary<string, List<DatabaseMetadataObject>>(StringComparer.OrdinalIgnoreCase);
-                await using (var command = new FbCommand(fieldsSql, connection))
+                await using (var command = CreateCommand(fieldsSql))
                 await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
                 {
                     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -478,7 +495,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     "COALESCE(CAST(RDB$FIELD_LENGTH AS VARCHAR(10)), '?'), COALESCE(CAST(RDB$FIELD_SCALE AS VARCHAR(10)), '0') " +
                     "FROM RDB$FIELDS WHERE COALESCE(RDB$SYSTEM_FLAG, 0) = 0 ORDER BY RDB$FIELD_NAME";
                 var domains = new List<DatabaseMetadataObject>();
-                await using var command = new FbCommand(sql, connection);
+                await using var command = CreateCommand(sql);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
@@ -493,7 +510,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
             private async Task AddCompletionCatalogAsync(
                 ICollection<DatabaseMetadataObject> target, string kind, string sql, CancellationToken cancellationToken)
             {
-                await using var command = new FbCommand(sql, connection);
+                await using var command = CreateCommand(sql);
                 await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
@@ -515,9 +532,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     "JOIN RDB$INDEX_SEGMENTS s ON s.RDB$INDEX_NAME = rc.RDB$INDEX_NAME " +
                     "WHERE rc.RDB$RELATION_NAME = @relationName AND rc.RDB$CONSTRAINT_TYPE = 'PRIMARY KEY' " +
                     "ORDER BY s.RDB$FIELD_POSITION";
-                await using (var command = new FbCommand(primaryKeySql, connection))
+                await using (var command = CreateCommand(primaryKeySql))
                 {
-                    command.Parameters.AddWithValue("@relationName", tableName);
+                    AddParameter(command, "@relationName", tableName);
                     await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                         primaryKeyColumns.Add(reader.GetString(0).Trim());
@@ -560,10 +577,10 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 var rows = new List<IReadOnlyList<string>>(pageSize);
                 var keyRows = new List<object?[]>(pageSize);
                 var hasMoreInDirection = false;
-                await using (var command = new FbCommand(sql, connection))
+                await using (var command = CreateCommand(sql))
                 {
                     foreach (var parameter in parameters)
-                        command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+                        AddParameter(command, parameter.Name, parameter.Value);
                     await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                     for (var index = 0; index < reader.FieldCount; index++) columns.Add(reader.GetName(index));
                     var keyOrdinals = primaryKeyColumns.Select(reader.GetOrdinal).ToArray();
@@ -627,14 +644,14 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                     var rowsAffected = -1;
                     var resultCharacters = 0;
                     const int maximumResultCharacters = 2_000_000;
-                    await using (var command = new FbCommand(sql, connection, transaction))
+                    await using (var command = CreateCommand(sql, transaction))
                     {
                         if (parameters is not null)
                         {
                             foreach (var parameter in parameters)
                             {
                                 var parameterName = $"@{parameter.Key.TrimStart('@', ':')}";
-                                command.Parameters.AddWithValue(parameterName, parameter.Value ?? DBNull.Value);
+                                AddParameter(command, parameterName, parameter.Value ?? DBNull.Value);
                             }
                         }
 

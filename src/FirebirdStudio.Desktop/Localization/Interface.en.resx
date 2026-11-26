@@ -162,7 +162,7 @@
   <data name="FileMenu" xml:space="preserve"><value>_File</value></data>
   <data name="FilePickerUnavailable" xml:space="preserve"><value>The file picker is not available on this platform.</value></data>
   <data name="FilterSearchType" xml:space="preserve"><value>Filter search results by type</value></data>
-  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Firebird database files</value></data>
+  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Firebird database files (.fdb, .gdb)</value></data>
   <data name="FirebirdProvider" xml:space="preserve"><value>Firebird provider</value></data>
   <data name="FirstObjectsLoaded" xml:space="preserve"><value>Loaded up to the first {0} objects per category for '{1}'. Scroll within an expanded category to load additional batches automatically.</value></data>
   <data name="FirstRow" xml:space="preserve"><value>First row</value></data>
@@ -458,4 +458,35 @@ Install and restart Firebird Studio to apply this update.</value></data>
   <data name="IndexSegments" xml:space="preserve"><value>; {0} segment(s)</value></data>
   <data name="DetailGroups" xml:space="preserve"><value>; {0} detail group(s)</value></data>
   <data name="SourceLoaded" xml:space="preserve"><value>; source loaded</value></data>
+  <data name="CreateDatabase" xml:space="preserve"><value>Create database</value></data>
+  <data name="CreateDatabaseMenu" xml:space="preserve"><value>Create database…</value></data>
+  <data name="DatabaseCreationTarget" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="UseActiveFirebird" xml:space="preserve"><value>Use the active Firebird connection</value></data>
+  <data name="UseEmbeddedFirebird" xml:space="preserve"><value>Use embedded Firebird</value></data>
+  <data name="DatabaseCreationConnectFirst" xml:space="preserve"><value>Connect to a database to use its Firebird instance.</value></data>
+  <data name="DatabaseCreationServerPath" xml:space="preserve"><value>Absolute path or alias on the server</value></data>
+  <data name="DatabaseCreationLocalPath" xml:space="preserve"><value>Local database file</value></data>
+  <data name="DatabaseCreationPassword" xml:space="preserve"><value>Firebird password</value></data>
+  <data name="DatabaseCreationPathRequired" xml:space="preserve"><value>Enter a database path or server alias.</value></data>
+  <data name="DatabaseCreationLocalPathRequired" xml:space="preserve"><value>Choose an absolute path for the database file.</value></data>
+  <data name="DatabaseCreationProfileNameRequired" xml:space="preserve"><value>Enter a name for the new connection.</value></data>
+  <data name="RegisterCreatedDatabase" xml:space="preserve"><value>Save a connection for this database</value></data>
+  <data name="DatabaseCreating" xml:space="preserve"><value>Creating database…</value></data>
+  <data name="DatabaseCreationFailed" xml:space="preserve"><value>Could not create the database. {0}</value></data>
+  <data name="DatabaseCreated" xml:space="preserve"><value>Database created at '{0}'.</value></data>
+  <data name="CreatedDatabaseProfileFailed" xml:space="preserve"><value>Saving the connection for the database created at '{0}'</value></data>
+  <data name="CreateDatabaseSucceeded" xml:space="preserve"><value>Database created</value></data>
+  <data name="DatabaseEngine" xml:space="preserve"><value>Firebird engine</value></data>
+  <data name="ManagedFirebirdEngine" xml:space="preserve"><value>Firebird {0} embedded</value></data>
+  <data name="EmbeddedEngines" xml:space="preserve"><value>Embedded Firebird</value></data>
+  <data name="EmbeddedDownloadPolicy" xml:space="preserve"><value>Engine downloads</value></data>
+  <data name="DownloadFirebirdOnDemand" xml:space="preserve"><value>Download on demand</value></data>
+  <data name="DownloadAllFirebirdEngines" xml:space="preserve"><value>Download all engines</value></data>
+  <data name="EmbeddedDownloadHelp" xml:space="preserve"><value>On demand downloads only the engine you use. Download all prepares Firebird 2.5, 3.0, 4.0, and 5.0 when you save.</value></data>
+  <data name="DownloadingFirebirdEngine" xml:space="preserve"><value>Downloading Firebird {0}…</value></data>
+  <data name="CheckingFirebirdEngines" xml:space="preserve"><value>Checking installed Firebird engines…</value></data>
+  <data name="FirebirdDownloadFailed" xml:space="preserve"><value>Could not download the Firebird engines. {0}</value></data>
+  <data name="FirebirdDownloadTlsFailed" xml:space="preserve"><value>Could not establish a secure connection to GitHub to download the Firebird engine. {0}</value></data>
+  <data name="FirebirdDownloadCancelled" xml:space="preserve"><value>Engine download cancelled.</value></data>
+  <data name="ExternalFirebirdLibrary" xml:space="preserve"><value>Use an external client library</value></data>
 </root>
