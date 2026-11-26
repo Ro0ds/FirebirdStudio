@@ -5,7 +5,10 @@
         Title="{loc:StudioText CreateDatabase}" Width="500" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" CanResize="False">
   <StackPanel Margin="18" Spacing="12">
-    <TextBlock x:Name="TargetDescription" Classes="panel-title" TextWrapping="Wrap" />
+    <StackPanel Spacing="4">
+      <TextBlock Text="{loc:StudioText DatabaseEngine}" />
+      <ComboBox x:Name="TargetBox" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:StudioText DatabaseEngine}" />
+    </StackPanel>
     <StackPanel Spacing="4">
       <TextBlock x:Name="PathLabel" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -13,7 +16,7 @@
         <Button Grid.Column="1" x:Name="BrowseButton" Classes="action" Content="{loc:StudioText Browse}" />
       </Grid>
     </StackPanel>
-    <StackPanel Spacing="4">
+    <StackPanel x:Name="PasswordPanel" Spacing="4">
       <TextBlock Text="{loc:StudioText DatabaseCreationPassword}" />
       <TextBox x:Name="PasswordBox" PasswordChar="●"
                AutomationProperties.Name="{loc:StudioText DatabaseCreationPassword}" />

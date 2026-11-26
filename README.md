@@ -20,6 +20,7 @@ The current stable release is **Firebird Studio 0.2.0**. It ships portable Windo
 
 - Create, edit, list, and delete local connection profiles.
 - Create a database on the Firebird instance behind the active connection and optionally save a profile for the new database.
+- On Windows x64, create or open a local database with Firebird 2.5, 3.0, 4.0, or 5.0. The default downloads the selected embedded engine as needed. To prepare all four engines, choose **File → Settings → Embedded Firebird → Download all engines**.
 - Register remote TCP/IP and embedded connection profiles, including a local alias, server/port, database path or server-side alias, user, role, character set, SQL dialect, and client library path for embedded mode.
 - Configure provider-level packet size, fetch size, database cache pages, pooling limits/lifetime, compression, database-trigger suppression, and garbage-collection behavior.
 - Validate connection mode requirements and advanced option ranges, including the provider restriction against combining trigger suppression with pooling.

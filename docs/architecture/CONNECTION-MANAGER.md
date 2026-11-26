@@ -62,9 +62,15 @@ A connection test is not a persistent database session. The desktop session mana
 
 ## Create a database
 
-Select a connected profile and open **File → Create database**. The dialog shows the Firebird version of the current instance. For TCP/IP, enter a path or alias on the server. For an embedded connection, choose an absolute local path.
+Open **File → Create database**. With a connected profile, the dialog offers the current instance and shows its Firebird version. For TCP/IP, enter a path or alias on the server. For an embedded connection, choose an absolute local path.
 
 Creation uses a separate provider operation with the selected credentials and rejects existing targets. The current connection stays open. If requested, the app saves a separate connection profile after creating the file.
+
+On Windows x64, choose a managed engine to create a local database without an active connection. The available Firebird releases are 2.5.9, 3.0.14, 4.0.7, and 5.0.4. A saved embedded profile records the chosen version. The connection editor also offers an external client library for existing installations.
+
+In **File → Settings → Embedded Firebird**, **Download on demand** is the default and retrieves the engine when creating a database, testing its connection, or connecting. **Download all engines** installs the missing versions when Settings is saved. Downloaded engines are reused from the per-user cache under `%LOCALAPPDATA%\FirebirdStudio\engines`. Packages come from official Firebird releases and are checked against pinned sizes and SHA-256 digests before installation. [Firebird releases](https://github.com/FirebirdSQL/firebird/releases)
+
+Embedded connections use a separate provider load context for each native library so that version-specific capabilities can coexist. On Windows x64, the integration smoke test opened simultaneous connections to all four engines and verified the format of the created database files through `MON$DATABASE`. Firebird 2.5, 3.0, 4.0, and 5.0 reported ODS 11.2, 12.0, 13.0, and 13.1 respectively.
 
 ## Credential storage
 

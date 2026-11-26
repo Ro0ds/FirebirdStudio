@@ -10,23 +10,64 @@ internal sealed record CreatedDatabase(string Path, ConnectionProfile? NewProfil
 
 internal sealed partial class CreateDatabaseWindow : Window
 {
-    private readonly ConnectionProfile _source;
+    private readonly EmbeddedFirebirdInstaller _engines;
+    private readonly ConnectionProfile? _active;
+    private string? _activePassword;
     private bool _creating;
+    private CancellationTokenSource? _download;
 
-    public CreateDatabaseWindow(ConnectionProfile source, string version, string? password)
+    public CreateDatabaseWindow(ConnectionProfile? active, string? version, string? password, EmbeddedFirebirdInstaller engines)
     {
-        _source = source;
+        _active = active;
+        _activePassword = password;
+        _engines = engines;
         InitializeComponent();
 
-        TargetDescription.Text = T("DatabaseCreationTarget", source.Name, version);
-        PathLabel.Text = T(source.ServerType == ConnectionServerType.Remote ? "DatabaseCreationServerPath" : "DatabaseCreationLocalPath");
-        BrowseButton.IsVisible = source.ServerType == ConnectionServerType.Embedded;
-        PasswordBox.Text = password;
+        if (active is not null)
+            TargetBox.Items.Add(new ComboBoxItem { Content = T("DatabaseCreationTarget", active.Name, version), Tag = active });
+        if (EmbeddedFirebirdInstaller.IsSupported)
+        {
+            foreach (var engineVersion in EmbeddedFirebirdInstaller.Versions)
+                TargetBox.Items.Add(new ComboBoxItem
+                {
+                    Content = T("ManagedFirebirdEngine", engineVersion),
+                    Tag = new ConnectionProfile { ServerType = ConnectionServerType.Embedded, EmbeddedEngineVersion = engineVersion }
+                });
+        }
+
+        TargetBox.SelectionChanged += (_, _) => UpdateTarget();
+        TargetBox.SelectedIndex = 0;
         BrowseButton.Click += async (_, _) => await BrowseAsync();
         CreateButton.Click += async (_, _) => await CreateAsync();
-        CancelButton.Click += (_, _) => Close();
-        Closing += (_, args) => args.Cancel = _creating;
-        Closed += (_, _) => PasswordBox.Text = null;
+        CancelButton.Click += (_, _) =>
+        {
+            if (_download is { } download)
+                download.Cancel();
+            else
+                Close();
+        };
+        Closing += (_, args) =>
+        {
+            args.Cancel = _creating;
+            _download?.Cancel();
+        };
+        Closed += (_, _) =>
+        {
+            PasswordBox.Text = null;
+            _activePassword = null;
+        };
+    }
+
+    private ConnectionProfile? Target => (TargetBox.SelectedItem as ComboBoxItem)?.Tag as ConnectionProfile;
+
+    private void UpdateTarget()
+    {
+        var local = Target?.ServerType == ConnectionServerType.Embedded;
+        PathLabel.Text = T(local ? "DatabaseCreationLocalPath" : "DatabaseCreationServerPath");
+        BrowseButton.IsVisible = local;
+        PasswordPanel.IsVisible = Target?.EmbeddedEngineVersion is null;
+        PasswordBox.Text = ReferenceEquals(Target, _active) ? _activePassword : null;
+        StatusText.IsVisible = false;
     }
 
     private async Task BrowseAsync()
@@ -50,13 +91,13 @@ internal sealed partial class CreateDatabaseWindow : Window
 
     private async Task CreateAsync()
     {
-        if (_creating)
+        if (_creating || Target is not { } source)
             return;
 
         var path = PathBox.Text?.Trim() ?? string.Empty;
-        if (path.Length == 0 || (_source.ServerType == ConnectionServerType.Embedded && !System.IO.Path.IsPathFullyQualified(path)))
+        if (path.Length == 0 || (source.ServerType == ConnectionServerType.Embedded && !System.IO.Path.IsPathFullyQualified(path)))
         {
-            SetStatus(T(_source.ServerType == ConnectionServerType.Embedded ? "DatabaseCreationLocalPathRequired" : "DatabaseCreationPathRequired"), error: true);
+            SetStatus(T(source.ServerType == ConnectionServerType.Embedded ? "DatabaseCreationLocalPathRequired" : "DatabaseCreationPathRequired"), error: true);
             return;
         }
 
@@ -68,15 +109,38 @@ internal sealed partial class CreateDatabaseWindow : Window
             return;
         }
 
-        var target = _source with { Id = Guid.NewGuid(), Database = path, Name = register ? name! : _source.Name };
+        var target = source with { Id = Guid.NewGuid(), Database = path, Name = register ? name! : path };
         var password = PasswordBox.Text ?? string.Empty;
+        var errors = ConnectionProfileValidator.Validate(target);
+        if (errors.Count > 0)
+        {
+            SetStatus(string.Join(Environment.NewLine, errors), error: true);
+            return;
+        }
+
         _creating = true;
-        CreateButton.IsEnabled = CancelButton.IsEnabled = false;
+        CreateButton.IsEnabled = TargetBox.IsEnabled = false;
         SetStatus(T("DatabaseCreating"), error: false);
 
+        using var download = new CancellationTokenSource();
+        _download = download;
         try
         {
-            await FirebirdDatabaseCreator.CreateAsync(target, password);
+            var resolved = await _engines.ResolveAsync(target, new Progress<string>(version =>
+            {
+                if (_download is not null)
+                    SetStatus(T("DownloadingFirebirdEngine", version), error: false);
+            }), download.Token);
+            download.Token.ThrowIfCancellationRequested();
+            _download = null;
+            CancelButton.IsEnabled = false;
+            SetStatus(T("DatabaseCreating"), error: false);
+            await FirebirdDatabaseCreator.CreateAsync(resolved, password);
+        }
+        catch (OperationCanceledException) when (download.IsCancellationRequested)
+        {
+            SetStatus(T("FirebirdDownloadCancelled"), error: false);
+            return;
         }
         catch (Exception exception)
         {
@@ -87,7 +151,8 @@ internal sealed partial class CreateDatabaseWindow : Window
         finally
         {
             _creating = false;
-            CreateButton.IsEnabled = CancelButton.IsEnabled = true;
+            _download = null;
+            CreateButton.IsEnabled = CancelButton.IsEnabled = TargetBox.IsEnabled = true;
             PasswordBox.Text = null;
         }
 

@@ -45,8 +45,14 @@
             </Grid>
             <TextBlock Text="{loc:StudioText DatabaseFileHelp}" Classes="secondary" TextWrapping="Wrap" />
 
-            <TextBlock Text="{loc:StudioText ClientLibraryPath}" />
-            <TextBox x:Name="ClientLibraryInput" PlaceholderText="{loc:StudioText ClientLibraryExample}" />
+            <StackPanel x:Name="RuntimeSelectPanel" Spacing="5">
+              <TextBlock Text="{loc:StudioText DatabaseEngine}" />
+              <ComboBox x:Name="RuntimeBox" AutomationProperties.Name="{loc:StudioText DatabaseEngine}" />
+            </StackPanel>
+            <StackPanel x:Name="ClientLibraryPanel" Spacing="5">
+              <TextBlock Text="{loc:StudioText ClientLibraryPath}" />
+              <TextBox x:Name="ClientLibraryInput" PlaceholderText="{loc:StudioText ClientLibraryExample}" />
+            </StackPanel>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="5">

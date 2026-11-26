@@ -24,6 +24,11 @@ This roadmap tracks Firebird Studio as a cross-platform Firebird development and
 
 Windows x64 remains the packaged target. Linux and macOS build, runtime, and packaging validation are tracked in the [platform support policy](architecture/PLATFORM-SUPPORT.md).
 
+### Database creation and embedded engines
+
+- [x] Create a database using the Firebird instance behind the active connection. The Firebird 5 TCP/IP smoke test covered creation, reopening, a query, and rejection of an existing target.
+- [x] Select Firebird 2.5, 3.0, 4.0, or 5.0 when creating or opening a local database on Windows x64. Download on demand by default or download all engines from Settings. [Connection and download workflow](architecture/CONNECTION-MANAGER.md#create-a-database)
+
 ### Reliability already delivered
 
 - Better error reporting, including immediate on-screen error feedback, automatic navigation to Messages, and detailed exception information.

@@ -473,4 +473,16 @@ Install and restart Firebird Studio to apply this update.</value></data>
   <data name="DatabaseCreated" xml:space="preserve"><value>Database created at '{0}'.</value></data>
   <data name="CreatedDatabaseProfileFailed" xml:space="preserve"><value>Saving the connection for the database created at '{0}'</value></data>
   <data name="CreateDatabaseSucceeded" xml:space="preserve"><value>Database created</value></data>
+  <data name="DatabaseEngine" xml:space="preserve"><value>Firebird engine</value></data>
+  <data name="ManagedFirebirdEngine" xml:space="preserve"><value>Firebird {0} embedded</value></data>
+  <data name="EmbeddedEngines" xml:space="preserve"><value>Embedded Firebird</value></data>
+  <data name="EmbeddedDownloadPolicy" xml:space="preserve"><value>Engine downloads</value></data>
+  <data name="DownloadFirebirdOnDemand" xml:space="preserve"><value>Download on demand</value></data>
+  <data name="DownloadAllFirebirdEngines" xml:space="preserve"><value>Download all engines</value></data>
+  <data name="EmbeddedDownloadHelp" xml:space="preserve"><value>On demand downloads only the engine you use. Download all prepares Firebird 2.5, 3.0, 4.0, and 5.0 when you save.</value></data>
+  <data name="DownloadingFirebirdEngine" xml:space="preserve"><value>Downloading Firebird {0}…</value></data>
+  <data name="CheckingFirebirdEngines" xml:space="preserve"><value>Checking installed Firebird engines…</value></data>
+  <data name="FirebirdDownloadFailed" xml:space="preserve"><value>Could not download the Firebird engines. {0}</value></data>
+  <data name="FirebirdDownloadCancelled" xml:space="preserve"><value>Engine download cancelled.</value></data>
+  <data name="ExternalFirebirdLibrary" xml:space="preserve"><value>Use an external client library</value></data>
 </root>

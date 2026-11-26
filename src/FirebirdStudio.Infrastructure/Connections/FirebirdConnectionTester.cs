@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using FirebirdSql.Data.FirebirdClient;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Connections;
 
@@ -101,7 +100,7 @@ public sealed class FirebirdConnectionTester : IFirebirdConnectionTester
             currentStage = "Firebird provider handshake and authentication";
             var providerTimer = Stopwatch.StartNew();
             var connectionString = FirebirdConnectionStringFactory.Build(profile, password, poolingOverride: false);
-            await using var connection = new FbConnection(connectionString);
+            await using var connection = FirebirdDbConnectionFactory.Create(connectionString);
             await connection.OpenAsync(timeout.Token).ConfigureAwait(false);
             diagnostics.AppendLine($"[Firebird provider handshake and authentication] Passed in {providerTimer.ElapsedMilliseconds:N0} ms");
             diagnostics.AppendLine($"[Server] Firebird {connection.ServerVersion}");

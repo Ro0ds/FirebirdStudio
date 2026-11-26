@@ -169,7 +169,7 @@ for package in ["Microsoft.NET.Test.Sdk", "xunit.v3.mtp-off", "xunit.runner.visu
         sys.exit(1)
 
 provider_factory_source = (root / "src/FirebirdStudio.Infrastructure/Connections/Provider/FirebirdProviderConnectionFactory.cs").read_text(encoding="utf-8")
-if "new FbConnection(connectionString)" not in provider_factory_source:
+if "FirebirdDbConnectionFactory.Create(connectionString)" not in provider_factory_source:
     print("Production provider factory does not create the Firebird provider connection.")
     sys.exit(1)
 
@@ -371,7 +371,7 @@ for token in ["FindNames", "NormalizePlaceholders", "lineComment", "blockComment
         print(f"Named SQL parameter parser is missing: {token}")
         sys.exit(1)
 provider_source = (root / "src/FirebirdStudio.Infrastructure/Connections/Provider/FirebirdProviderConnectionFactory.cs").read_text(encoding="utf-8")
-if "command.Parameters.AddWithValue(parameterName" not in provider_source:
+if "AddParameter(command, parameterName" not in provider_source or "command.Parameters.Add(parameter)" not in provider_source:
     print("SQL execution does not bind supplied parameter values through the Firebird provider.")
     sys.exit(1)
 print("Connection-time metadata paging, in-place append, SQL source formatting, and named parameter binding source checks passed.")

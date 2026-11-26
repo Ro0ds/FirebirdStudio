@@ -17,7 +17,7 @@
     </Style>
   </Window.Styles>
   <Grid Margin="18" RowDefinitions="*,Auto,Auto" RowSpacing="12">
-    <TabControl>
+    <TabControl x:Name="SettingsTabs">
       <TabItem Header="{loc:StudioText KeyboardShortcuts}">
         <StackPanel Spacing="12" Margin="0,10">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -90,6 +90,17 @@
           </Grid>
           <TextBlock Text="{loc:StudioText LanguageRestartHint}"
                      Classes="secondary" TextWrapping="Wrap" />
+        </StackPanel>
+      </TabItem>
+      <TabItem x:Name="EmbeddedEnginesSettingsTab" Header="{loc:StudioText EmbeddedEngines}">
+        <StackPanel Spacing="10" Margin="0,10">
+          <TextBlock Text="{loc:StudioText EmbeddedDownloadPolicy}" />
+          <ComboBox x:Name="EmbeddedDownloadBox" MinWidth="200" AutomationProperties.Name="{loc:StudioText EmbeddedDownloadPolicy}">
+            <ComboBoxItem Content="{loc:StudioText DownloadFirebirdOnDemand}" />
+            <ComboBoxItem Content="{loc:StudioText DownloadAllFirebirdEngines}" />
+          </ComboBox>
+          <TextBlock Text="{loc:StudioText EmbeddedDownloadHelp}" TextWrapping="Wrap" Classes="secondary" />
+          <TextBlock x:Name="EmbeddedDownloadStatus" IsVisible="False" TextWrapping="Wrap" />
         </StackPanel>
       </TabItem>
     </TabControl>

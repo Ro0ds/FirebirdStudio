@@ -475,4 +475,16 @@ Instale a atualização e reinicie o Firebird Studio para aplicá-la.</value></d
   <data name="DatabaseCreated" xml:space="preserve"><value>Banco de dados criado em '{0}'.</value></data>
   <data name="CreatedDatabaseProfileFailed" xml:space="preserve"><value>Gravação da conexão do banco criado em '{0}'</value></data>
   <data name="CreateDatabaseSucceeded" xml:space="preserve"><value>Banco de dados criado</value></data>
+  <data name="DatabaseEngine" xml:space="preserve"><value>Motor do Firebird</value></data>
+  <data name="ManagedFirebirdEngine" xml:space="preserve"><value>Firebird {0} embarcado</value></data>
+  <data name="EmbeddedEngines" xml:space="preserve"><value>Firebird embarcado</value></data>
+  <data name="EmbeddedDownloadPolicy" xml:space="preserve"><value>Download dos motores</value></data>
+  <data name="DownloadFirebirdOnDemand" xml:space="preserve"><value>Baixar sob demanda</value></data>
+  <data name="DownloadAllFirebirdEngines" xml:space="preserve"><value>Baixar todos os motores</value></data>
+  <data name="EmbeddedDownloadHelp" xml:space="preserve"><value>Sob demanda, o app baixa apenas o motor que você usa. Ao salvar com a opção de baixar todos, o app prepara o Firebird 2.5, 3.0, 4.0 e 5.0.</value></data>
+  <data name="DownloadingFirebirdEngine" xml:space="preserve"><value>Baixando Firebird {0}…</value></data>
+  <data name="CheckingFirebirdEngines" xml:space="preserve"><value>Verificando os motores Firebird instalados…</value></data>
+  <data name="FirebirdDownloadFailed" xml:space="preserve"><value>Falha ao baixar os motores Firebird. {0}</value></data>
+  <data name="FirebirdDownloadCancelled" xml:space="preserve"><value>Download do motor cancelado.</value></data>
+  <data name="ExternalFirebirdLibrary" xml:space="preserve"><value>Usar uma biblioteca cliente externa</value></data>
 </root>
