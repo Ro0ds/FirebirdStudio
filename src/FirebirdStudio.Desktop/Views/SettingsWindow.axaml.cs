@@ -186,7 +186,9 @@ internal sealed partial class SettingsWindow : Window
         }
         catch (Exception exception)
         {
-            EmbeddedDownloadStatus.Text = T("FirebirdDownloadFailed", exception.Message);
+            EmbeddedDownloadStatus.Text = exception is HttpRequestException { HttpRequestError: HttpRequestError.SecureConnectionError }
+                ? T("FirebirdDownloadTlsFailed", exception.GetBaseException().Message)
+                : T("FirebirdDownloadFailed", exception.Message);
             EmbeddedDownloadStatus.Classes.Set("error", true);
             return false;
         }

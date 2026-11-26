@@ -488,6 +488,7 @@ Instale a atualização e reinicie o Firebird Studio para aplicá-la.</value></d
   <data name="DownloadingFirebirdEngine" xml:space="preserve"><value>Baixando Firebird {0}…</value></data>
   <data name="CheckingFirebirdEngines" xml:space="preserve"><value>Verificando os motores Firebird instalados…</value></data>
   <data name="FirebirdDownloadFailed" xml:space="preserve"><value>Falha ao baixar os motores Firebird. {0}</value></data>
+  <data name="FirebirdDownloadTlsFailed" xml:space="preserve"><value>Não foi possível estabelecer uma conexão segura com o GitHub para baixar o motor Firebird. {0}</value></data>
   <data name="FirebirdDownloadCancelled" xml:space="preserve"><value>Download do motor cancelado.</value></data>
   <data name="ExternalFirebirdLibrary" xml:space="preserve"><value>Usar uma biblioteca cliente externa</value></data>
 </root>
