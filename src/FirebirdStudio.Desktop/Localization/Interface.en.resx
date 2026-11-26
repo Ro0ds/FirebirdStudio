@@ -162,7 +162,7 @@
   <data name="FileMenu" xml:space="preserve"><value>_File</value></data>
   <data name="FilePickerUnavailable" xml:space="preserve"><value>The file picker is not available on this platform.</value></data>
   <data name="FilterSearchType" xml:space="preserve"><value>Filter search results by type</value></data>
-  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Firebird database files</value></data>
+  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Firebird database files (.fdb, .gdb)</value></data>
   <data name="FirebirdProvider" xml:space="preserve"><value>Firebird provider</value></data>
   <data name="FirstObjectsLoaded" xml:space="preserve"><value>Loaded up to the first {0} objects per category for '{1}'. Scroll within an expanded category to load additional batches automatically.</value></data>
   <data name="FirstRow" xml:space="preserve"><value>First row</value></data>

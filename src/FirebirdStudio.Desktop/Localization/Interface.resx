@@ -162,7 +162,7 @@
   <data name="FileMenu" xml:space="preserve"><value>_Arquivo</value></data>
   <data name="FilePickerUnavailable" xml:space="preserve"><value>O seletor de arquivos está indisponível nesta plataforma.</value></data>
   <data name="FilterSearchType" xml:space="preserve"><value>Filtrar resultados por tipo</value></data>
-  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Arquivos de banco Firebird</value></data>
+  <data name="FirebirdDatabaseFiles" xml:space="preserve"><value>Arquivos de banco Firebird (.fdb, .gdb)</value></data>
   <data name="FirebirdProvider" xml:space="preserve"><value>Provedor do Firebird</value></data>
   <data name="FirstObjectsLoaded" xml:space="preserve"><value>Até {0} objetos foram carregados por categoria de '{1}'. Role uma categoria expandida para carregar mais lotes automaticamente.</value></data>
   <data name="FirstRow" xml:space="preserve"><value>Primeira linha</value></data>

@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Connections;
+using FirebirdStudio.Desktop.Services;
 using FirebirdStudio.Infrastructure.Connections;
 using static FirebirdStudio.Desktop.Services.StudioText;
 
@@ -95,22 +96,14 @@ public sealed partial class ConnectionEditorWindow : Window
         {
             Title = T("PickFirebirdDatabase"),
             AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType(T("FirebirdDatabaseFiles"))
-                {
-                    Patterns = ["*.gdb", "*.GDB", "*.fdb", "*.FDB"]
-                }
-            ]
+            FileTypeFilter = [FirebirdDatabaseFiles.CreateFilter()]
         });
 
         if (files.Count == 0)
             return;
 
         var selectedPath = files[0].Path.LocalPath;
-        var extension = Path.GetExtension(selectedPath);
-        if (!string.Equals(extension, ".gdb", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(extension, ".fdb", StringComparison.OrdinalIgnoreCase))
+        if (!FirebirdDatabaseFiles.HasSupportedExtension(selectedPath))
         {
             SetMessage(T("InvalidDatabaseExtension"));
             return;

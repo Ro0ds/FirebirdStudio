@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using FirebirdStudio.Core.Connections;
+using FirebirdStudio.Desktop.Services;
 using FirebirdStudio.Infrastructure.Connections;
 using static FirebirdStudio.Desktop.Services.StudioText;
 
@@ -93,7 +94,7 @@ internal sealed partial class CreateDatabaseWindow : Window
             {
                 Title = T("CreateDatabase"),
                 DefaultExtension = "fdb",
-                FileTypeChoices = [new FilePickerFileType(T("FirebirdDatabaseFiles")) { Patterns = ["*.fdb"] }]
+                FileTypeChoices = [FirebirdDatabaseFiles.CreateFilter()]
             });
             if (target?.TryGetLocalPath() is { } path)
                 PathBox.Text = path;
