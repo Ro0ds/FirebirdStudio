@@ -1,7 +1,6 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Connections;
@@ -27,7 +26,7 @@ public sealed partial class ConnectionEditorWindow : Window
         _profileManager = profileManager ?? throw new ArgumentNullException(nameof(profileManager));
         _connectionTester = connectionTester ?? throw new ArgumentNullException(nameof(connectionTester));
 
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
         RuntimeBox.Items.Add(new ComboBoxItem { Content = T("ExternalFirebirdLibrary") });
         if (EmbeddedFirebirdInstaller.IsSupported || profile.EmbeddedEngineVersion is not null)
         {

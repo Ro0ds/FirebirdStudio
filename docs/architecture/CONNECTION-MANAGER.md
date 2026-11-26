@@ -62,11 +62,11 @@ A connection test is not a persistent database session. The desktop session mana
 
 ## Create a database
 
-Open **File → Create database**. With a connected profile, the dialog offers the current instance and shows its Firebird version. For TCP/IP, enter a path or alias on the server. For an embedded connection, choose an absolute local path.
+Open **File → Create database**. Choose **Use the active Firebird connection** to create with the current instance. The dialog displays its version. For TCP/IP, enter a path or alias on the server. For an embedded connection, choose an absolute local path.
 
 Creation uses a separate provider operation with the selected credentials and rejects existing targets. The current connection stays open. If requested, the app saves a separate connection profile after creating the file.
 
-On Windows x64, choose a managed engine to create a local database without an active connection. The available Firebird releases are 2.5.9, 3.0.14, 4.0.7, and 5.0.4. A saved embedded profile records the chosen version. The connection editor also offers an external client library for existing installations.
+On Windows x64, choose **Use embedded Firebird** and select a version to create a local database. This option is available with or without an active connection. The available Firebird releases are 2.5.9, 3.0.14, 4.0.7, and 5.0.4. A saved embedded profile records the chosen version. The connection editor also offers an external client library for existing installations.
 
 In **File → Settings → Embedded Firebird**, **Download on demand** is the default and retrieves the engine when creating a database, testing its connection, or connecting. **Download all engines** installs the missing versions when Settings is saved. Downloaded engines are reused from the per-user cache under `%LOCALAPPDATA%\FirebirdStudio\engines`. Packages come from official Firebird releases and are checked against pinned sizes and SHA-256 digests before installation. [Firebird releases](https://github.com/FirebirdSQL/firebird/releases)
 

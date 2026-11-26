@@ -23,20 +23,28 @@ internal sealed partial class CreateDatabaseWindow : Window
         _engines = engines;
         InitializeComponent();
 
-        if (active is not null)
-            TargetBox.Items.Add(new ComboBoxItem { Content = T("DatabaseCreationTarget", active.Name, version), Tag = active });
-        if (EmbeddedFirebirdInstaller.IsSupported)
+        var embeddedAvailable = EmbeddedFirebirdInstaller.IsSupported;
+        ActiveInstanceOption.IsEnabled = active is not null;
+        ActiveInstanceDescription.Text = active is null
+            ? T("DatabaseCreationConnectFirst")
+            : T("DatabaseCreationTarget", active.Name, version);
+        EmbeddedInstanceOption.IsVisible = embeddedAvailable;
+        if (embeddedAvailable)
         {
             foreach (var engineVersion in EmbeddedFirebirdInstaller.Versions)
-                TargetBox.Items.Add(new ComboBoxItem
+                EmbeddedEngineBox.Items.Add(new ComboBoxItem
                 {
                     Content = T("ManagedFirebirdEngine", engineVersion),
                     Tag = new ConnectionProfile { ServerType = ConnectionServerType.Embedded, EmbeddedEngineVersion = engineVersion }
                 });
+            EmbeddedEngineBox.SelectedIndex = 0;
         }
 
-        TargetBox.SelectionChanged += (_, _) => UpdateTarget();
-        TargetBox.SelectedIndex = 0;
+        ActiveInstanceOption.IsChecked = active is not null;
+        EmbeddedInstanceOption.IsChecked = active is null && embeddedAvailable;
+        ActiveInstanceOption.IsCheckedChanged += (_, _) => UpdateTarget();
+        EmbeddedInstanceOption.IsCheckedChanged += (_, _) => UpdateTarget();
+        UpdateTarget();
         BrowseButton.Click += async (_, _) => await BrowseAsync();
         CreateButton.Click += async (_, _) => await CreateAsync();
         CancelButton.Click += (_, _) =>
@@ -58,15 +66,22 @@ internal sealed partial class CreateDatabaseWindow : Window
         };
     }
 
-    private ConnectionProfile? Target => (TargetBox.SelectedItem as ComboBoxItem)?.Tag as ConnectionProfile;
+    private ConnectionProfile? Target => ActiveInstanceOption.IsChecked == true
+        ? _active
+        : EmbeddedInstanceOption.IsChecked == true
+            ? (EmbeddedEngineBox.SelectedItem as ComboBoxItem)?.Tag as ConnectionProfile
+            : null;
 
     private void UpdateTarget()
     {
-        var local = Target?.ServerType == ConnectionServerType.Embedded;
+        var target = Target;
+        var local = target?.ServerType == ConnectionServerType.Embedded;
+        EmbeddedEnginePanel.IsVisible = EmbeddedInstanceOption.IsChecked == true;
         PathLabel.Text = T(local ? "DatabaseCreationLocalPath" : "DatabaseCreationServerPath");
         BrowseButton.IsVisible = local;
-        PasswordPanel.IsVisible = Target?.EmbeddedEngineVersion is null;
-        PasswordBox.Text = ReferenceEquals(Target, _active) ? _activePassword : null;
+        PasswordPanel.IsVisible = target is { EmbeddedEngineVersion: null };
+        PasswordBox.Text = ActiveInstanceOption.IsChecked == true ? _activePassword : null;
+        CreateButton.IsEnabled = target is not null;
         StatusText.IsVisible = false;
     }
 
@@ -119,7 +134,7 @@ internal sealed partial class CreateDatabaseWindow : Window
         }
 
         _creating = true;
-        CreateButton.IsEnabled = TargetBox.IsEnabled = false;
+        CreateButton.IsEnabled = SourceOptions.IsEnabled = false;
         SetStatus(T("DatabaseCreating"), error: false);
 
         using var download = new CancellationTokenSource();
@@ -152,7 +167,7 @@ internal sealed partial class CreateDatabaseWindow : Window
         {
             _creating = false;
             _download = null;
-            CreateButton.IsEnabled = CancelButton.IsEnabled = TargetBox.IsEnabled = true;
+            CreateButton.IsEnabled = CancelButton.IsEnabled = SourceOptions.IsEnabled = true;
             PasswordBox.Text = null;
         }
 

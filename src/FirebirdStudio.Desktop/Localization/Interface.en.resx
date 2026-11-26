@@ -461,6 +461,9 @@ Install and restart Firebird Studio to apply this update.</value></data>
   <data name="CreateDatabase" xml:space="preserve"><value>Create database</value></data>
   <data name="CreateDatabaseMenu" xml:space="preserve"><value>Create database…</value></data>
   <data name="DatabaseCreationTarget" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="UseActiveFirebird" xml:space="preserve"><value>Use the active Firebird connection</value></data>
+  <data name="UseEmbeddedFirebird" xml:space="preserve"><value>Use embedded Firebird</value></data>
+  <data name="DatabaseCreationConnectFirst" xml:space="preserve"><value>Connect to a database to use its Firebird instance.</value></data>
   <data name="DatabaseCreationServerPath" xml:space="preserve"><value>Absolute path or alias on the server</value></data>
   <data name="DatabaseCreationLocalPath" xml:space="preserve"><value>Local database file</value></data>
   <data name="DatabaseCreationPassword" xml:space="preserve"><value>Firebird password</value></data>
