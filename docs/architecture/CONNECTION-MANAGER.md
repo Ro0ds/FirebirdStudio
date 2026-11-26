@@ -60,6 +60,12 @@ The error result does not include the connection string, and the exact supplied 
 
 A connection test is not a persistent database session. The desktop session manager separately owns long-lived connections.
 
+## Create a database
+
+Select a connected profile and open **File → Create database**. The dialog shows the Firebird version of the current instance. For TCP/IP, enter a path or alias on the server. For an embedded connection, choose an absolute local path.
+
+Creation uses a separate provider operation with the selected credentials and rejects existing targets. The current connection stays open. If requested, the app saves a separate connection profile after creating the file.
+
 ## Credential storage
 
 `ISecureCredentialStore` is the application port for OS-backed secrets. `LatchkeySecureCredentialStore` implements it through Latchkey 0.1.0 and selects only the library's native `Auto` backend: Windows Credential Manager, macOS Keychain Services, or Linux freedesktop Secret Service (typically backed by GNOME Keyring or KWallet). The adapter does not configure Latchkey's plaintext file backend or any fallback.

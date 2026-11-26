@@ -101,6 +101,7 @@
                 <PathIcon Classes="action-icon" Data="{StaticResource ActionAddIcon}" />
               </MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="{loc:StudioText CreateDatabaseMenu}" x:Name="CreateDatabaseMenuItem" IsEnabled="False" />
             <Separator />
             <MenuItem Header="{loc:StudioText SettingsMenu}" x:Name="SettingsMenuItem">
               <MenuItem.Icon>

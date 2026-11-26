@@ -19,6 +19,7 @@ The current stable release is **Firebird Studio 0.2.0**. It ships portable Windo
 ## Implemented in this milestone
 
 - Create, edit, list, and delete local connection profiles.
+- Create a database on the Firebird instance behind the active connection and optionally save a profile for the new database.
 - Register remote TCP/IP and embedded connection profiles, including a local alias, server/port, database path or server-side alias, user, role, character set, SQL dialect, and client library path for embedded mode.
 - Configure provider-level packet size, fetch size, database cache pages, pooling limits/lifetime, compression, database-trigger suppression, and garbage-collection behavior.
 - Validate connection mode requirements and advanced option ranges, including the provider restriction against combining trigger suppression with pooling.

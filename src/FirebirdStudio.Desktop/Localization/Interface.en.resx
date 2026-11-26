@@ -458,4 +458,19 @@ Install and restart Firebird Studio to apply this update.</value></data>
   <data name="IndexSegments" xml:space="preserve"><value>; {0} segment(s)</value></data>
   <data name="DetailGroups" xml:space="preserve"><value>; {0} detail group(s)</value></data>
   <data name="SourceLoaded" xml:space="preserve"><value>; source loaded</value></data>
+  <data name="CreateDatabase" xml:space="preserve"><value>Create database</value></data>
+  <data name="CreateDatabaseMenu" xml:space="preserve"><value>Create database…</value></data>
+  <data name="DatabaseCreationTarget" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="DatabaseCreationServerPath" xml:space="preserve"><value>Absolute path or alias on the server</value></data>
+  <data name="DatabaseCreationLocalPath" xml:space="preserve"><value>Local database file</value></data>
+  <data name="DatabaseCreationPassword" xml:space="preserve"><value>Firebird password</value></data>
+  <data name="DatabaseCreationPathRequired" xml:space="preserve"><value>Enter a database path or server alias.</value></data>
+  <data name="DatabaseCreationLocalPathRequired" xml:space="preserve"><value>Choose an absolute path for the database file.</value></data>
+  <data name="DatabaseCreationProfileNameRequired" xml:space="preserve"><value>Enter a name for the new connection.</value></data>
+  <data name="RegisterCreatedDatabase" xml:space="preserve"><value>Save a connection for this database</value></data>
+  <data name="DatabaseCreating" xml:space="preserve"><value>Creating database…</value></data>
+  <data name="DatabaseCreationFailed" xml:space="preserve"><value>Could not create the database. {0}</value></data>
+  <data name="DatabaseCreated" xml:space="preserve"><value>Database created at '{0}'.</value></data>
+  <data name="CreatedDatabaseProfileFailed" xml:space="preserve"><value>Saving the connection for the database created at '{0}'</value></data>
+  <data name="CreateDatabaseSucceeded" xml:space="preserve"><value>Database created</value></data>
 </root>

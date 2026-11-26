@@ -323,6 +323,7 @@ public sealed partial class MainWindow : Window
         _disconnectButton.Click += OnDisconnectClick;
         _refreshMetadataMenuItem.Click += OnRefreshMetadataClick;
         this.FindControl<MenuItem>("SettingsMenuItem")!.Click += OnSettingsClick;
+        this.FindControl<MenuItem>("CreateDatabaseMenuItem")!.Click += OnCreateDatabaseClick;
         _toggleThemeMenuItem.Click += async (_, _) =>
             await SetThemeAsync(_preferences.Theme == "Dark" ? "Light" : "Dark");
         _checkForUpdatesMenuItem.Click += async (_, _) =>
@@ -804,6 +805,47 @@ public sealed partial class MainWindow : Window
     private async void OnAddConnectionClick(object? sender, RoutedEventArgs e) =>
         await ShowConnectionEditorAsync(new ConnectionProfile());
 
+    private async void OnCreateDatabaseClick(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedConnection is not { } source ||
+            _sessionManager.GetActiveSessions().FirstOrDefault(item => item.ProfileId == source.Id) is not { } session)
+            return;
+
+        string? savedPassword = null;
+        try
+        {
+            savedPassword = await _credentialStore.GetPasswordAsync(source.Id);
+        }
+        catch (Exception exception)
+        {
+            ReportError(T("AccessingCredentialStore"), exception);
+        }
+
+        var result = await new CreateDatabaseWindow(source, session.ServerVersion, savedPassword)
+            .ShowDialog<CreatedDatabase?>(this);
+        if (result is null)
+            return;
+
+        if (result.NewProfile is { } profile)
+        {
+            try
+            {
+                await _profileManager.SaveAsync(profile);
+                _connectionItems.Add(new ConnectionListItem(profile));
+            }
+            catch (Exception exception)
+            {
+                ReportError(T("CreatedDatabaseProfileFailed", result.Path), exception);
+                return;
+            }
+        }
+
+        var message = T("DatabaseCreated", result.Path);
+        _statusText.Text = message;
+        AddMessage("Success", T("CreateDatabase"), message);
+        ShowFooterNotification(T("CreateDatabaseSucceeded"), "success");
+    }
+
     private async void OnEditConnectionClick(object? sender, RoutedEventArgs e)
     {
         if (SelectedConnection is { } profile)
@@ -1148,6 +1190,7 @@ public sealed partial class MainWindow : Window
         _removeButton.IsEnabled = canChange && !isConnected;
         _connectButton.IsEnabled = canChange && !isConnected;
         _disconnectButton.IsEnabled = canChange && isConnected;
+        this.FindControl<MenuItem>("CreateDatabaseMenuItem")!.IsEnabled = canChange && isConnected;
         _connectionContextEditItem.IsEnabled = _editButton.IsEnabled;
         _connectionContextDeleteItem.IsEnabled = _removeButton.IsEnabled;
         _connectionContextConnectItem.IsEnabled = _connectButton.IsEnabled;
