@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:FirebirdStudio.Desktop.Services"
+        x:Class="FirebirdStudio.Desktop.Views.CreateDatabaseWindow"
+        Title="{loc:StudioText CreateDatabase}" Width="500" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" CanResize="False">
+  <StackPanel Margin="18" Spacing="12">
+    <StackPanel x:Name="SourceOptions" Spacing="6">
+      <RadioButton x:Name="ActiveInstanceOption" GroupName="DatabaseCreationSource"
+                   Content="{loc:StudioText UseActiveFirebird}" />
+      <TextBlock x:Name="ActiveInstanceDescription" Margin="24,0,0,0" Classes="secondary" TextWrapping="Wrap" />
+      <RadioButton x:Name="EmbeddedInstanceOption" GroupName="DatabaseCreationSource"
+                   Content="{loc:StudioText UseEmbeddedFirebird}" />
+      <StackPanel x:Name="EmbeddedEnginePanel" Margin="24,0,0,0" Spacing="4">
+        <TextBlock Text="{loc:StudioText DatabaseEngine}" />
+        <ComboBox x:Name="EmbeddedEngineBox" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="{loc:StudioText DatabaseEngine}" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Spacing="4">
+      <TextBlock x:Name="PathLabel" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox x:Name="PathBox" AutomationProperties.Name="{loc:StudioText DatabasePath}" />
+        <Button Grid.Column="1" x:Name="BrowseButton" Classes="action" Content="{loc:StudioText Browse}" />
+      </Grid>
+    </StackPanel>
+    <StackPanel x:Name="PasswordPanel" Spacing="4">
+      <TextBlock Text="{loc:StudioText DatabaseCreationPassword}" />
+      <TextBox x:Name="PasswordBox" PasswordChar="●"
+               AutomationProperties.Name="{loc:StudioText DatabaseCreationPassword}" />
+    </StackPanel>
+    <CheckBox x:Name="RegisterProfileBox" IsChecked="True" Content="{loc:StudioText RegisterCreatedDatabase}" />
+    <StackPanel x:Name="ProfileNamePanel" Spacing="4" IsVisible="{Binding #RegisterProfileBox.IsChecked}">
+      <TextBlock Text="{loc:StudioText ConnectionName}" />
+      <TextBox x:Name="NameBox" AutomationProperties.Name="{loc:StudioText ConnectionName}" />
+    </StackPanel>
+    <TextBlock x:Name="StatusText" TextWrapping="Wrap" IsVisible="False" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button x:Name="CancelButton" Classes="action" IsCancel="True" Content="{loc:StudioText Cancel}" />
+      <Button x:Name="CreateButton" Classes="action accent" IsDefault="True" Content="{loc:StudioText CreateDatabase}" />
+    </StackPanel>
+  </StackPanel>
+</Window>

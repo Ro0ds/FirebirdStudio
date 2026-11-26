@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using FirebirdStudio.Desktop.Services;
+using FirebirdStudio.Infrastructure.Connections;
 
 namespace FirebirdStudio.Desktop;
 
@@ -10,6 +11,7 @@ public sealed partial class App : Avalonia.Application
     private StudioAppearance? _appearance;
 
     internal StudioAppearance Appearance => _appearance ??= new(Resources);
+    internal EmbeddedFirebirdInstaller EmbeddedEngines { get; } = new();
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 

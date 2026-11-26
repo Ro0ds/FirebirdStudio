@@ -17,6 +17,8 @@ internal static class FirebirdConnectionStringFactory
         var errors = ConnectionProfileValidator.Validate(profile);
         if (errors.Count > 0)
             throw new ArgumentException(string.Join(Environment.NewLine, errors), nameof(profile));
+        if (profile.EmbeddedEngineVersion is not null)
+            throw new InvalidOperationException("Resolve the managed Firebird engine before building the connection string.");
 
         var builder = new FbConnectionStringBuilder
         {

@@ -27,6 +27,7 @@ public sealed record ConnectionProfile
 
     /// <summary>Optional native client library path, primarily for embedded connections.</summary>
     public string? ClientLibraryPath { get; init; }
+    public string? EmbeddedEngineVersion { get; init; }
 
     public int PacketSize { get; init; } = 8192;
     public int FetchSize { get; init; } = 200;

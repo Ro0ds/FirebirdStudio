@@ -14,6 +14,7 @@ internal sealed record StudioPreferences(
         new("Light", Array.Empty<string>(), ExecuteSqlShortcut: SqlExecutionShortcuts.Default.ToString());
 
     public string InterfaceLanguage { get; init; } = StudioText.English;
+    public bool DownloadAllEmbeddedEngines { get; init; }
 
     [JsonIgnore]
     public Key ExecuteSqlKey => SqlExecutionShortcuts.Resolve(ExecuteSqlShortcut);

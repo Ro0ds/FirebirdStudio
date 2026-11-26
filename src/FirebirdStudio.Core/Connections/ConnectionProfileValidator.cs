@@ -52,11 +52,19 @@ public static class ConnectionProfileValidator
             errors.Add("Client library path contains invalid control characters.");
 
         if (profile.ServerType == ConnectionServerType.Embedded &&
-            string.IsNullOrWhiteSpace(profile.ClientLibraryPath))
+            profile.EmbeddedEngineVersion is null && string.IsNullOrWhiteSpace(profile.ClientLibraryPath))
             errors.Add("A client library path is required for an embedded connection.");
         else if (profile.ServerType == ConnectionServerType.Remote &&
                  !string.IsNullOrWhiteSpace(profile.ClientLibraryPath))
             errors.Add("Client library path is only used by embedded connections.");
+
+        if (profile.EmbeddedEngineVersion is { } engineVersion)
+        {
+            if (profile.ServerType != ConnectionServerType.Embedded || !string.IsNullOrWhiteSpace(profile.ClientLibraryPath))
+                errors.Add("A managed engine requires an embedded connection without an external client library.");
+            if (engineVersion is not ("2.5" or "3.0" or "4.0" or "5.0"))
+                errors.Add("The managed Firebird engine version is unavailable.");
+        }
 
         if (profile.SqlDialect is < 1 or > 3)
             errors.Add("SQL dialect must be 1, 2, or 3.");

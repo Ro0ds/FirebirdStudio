@@ -323,6 +323,7 @@ public sealed partial class MainWindow : Window
         _disconnectButton.Click += OnDisconnectClick;
         _refreshMetadataMenuItem.Click += OnRefreshMetadataClick;
         this.FindControl<MenuItem>("SettingsMenuItem")!.Click += OnSettingsClick;
+        this.FindControl<MenuItem>("CreateDatabaseMenuItem")!.Click += OnCreateDatabaseClick;
         _toggleThemeMenuItem.Click += async (_, _) =>
             await SetThemeAsync(_preferences.Theme == "Dark" ? "Light" : "Dark");
         _checkForUpdatesMenuItem.Click += async (_, _) =>
@@ -804,6 +805,52 @@ public sealed partial class MainWindow : Window
     private async void OnAddConnectionClick(object? sender, RoutedEventArgs e) =>
         await ShowConnectionEditorAsync(new ConnectionProfile());
 
+    private async void OnCreateDatabaseClick(object? sender, RoutedEventArgs e)
+    {
+        var source = SelectedConnection;
+        var session = _sessionManager.GetActiveSessions().FirstOrDefault(item => item.ProfileId == source?.Id);
+        if (session is null && !EmbeddedFirebirdInstaller.IsSupported)
+            return;
+
+        string? savedPassword = null;
+        if (session is not null && source is not null && source.EmbeddedEngineVersion is null)
+        {
+            try
+            {
+                savedPassword = await _credentialStore.GetPasswordAsync(source.Id);
+            }
+            catch (Exception exception)
+            {
+                ReportError(T("AccessingCredentialStore"), exception);
+            }
+        }
+
+        var result = await new CreateDatabaseWindow(session is null ? null : source, session?.ServerVersion, savedPassword,
+                ((App)Avalonia.Application.Current!).EmbeddedEngines)
+            .ShowDialog<CreatedDatabase?>(this);
+        if (result is null)
+            return;
+
+        if (result.NewProfile is { } profile)
+        {
+            try
+            {
+                await _profileManager.SaveAsync(profile);
+                _connectionItems.Add(new ConnectionListItem(profile));
+            }
+            catch (Exception exception)
+            {
+                ReportError(T("CreatedDatabaseProfileFailed", result.Path), exception);
+                return;
+            }
+        }
+
+        var message = T("DatabaseCreated", result.Path);
+        _statusText.Text = message;
+        AddMessage("Success", T("CreateDatabase"), message);
+        ShowFooterNotification(T("CreateDatabaseSucceeded"), "success");
+    }
+
     private async void OnEditConnectionClick(object? sender, RoutedEventArgs e)
     {
         if (SelectedConnection is { } profile)
@@ -1014,7 +1061,9 @@ public sealed partial class MainWindow : Window
         _statusText.Text = T("ConnectingToProfile", profile.Name);
         try
         {
-            var result = await _sessionManager.ConnectAsync(profile, password);
+            var resolved = await ((App)Avalonia.Application.Current!).EmbeddedEngines.ResolveAsync(profile,
+                new Progress<string>(version => _statusText.Text = T("DownloadingFirebirdEngine", version)));
+            var result = await _sessionManager.ConnectAsync(resolved, password);
             if (result.Succeeded)
             {
                 _statusText.Text = result.Message;
@@ -1148,6 +1197,8 @@ public sealed partial class MainWindow : Window
         _removeButton.IsEnabled = canChange && !isConnected;
         _connectButton.IsEnabled = canChange && !isConnected;
         _disconnectButton.IsEnabled = canChange && isConnected;
+        this.FindControl<MenuItem>("CreateDatabaseMenuItem")!.IsEnabled =
+            EmbeddedFirebirdInstaller.IsSupported || (canChange && isConnected);
         _connectionContextEditItem.IsEnabled = _editButton.IsEnabled;
         _connectionContextDeleteItem.IsEnabled = _removeButton.IsEnabled;
         _connectionContextConnectItem.IsEnabled = _connectButton.IsEnabled;
@@ -2145,6 +2196,7 @@ public sealed partial class MainWindow : Window
         {
             ExecuteSqlShortcut = changes.ExecuteShortcut.ToString(),
             InterfaceLanguage = changes.InterfaceLanguage,
+            DownloadAllEmbeddedEngines = changes.DownloadAllEmbeddedEngines,
             LightThemeColors = changes.Light,
             DarkThemeColors = changes.Dark
         };
