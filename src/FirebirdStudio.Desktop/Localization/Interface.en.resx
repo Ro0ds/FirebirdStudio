@@ -486,6 +486,7 @@ Install and restart Firebird Studio to apply this update.</value></data>
   <data name="DownloadingFirebirdEngine" xml:space="preserve"><value>Downloading Firebird {0}…</value></data>
   <data name="CheckingFirebirdEngines" xml:space="preserve"><value>Checking installed Firebird engines…</value></data>
   <data name="FirebirdDownloadFailed" xml:space="preserve"><value>Could not download the Firebird engines. {0}</value></data>
+  <data name="FirebirdDownloadTlsFailed" xml:space="preserve"><value>Could not establish a secure connection to GitHub to download the Firebird engine. {0}</value></data>
   <data name="FirebirdDownloadCancelled" xml:space="preserve"><value>Engine download cancelled.</value></data>
   <data name="ExternalFirebirdLibrary" xml:space="preserve"><value>Use an external client library</value></data>
 </root>

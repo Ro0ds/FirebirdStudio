@@ -2,13 +2,14 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using FirebirdStudio.Core.Connections;
+using FirebirdStudio.Infrastructure.Downloads;
 
 namespace FirebirdStudio.Infrastructure.Connections;
 
 public sealed class EmbeddedFirebirdInstaller
 {
     private const string ReleaseBase = "https://github.com/FirebirdSQL/firebird/releases/download/";
-    private static readonly HttpClient Client = new();
+    private static readonly HttpClient Client = new(GitHubReleaseDownload.CreateHandler());
     private static readonly Package[] Packages =
     [
         new("5.0", "5.0.4", "v5.0.4/Firebird-5.0.4.1812-0-windows-x64.zip", "fbclient.dll", 25206603,

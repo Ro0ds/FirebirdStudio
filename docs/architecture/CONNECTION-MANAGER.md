@@ -72,6 +72,8 @@ On Windows x64, choose **Use embedded Firebird** and select a version to create 
 
 In **File → Settings → Embedded Firebird**, **Download on demand** is the default and retrieves the engine when creating a database, testing its connection, or connecting. **Download all engines** installs the missing versions when Settings is saved. Downloaded engines are reused from the per-user cache under `%LOCALAPPDATA%\FirebirdStudio\engines`. Packages come from official Firebird releases and are checked against pinned sizes and SHA-256 digests before installation. [Firebird releases](https://github.com/FirebirdSQL/firebird/releases)
 
+On Windows, engine downloads use the same TLS 1.2 configuration as application update downloads. The GitHub release downloads require HTTPS access to `github.com` and `release-assets.githubusercontent.com`.
+
 Embedded connections use a separate provider load context for each native library so that version-specific capabilities can coexist. On Windows x64, the integration smoke test opened simultaneous connections to all four engines and verified the format of the created database files through `MON$DATABASE`. Firebird 2.5, 3.0, 4.0, and 5.0 reported ODS 11.2, 12.0, 13.0, and 13.1 respectively.
 
 ## Credential storage

@@ -160,8 +160,11 @@ internal sealed partial class CreateDatabaseWindow : Window
         }
         catch (Exception exception)
         {
-            var detail = password.Length == 0 ? exception.Message : exception.Message.Replace(password, "[REDACTED]", StringComparison.Ordinal);
-            SetStatus(T("DatabaseCreationFailed", detail), error: true);
+            var tlsFailure = exception is HttpRequestException { HttpRequestError: HttpRequestError.SecureConnectionError };
+            var detail = tlsFailure ? exception.GetBaseException().Message : exception.Message;
+            if (password.Length > 0)
+                detail = detail.Replace(password, "[REDACTED]", StringComparison.Ordinal);
+            SetStatus(T(tlsFailure ? "FirebirdDownloadTlsFailed" : "DatabaseCreationFailed", detail), error: true);
             return;
         }
         finally
