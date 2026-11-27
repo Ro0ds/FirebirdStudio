@@ -2,9 +2,10 @@
 
 ## Initial scope
 
-The first explorer milestone reads the following user-defined object categories from the active Firebird session:
+The explorer reads the following object categories from the active Firebird session:
 
 - Tables, including global temporary tables
+- System tables
 - Views
 - Stored procedures
 - Triggers
@@ -18,6 +19,7 @@ Metadata browsing uses `SELECT` statements against Firebird system catalog table
 | Category | Catalog | Important filter/details |
 |---|---|---|
 | Tables | `RDB$RELATIONS` | `RDB$VIEW_BLR IS NULL`; `RDB$SYSTEM_FLAG` is zero or null |
+| System tables | `RDB$RELATIONS` | `RDB$VIEW_BLR IS NULL`; `RDB$SYSTEM_FLAG` is nonzero |
 | Views | `RDB$RELATIONS` | `RDB$VIEW_BLR IS NOT NULL`; `RDB$SYSTEM_FLAG` is zero or null |
 | Procedures | `RDB$PROCEDURES` | `RDB$SYSTEM_FLAG` is zero or null; input/output parameter counts and source |
 | Procedure parameters | `RDB$PROCEDURE_PARAMETERS` | Direction, position, domain, nullability and default source; joined to `RDB$FIELDS` for type details |
@@ -34,6 +36,7 @@ Table/view classification by `RDB$VIEW_BLR` and user-object filtering by `RDB$SY
 
 - The desktop groups discovered objects under expandable categories.
 - Expanding **Tables** reveals individual user tables; expanding a table reveals its columns and a nested **Constraints** group.
+- **System tables** has a red label in both desktop themes. Its entries also appear in red in general search and can be isolated with the **System tables** filter. The table inspector displays columns and read-only data for these entries. Firebird manages their definitions.
 - Column details are read from `RDB$RELATION_FIELDS` joined to `RDB$FIELDS`: domain name, field type/subtype codes, byte length, character length, numeric precision, scale, character set, nullability, and ordinal position.
 - Constraint details are read from `RDB$RELATION_CONSTRAINTS`, with foreign-key relationships and referential actions from `RDB$REF_CONSTRAINTS`.
 - Primary-key, unique-key, and foreign-key key columns are read from `RDB$INDEX_SEGMENTS`. Foreign-key segments are paired by position with the referenced primary/unique index segments, allowing the tree to show local-to-referenced column mappings.

@@ -414,6 +414,9 @@
   <data name="SuppressDatabaseTriggersWarning" xml:space="preserve"><value>Atenção: suprimir triggers do banco pode contornar regras de negócio. O provedor impede o uso dessa opção com o pool de conexões.</value></data>
   <data name="SwitchToCompact" xml:space="preserve"><value>Mostrar apenas nomes de conexões</value></data>
   <data name="SwitchToDetailed" xml:space="preserve"><value>Mostrar detalhes da conexão</value></data>
+  <data name="SystemTable" xml:space="preserve"><value>Tabela de sistema</value></data>
+  <data name="SystemTableDdlUnavailable" xml:space="preserve"><value>O Firebird gerencia esta tabela de sistema. A prévia de CREATE TABLE está indisponível.</value></data>
+  <data name="SystemTables" xml:space="preserve"><value>Tabelas de sistema</value></data>
   <data name="Table" xml:space="preserve"><value>Tabela</value></data>
   <data name="TableDetails" xml:space="preserve"><value>Detalhes da tabela</value></data>
   <data name="TableDetailsSummary" xml:space="preserve"><value>{0}  ·  Colunas: {1} · Restrições: {2}</value></data>

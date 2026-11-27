@@ -19,7 +19,7 @@ public sealed class MetadataObjectIconConverter : FuncValueConverter<DatabaseMet
     public MetadataObjectIconConverter() : base(item => item?.Kind switch
     {
         "Category" => Folder,
-        "Tables" => Table,
+        "Tables" or DatabaseMetadataObject.SystemTablesKind => Table,
         "Views" => View,
         "Column" => Column,
         "Procedures" => Procedure,

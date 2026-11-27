@@ -245,6 +245,7 @@
                         ToolTip.Tip="{loc:StudioText FilterSearchType}">
                 <ComboBoxItem Content="{loc:StudioText AllObjectTypes}" />
                 <ComboBoxItem Content="{loc:StudioText Tables}" Tag="Tables" />
+                <ComboBoxItem Content="{loc:StudioText SystemTables}" Tag="{x:Static database:DatabaseMetadataObject.SystemTablesKind}" />
                 <ComboBoxItem Content="{loc:StudioText Views}" Tag="Views" />
                 <ComboBoxItem Content="{loc:StudioText Columns}" Tag="Column" />
                 <ComboBoxItem Content="{loc:StudioText Procedures}" Tag="Procedures" />
@@ -263,6 +264,11 @@
           <Grid Grid.Row="1">
             <TreeView x:Name="MetadataTree" SelectionMode="Single" MinHeight="0"
                       AutomationProperties.Name="{loc:StudioText ObjectTree}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+              <TreeView.Styles>
+                <Style Selector="TextBlock.system-table">
+                  <Setter Property="Foreground" Value="{DynamicResource StudioErrorBrush}" />
+                </Style>
+              </TreeView.Styles>
               <TreeView.ItemsPanel>
                 <ItemsPanelTemplate>
                   <VirtualizingStackPanel />
@@ -281,6 +287,7 @@
                               Foreground="{DynamicResource StudioSecondaryTextBrush}"
                               Data="{Binding Converter={StaticResource MetadataObjectIcon}}" />
                     <TextBlock Grid.Column="1" Text="{Binding Converter={StaticResource MetadataObjectLabel}}" VerticalAlignment="Center"
+                               Classes.system-table="{Binding IsSystemTable}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="2" Text="{Binding ParentName}" Classes="secondary" Margin="6,0,0,0"
                                IsVisible="{Binding !!ParentName}" VerticalAlignment="Center" MaxWidth="90"
