@@ -2,17 +2,17 @@
 
 The product-level four-phase roadmap is maintained in [`../ROADMAP.md`](../ROADMAP.md). This file tracks implementation slices and their acceptance evidence; it does not redefine the product phases.
 
-The v0.2.0 desktop redesign is published for Windows x64. The [release notes](../releasing/0.2.0.md) record the candidate smoke test on Firebird 5.0.4 embedded. The next integration milestone starts with a repeatable Firebird 5 TCP/IP test. [Compatibility matrix](FIREBIRD-COMPATIBILITY.md)
+The v0.2.0 desktop redesign is published for Windows x64. The [release notes](../releasing/0.2.0.md) record the candidate smoke test on Firebird 5.0.4 embedded. The core TCP/IP scenario passed on Windows x64 with Firebird 2.5, 3, 4, and 5. Fedora validation is pending. [Compatibility matrix](FIREBIRD-COMPATIBILITY.md)
 
 | Phase | Scope | Acceptance evidence | Status |
 |---|---|---|---|
 | 0 | Repository foundation and desktop shell | Restore/build/run on all three OS families | Windows x64 packages published, Linux and macOS verification pending |
-| 1A | Connection profiles and connection testing | Profile validation and persistence tests, integration tests on FB 2.5, 3, 4, 5 | Registration fields and deterministic tests implemented. FB 5.0.4 embedded connection smoke passed. TCP/IP and other versions pending. |
+| 1A | Connection profiles and connection testing | Profile validation and persistence tests, integration tests on FB 2.5, 3, 4, 5 | Registration fields and deterministic tests implemented. Embedded FB 5.0.4 smoke and TCP/IP session open/close on all four versions passed. |
 | 1B | Persistent secure credential storage | Native keyring integration tests on Windows, macOS, Linux; fail-closed behavior | Latchkey adapter and remember/forget UI implemented provisionally; automated adapter tests use a fake; native platform integration tests pending |
 | 1C | Active connection/session lifecycle and reliability | Connect/disconnect, state transitions, detailed errors, SQL recovery, staged connection diagnostics, concurrency and disposal tests | Session lifecycle, diagnostic reporting, and editor recovery implemented. The FB 5.0.4 embedded smoke covered connection switching, queued cancellation, and restoration after restart. Broader integration pending. |
 | 1D | Database creation on the active instance | Create, reopen, query, and reject an existing target | Passed with Firebird 5.0.4 over TCP/IP. [Creation workflow](CONNECTION-MANAGER.md#create-a-database) |
 | 1E | Managed embedded engines | Validate both download settings and create and reopen with the selected engine | Passed on Windows x64 with Firebird 2.5.9, 3.0.14, 4.0.7, and 5.0.4. |
-| 2 | Metadata explorer | Verified metadata fixtures per server version | Read-only catalog implemented. The FB 5.0.4 embedded smoke covered paging, search, and table, view, and trigger DDL. TCP/IP and other versions pending. |
+| 2 | Metadata explorer | Verified metadata fixtures per server version | Read-only catalog implemented. Table listing, search, columns, and table DDL passed over TCP/IP on all four versions. The FB 5.0.4 embedded smoke also covered paging and view and trigger DDL. |
 | 3 | SQL editor and execution | Parameters, transactions, cancellation, errors, multi-statement behavior documented | Initial single-statement execution, transaction commit/rollback, cancellation, 500-row read-only TableView preview, configurable execution shortcut with `F9` as the default, table-inspection tab (fields/data/constraints/generated DDL), and persistent 250-entry query history with double-click restore and right/tab docking implemented. Typed named parameter binding and SQL formatting are available. Multi-statement scripts remain planned |
 | 4 | Data grid and record editor | Paging, sorting, filtering, safe updates | Table data paging and read-only result sorting, row navigation, and copying shipped. Filtering and record editing remain planned. |
 | 5 | Object editors | Round-trip DDL tests for tables, views, procedures, triggers, domains, indexes | Not implemented |
