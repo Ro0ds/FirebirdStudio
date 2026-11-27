@@ -8,7 +8,7 @@ This roadmap tracks Firebird Studio as a cross-platform Firebird development and
 
 ## Phase 1 — Reliability and quality of life
 
-- [ ] Automated integration tests against Firebird 2.5, 3, 4, and 5. The 0.2.0 candidate smoke test covered Firebird 5.0.4 embedded.
+- [ ] Validate the automated Firebird 2.5, 3, 4, and 5 TCP/IP matrix on Fedora. The core scenario passed on Windows x64.
 - [x] Persistent SQL editor workspace across normal restarts and crash recovery, including tab rename and close.
 - [x] Connection diagnostics.
 - [x] Better error reporting and actionable diagnostic details.
@@ -18,8 +18,8 @@ This roadmap tracks Firebird Studio as a cross-platform Firebird development and
 
 ### Next milestone
 
-1. Add a repeatable Firebird 5 TCP/IP test against a disposable database. Cover connect and disconnect, metadata and DDL reads, typed SQL parameters, commit and rollback, and cancellation during query execution.
-2. Run the same core checks against Firebird 4, 3, and 2.5. Record the engine version, connection mode, and any version-specific behavior in the [compatibility matrix](architecture/FIREBIRD-COMPATIBILITY.md).
+1. Run the [TCP/IP integration suite](../tests/README.md#real-firebird-tcpip-integration) on Fedora against Firebird 5, 4, 3, and 2.5. Record the result in the [compatibility matrix](architecture/FIREBIRD-COMPATIBILITY.md).
+2. Prepare and smoke-test a Linux package on Fedora, then validate it on two additional distributions.
 3. Measure initial metadata loading, paging, search, and result display with a larger database. Record elapsed times, memory, and UI responsiveness so later changes can be compared against the same workload.
 
 Windows x64 remains the packaged target. Linux and macOS build, runtime, and packaging validation are tracked in the [platform support policy](architecture/PLATFORM-SUPPORT.md).

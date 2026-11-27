@@ -66,7 +66,7 @@ Table/view classification by `RDB$VIEW_BLR` and user-object filtering by `RDB$SY
 - Firebird 3+ packaged procedures are not yet disambiguated by package name in the display model. When duplicate procedure names are detected, parameter/source children are deliberately withheld rather than attached to the wrong procedure.
 - Functions, sequences/generators, exceptions, roles, character sets, collations, packages, and privileges are not yet listed.
 - The table inspector displays the generated draft with indentation set by the DDL builder. Views format the catalog query, and triggers and procedures format the catalog source using procedural indentation. The formatter preserves quoted identifiers, literals, and comments in the covered cases. These previews are for inspection.
-- No real-server integration fixtures have yet verified the queries on Firebird 2.5, 3, 4, and 5.
+- The TCP/IP integration fixture covers table listing, search, columns, and table DDL on Firebird 2.5, 3, 4, and 5. See the [compatibility matrix](FIREBIRD-COMPATIBILITY.md) for wider catalog coverage.
 - The metadata tree is an expandable inventory, not a metadata editor. Categories expand to objects; tables expand to columns and constraints; key constraints expand to their key columns; indexes expand to ordered segments; procedures expand to parameters and source. Table inspection is provided in a separate tab.
 - Each fetch is limited to 200 objects. As the end of the loaded list enters view, scrolling fetches and appends more objects without manual pagination controls. Table/view details are loaded on selection rather than during refresh.
 

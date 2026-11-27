@@ -46,7 +46,7 @@ The current stable release is **Firebird Studio 0.2.2**. It ships portable Windo
 - IBExpert-specific UI/metadata options (object-name capitalization, metadata cache, SQL plan display, startup auto-connect, idle disconnect, backup defaults, and pre/post-connect scripts); these belong to later feature areas, not the provider's connection string.
 - Legacy NetBEUI/SPX transports and trusted authentication; neither is exposed until support is verified for the cross-platform provider targets.
 - Multi-statement SQL scripts, editable result grids, data editing, schema/data comparison, backup/restore, monitoring, and import/export.
-- Real-server integration tests across targeted Firebird versions, and release packages for Linux and macOS.
+- Release packages for Linux and macOS.
 
 The `ISecureCredentialStore` abstraction is implemented by an Infrastructure adapter backed by Latchkey. The adapter uses only the native OS credential backend and does not configure a plaintext fallback. Latchkey is a provisional early-stage dependency until Windows, macOS, and Linux native integration tests pass.
 
@@ -100,7 +100,7 @@ Run the suite from the solution root:
 dotnet test
 ```
 
-The suite does not connect to a Firebird server or write to a user database. Native credential-store round-trip tests on Windows, macOS, and Linux remain separate platform integration tests.
+The default test run uses deterministic fixtures. The [opt-in TCP/IP suite](tests/README.md#real-firebird-tcpip-integration) exercises Firebird 2.5, 3.0, 4.0, and 5.0 using disposable databases. Native credential-store round-trip tests on Windows, macOS, and Linux remain separate platform integration tests.
 
 
 ## Read-only metadata explorer
