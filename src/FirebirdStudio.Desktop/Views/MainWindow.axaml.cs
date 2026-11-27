@@ -1479,13 +1479,13 @@ public sealed partial class MainWindow : Window
 
         if (_metadataTree.SelectedItem is DatabaseMetadataObject { Kind: "Column", ParentName: not null } column)
         {
-            var relationKind = GetOwningRelationKind(column.ParentName);
+            var relationKind = column.ParentKind ?? GetOwningRelationKind(column.ParentName);
             await ShowTableDetailsAsync(new DatabaseMetadataObject(relationKind, column.ParentName, null,
                 T("OpenedFromColumn", column.Name)));
             return;
         }
 
-        if (_metadataTree.SelectedItem is DatabaseMetadataObject { Kind: "Tables" or "Views" } table)
+        if (_metadataTree.SelectedItem is DatabaseMetadataObject { Kind: "Tables" or DatabaseMetadataObject.SystemTablesKind or "Views" } table)
         {
             await ShowTableDetailsAsync(table);
             return;
@@ -1528,6 +1528,7 @@ public sealed partial class MainWindow : Window
         switch (item.Kind)
         {
             case "Tables":
+            case DatabaseMetadataObject.SystemTablesKind:
             case "Views":
                 await ShowTableDetailsAsync(item);
                 return;
@@ -1538,7 +1539,7 @@ public sealed partial class MainWindow : Window
             case "Constraint column" when item.ParentName is not null:
             case "Constraint group" when item.ParentName is not null:
             case "View source" when item.ParentName is not null:
-                var relationKind = item.Kind == "View source" ? "Views" : GetOwningRelationKind(item.ParentName);
+                var relationKind = item.ParentKind ?? (item.Kind == "View source" ? "Views" : GetOwningRelationKind(item.ParentName));
                 await ShowTableDetailsAsync(new DatabaseMetadataObject(
                     relationKind, item.ParentName, null, T("OpenedFromMetadata", item.Kind.ToLowerInvariant(), item.Name)));
                 return;
@@ -3083,7 +3084,13 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        _tableDetailsTab.Header = $"{T(table.Kind == "Views" ? "View" : "Table")}: {table.Name}";
+        var tableLabel = table.Kind switch
+        {
+            "Views" => T("View"),
+            DatabaseMetadataObject.SystemTablesKind => T("SystemTable"),
+            _ => T("Table")
+        };
+        _tableDetailsTab.Header = $"{tableLabel}: {table.Name}";
         _tableDetailsTab.IsVisible = true;
         _editorTabs.SelectedItem = _tableDetailsTab;
         _tableDetailsTitle.Text = T("LoadingObjectDetails", table.Name);
@@ -3118,10 +3125,13 @@ public sealed partial class MainWindow : Window
             var constraints = details.FirstOrDefault(item => item.Kind == "Constraint group")?.Children
                 ?? Array.Empty<DatabaseMetadataObject>();
             _tableConstraintsList.ItemsSource = constraints;
-            _tableDdlText.Text = table.Kind == "Tables"
-                ? FirebirdDdlPreview.BuildTableDdl(table.Name, fields, constraints)
-                : FirebirdDdlPreview.FormatSource("View source", details.FirstOrDefault(item => item.Kind == "View source")?.Details
-                    ?? "-- View definition is not available.");
+            _tableDdlText.Text = table.Kind switch
+            {
+                DatabaseMetadataObject.SystemTablesKind => $"-- {T("SystemTableDdlUnavailable")}",
+                "Views" => FirebirdDdlPreview.FormatSource("View source",
+                    details.FirstOrDefault(item => item.Kind == "View source")?.Details ?? "-- View definition is not available."),
+                _ => FirebirdDdlPreview.BuildTableDdl(table.Name, fields, constraints)
+            };
             _tableDdlText.TextArea.TextView.Redraw();
             _tableDetailsTitle.Text = T("TableDetailsSummary", table.Name, fields.Length, constraints.Count);
             await LoadTableDataPageAsync(profile, table.Name, 0, null, false);

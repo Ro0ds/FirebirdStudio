@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Resources;
+using FirebirdStudio.Core.Database;
 
 namespace FirebirdStudio.Desktop.Services;
 
@@ -30,7 +31,7 @@ internal static class StudioText
     public static string MetadataCategoryName(string category) => category switch
     {
         "Column" => T("Columns"),
-        "Tables" or "Views" or "Procedures" or "Triggers" or "Indexes" or "Domains" => T(category),
+        "Tables" or DatabaseMetadataObject.SystemTablesKind or "Views" or "Procedures" or "Triggers" or "Indexes" or "Domains" => T(category),
         _ => category
     };
 }
