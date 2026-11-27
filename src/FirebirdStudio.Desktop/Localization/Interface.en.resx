@@ -413,6 +413,9 @@
   <data name="SuppressDatabaseTriggersWarning" xml:space="preserve"><value>Warning: suppressing database triggers can bypass database-side business rules. The provider does not allow this option together with connection pooling.</value></data>
   <data name="SwitchToCompact" xml:space="preserve"><value>Switch to minimal connection names</value></data>
   <data name="SwitchToDetailed" xml:space="preserve"><value>Switch to detailed connection information</value></data>
+  <data name="SystemTable" xml:space="preserve"><value>System table</value></data>
+  <data name="SystemTableDdlUnavailable" xml:space="preserve"><value>Firebird manages this system table. A CREATE TABLE preview is unavailable.</value></data>
+  <data name="SystemTables" xml:space="preserve"><value>System tables</value></data>
   <data name="Table" xml:space="preserve"><value>Table</value></data>
   <data name="TableDetails" xml:space="preserve"><value>Table details</value></data>
   <data name="TableDetailsSummary" xml:space="preserve"><value>{0}  ·  {1} column(s) · {2} constraint(s)</value></data>

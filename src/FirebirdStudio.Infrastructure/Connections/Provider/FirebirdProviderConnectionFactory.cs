@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using FirebirdStudio.Application.Connections;
 using FirebirdStudio.Core.Database;
+using static FirebirdStudio.Core.Database.DatabaseMetadataObject;
 
 namespace FirebirdStudio.Infrastructure.Connections.Provider;
 
@@ -14,6 +15,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
 
     private sealed class FirebirdProviderConnection(DbConnection connection) : IFirebirdProviderConnection
     {
+        private const string SystemTablesFilter = "COALESCE(RDB$SYSTEM_FLAG, 0) <> 0 AND RDB$VIEW_BLR IS NULL";
+
         private DbCommand CreateCommand(string sql, DbTransaction? transaction = null)
         {
             var command = connection.CreateCommand();
@@ -37,7 +40,7 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
         public Task<IReadOnlyList<DatabaseMetadataObject>> ReadMetadataAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            string[] categories = ["Tables", "Views", "Procedures", "Triggers", "Indexes", "Domains"];
+            string[] categories = ["Tables", SystemTablesKind, "Views", "Procedures", "Triggers", "Indexes", "Domains"];
             IReadOnlyList<DatabaseMetadataObject> result = categories.Select(category =>
                 new DatabaseMetadataObject("Category", category, null,
                     "Not loaded · select to browse", Array.Empty<DatabaseMetadataObject>())).ToArray();
@@ -51,6 +54,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
             {
                 ["Tables"] = ("SELECT TRIM(RDB$RELATION_NAME), 'User table' FROM RDB$RELATIONS " +
                     "WHERE COALESCE(RDB$SYSTEM_FLAG, 0) = 0 AND RDB$VIEW_BLR IS NULL", "Tables"),
+                [SystemTablesKind] = ("SELECT TRIM(RDB$RELATION_NAME), 'System table' FROM RDB$RELATIONS " +
+                    "WHERE " + SystemTablesFilter, SystemTablesKind),
                 ["Views"] = ("SELECT TRIM(RDB$RELATION_NAME), 'View' FROM RDB$RELATIONS " +
                     "WHERE COALESCE(RDB$SYSTEM_FLAG, 0) = 0 AND RDB$VIEW_BLR IS NOT NULL", "Views"),
                 ["Procedures"] = ("SELECT TRIM(RDB$PROCEDURE_NAME), 'Input parameters: ' || " +
@@ -106,6 +111,9 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 "SELECT CAST('Tables' AS VARCHAR(16)) AS object_kind, TRIM(RDB$RELATION_NAME) AS object_name, " +
                 "CAST(NULL AS VARCHAR(63)) AS parent_name, CAST('User table' AS VARCHAR(255)) AS details " +
                 "FROM RDB$RELATIONS WHERE COALESCE(RDB$SYSTEM_FLAG, 0) = 0 AND RDB$VIEW_BLR IS NULL " +
+                "UNION ALL " +
+                "SELECT CAST('" + SystemTablesKind + "' AS VARCHAR(16)), TRIM(RDB$RELATION_NAME), CAST(NULL AS VARCHAR(63)), " +
+                "CAST('System table' AS VARCHAR(255)) FROM RDB$RELATIONS WHERE " + SystemTablesFilter + " " +
                 "UNION ALL " +
                 "SELECT CAST('Views' AS VARCHAR(16)), TRIM(RDB$RELATION_NAME), CAST(NULL AS VARCHAR(63)), " +
                 "CAST('View' AS VARCHAR(255)) FROM RDB$RELATIONS " +
@@ -308,7 +316,8 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                 return Array.Empty<DatabaseMetadataObject>();
             }
 
-            if (!string.Equals(kind, "Tables", StringComparison.OrdinalIgnoreCase) &&
+            var isSystemTable = string.Equals(kind, SystemTablesKind, StringComparison.OrdinalIgnoreCase);
+            if (!isSystemTable && !string.Equals(kind, "Tables", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(kind, "Views", StringComparison.OrdinalIgnoreCase))
                 return Array.Empty<DatabaseMetadataObject>();
 
@@ -340,7 +349,10 @@ internal sealed class FirebirdProviderConnectionFactory : IFirebirdProviderConne
                         $"scale: {reader.GetString(7).Trim()}; character length: {reader.GetString(8).Trim()}; " +
                         $"precision: {reader.GetString(9).Trim()}; charset: {(reader.IsDBNull(10) ? string.Empty : reader.GetString(10).Trim())}; " +
                         $"{(nullable ? "nullable" : "not null")}; position: {reader.GetString(2).Trim()}";
-                    columns.Add(new DatabaseMetadataObject("Column", fieldName, name, details));
+                    columns.Add(new DatabaseMetadataObject("Column", fieldName, name, details)
+                    {
+                        ParentKind = isSystemTable ? SystemTablesKind : null
+                    });
                 }
             }
 
