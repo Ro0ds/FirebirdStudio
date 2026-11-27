@@ -4,7 +4,7 @@ A cross-platform, open-source Firebird database IDE foundation for Windows, Linu
 
 > **Project status: functional early-development release.** Connection management, metadata exploration, SQL editing/execution, query history, editor recovery, and staged connection diagnostics are implemented. It is not yet a complete IBExpert replacement.
 
-The current stable release is **Firebird Studio 0.2.0**. It ships portable Windows x64 packages with and without the .NET runtime. [Download v0.2.0](https://github.com/Ro0ds/FirebirdStudio/releases/tag/v0.2.0) · [Release notes](docs/releasing/0.2.0.md) · [Product roadmap](docs/ROADMAP.md)
+The current stable release is **Firebird Studio 0.2.2**. It ships portable Windows x64 packages with and without the .NET runtime. [Download v0.2.2](https://github.com/Ro0ds/FirebirdStudio/releases/tag/v0.2.2) · [Release notes](docs/releasing/0.2.2.md) · [Product roadmap](docs/ROADMAP.md)
 
 ## Technology
 
