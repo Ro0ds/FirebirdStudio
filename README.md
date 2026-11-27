@@ -70,7 +70,7 @@ The connection profile editor can be used without a Firebird server. The connect
 
 ## Platform notes
 
-Windows x64 is the current packaged release target. Linux and macOS remain development targets. See the [platform support policy](docs/architecture/PLATFORM-SUPPORT.md) for the validation scope and the [Windows packaging guide](docs/releasing/WINDOWS.md) for release instructions.
+Windows x64 is the current published release target. See the [Linux portable package guide](docs/releasing/LINUX.md) for Fedora test builds, the [platform support policy](docs/architecture/PLATFORM-SUPPORT.md) for validation scope, and the [Windows packaging guide](docs/releasing/WINDOWS.md) for release instructions.
 
 ## Security notes
 
